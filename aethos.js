@@ -174,7 +174,7 @@ function aethos_main() {
 		/* loop through and initialize each slider */
 		sliders.forEach(initializeSplide);
 	}
-
+	/**/
 	// window.fsAttributes = window.fsAttributes || [];
 	// window.fsAttributes.push([
 	// 	"cmsfilter",
