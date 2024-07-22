@@ -165,6 +165,10 @@ function aethos_main() {
 					autoScroll: {
 						autoStart: false,
 					},
+					breakpoints: {
+						767: { perPage: 1 },
+						991: { perPage: 2 },
+					},
 				},
 				useExtensions: false,
 				useProgressBar: true,
