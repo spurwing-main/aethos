@@ -1,8 +1,6 @@
 function aethos_main() {
 	/**/
 
-	// Create a global object to store component data
-	const aethos = {};
 	aethos.anim = {};
 	aethos.helpers = {};
 	aethos.splides = {};
@@ -95,6 +93,55 @@ function aethos_main() {
 			bar.style.width = String(100 * rate) + "%";
 		});
 	};
+
+	aethos.anim.splitText = function () {
+		// return;
+		let typeSplit;
+		let linesClass = "anim-split_line"; // class to add to lines
+		let maskClass = "anim-split_line-mask"; // class to add to masks
+		// Split the text up
+		function runSplit() {
+			typeSplit = new SplitText(".anim-split", {
+				types: "lines, words",
+				linesClass: linesClass,
+			});
+			$("." + linesClass).append("<div class='" + maskClass + "'></div>");
+			createAnimation();
+		}
+		runSplit();
+
+		// Update on window resize
+		let windowWidth = $(window).innerWidth();
+		window.addEventListener("resize", function () {
+			if (windowWidth !== $(window).innerWidth()) {
+				windowWidth = $(window).innerWidth();
+				typeSplit.revert();
+				runSplit();
+			}
+		});
+
+		gsap.registerPlugin(ScrollTrigger);
+
+		function createAnimation() {
+			$("." + linesClass).each(function (index) {
+				let tl = gsap.timeline({
+					scrollTrigger: {
+						trigger: $(this),
+						// trigger element - viewport
+						start: "top center",
+						end: "bottom center",
+						scrub: 1,
+					},
+				});
+				tl.to($(this).find("." + maskClass), {
+					width: "0%",
+					duration: 1,
+				});
+			});
+		}
+	};
+
+	aethos.anim.splitText();
 
 	loadSliders();
 
