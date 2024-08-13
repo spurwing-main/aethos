@@ -8,6 +8,144 @@ function aethos_main() {
 	/* sitewide custom code goes here */
 	/**/
 
+	aethos.anim.smoothScroll = function () {
+		gsap.registerPlugin(ScrollSmoother);
+
+		ScrollSmoother.create({
+			smooth: 1,
+			effects: true,
+			content: "#smooth-content",
+			wrapper: "#smooth-wrapper",
+		});
+	};
+
+	aethos.anim.arch = function () {
+		let trigger =
+			document.querySelector(
+				".c-intro-home"
+			); /* TO DO - SUPPORT MULTIPLE INSTANCES */
+		let selector = gsap.utils.selector(trigger);
+		let img_wrap = selector(".intro-home_img-wrap");
+		let arch_path = document.querySelector("#shape-arch path");
+		let arch_path_bg = document.querySelector("#shape-arch-bg path");
+
+		let tl_arch = gsap.timeline({
+			scrollTrigger: {
+				trigger: trigger,
+				start: "top 30%",
+				end: "top 10%",
+				scrub: 0,
+			},
+		});
+
+		tl_arch.from(img_wrap, {
+			y: "10%",
+			ease: "linear",
+		});
+
+		// move clip path up - it is in turn clipped by parent wrapper so arch is shorter at start
+		tl_arch.from(
+			arch_path,
+			{
+				attr: {
+					d: "M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v0.441 H0.001 v-0.441",
+				},
+				// y: 0.5,
+				ease: "linear",
+			},
+			"-+25%" //start this anim 75% of way through previous step
+		);
+		tl_arch.from(
+			arch_path_bg,
+			{
+				attr: {
+					d: "M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v0.441 H0.001 v-0.441",
+				},
+				// y: 0.5,
+				ease: "linear",
+			},
+			"-+25%" //start this anim 75% of way through previous step
+		);
+
+		tl_arch.from(
+			arch_path,
+			{
+				scale: 0.86,
+				transformOrigin: "bottom left",
+				ease: "linear",
+			},
+			"-+25%" //start this anim 75% of way through previous step
+		);
+	};
+
+	aethos.anim.headerLogo = function () {
+		/* on page load, if we are on homepage
+		header inner starts out hidden
+		big logo starts out visible
+		on scroll (100vh?), big logo reduces in size until its size of small logo
+		then big logo disappears and header inner appears
+		anim doesn't repeat on scroll back
+		it does scrub before finishing though
+
+		- home hero needs to be 200vh tall [x]
+		- add attr to page so we know we are on home [x]
+		- add 100dvh trigger element [x]
+
+
+		.page-wrap[data-page="home"]
+		.hero-home-trigger
+
+		*/
+		// gsap.set(".header-bar_big-logo-wrap", { display: "block" });
+		// gsap.to(".header-bar_big-logo-wrap", {
+		// 	scrollTrigger: {
+		// 		trigger: ".hero-home-trigger",
+		// 		scrub: true,
+		// 		start: "top top",
+		// 		end: "bottom top",
+		// 	},
+		// 	scale: 0,
+
+		// 	transformOrigin: "center top",
+		// 	ease: "none",
+		// });
+
+		/* if on homepage */
+		if (!document.querySelector('.page-wrap[data-page="home"]')) {
+			return;
+		}
+
+		/* set start size of logo */
+		const window_w = window.innerWidth;
+		const header_logo_wrap = document.querySelector(".header-bar_logo-wrap");
+		const scaled_size = window_w - 64;
+		const orig_size = header_logo_wrap.offsetWidth;
+		const scale = scaled_size / orig_size;
+
+		gsap.set([".header-bar_left", ".header-bar_right"], {
+			opacity: 0,
+		});
+
+		gsap.from(header_logo_wrap, {
+			scrollTrigger: {
+				trigger: ".hero-home-trigger",
+				scrub: true,
+				start: "top top",
+				end: "bottom top",
+				once: true, //ScrollTrigger will kill() itself as soon as the end position is reached once
+				onLeave: () => {
+					gsap.to([".header-bar_left", ".header-bar_right"], {
+						opacity: 1,
+					});
+				},
+			},
+			scale: scale,
+
+			transformOrigin: "center top",
+			ease: "none",
+		});
+	};
+
 	(function updateCopyrightYear() {
 		const year = new Date().getFullYear().toString();
 		document
@@ -142,6 +280,10 @@ function aethos_main() {
 	};
 
 	aethos.anim.splitText();
+	// aethos.anim.headerLogo();
+	aethos.anim.smoothScroll();
+
+	aethos.anim.arch();
 
 	loadSliders();
 
