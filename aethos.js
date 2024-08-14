@@ -29,8 +29,8 @@ function main() {
 			scrollTrigger: {
 				trigger: trigger,
 				start: "top 30%",
-				end: "top 10%",
-				scrub: 0,
+				// end: "top 10%",
+				// scrub: 0,
 			},
 		});
 
@@ -178,14 +178,14 @@ function main() {
 					scrollTrigger: {
 						trigger: $(this),
 						// trigger element - viewport
-						start: "top center",
-						end: "bottom center",
-						scrub: 1,
+						start: "top 90%",
+						// end: "bottom center",
+						// scrub: 1,
 					},
 				});
 				tl.to($(this).find("." + maskClass), {
 					width: "0%",
-					duration: 1,
+					duration: 2,
 				});
 			});
 		}
@@ -270,6 +270,7 @@ function main() {
 					},
 					focus: 0,
 					trimSpace: false,
+					flickPower: 400,
 					// breakpoints: {
 					// 	767: { perPage: 1 },
 					// 	991: { perPage: 2 },
