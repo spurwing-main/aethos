@@ -1,12 +1,8 @@
-function aethos_main() {
-	/**/
-
+function main() {
 	aethos.anim = {};
 	aethos.helpers = {};
 	aethos.splides = {};
-
-	/* sitewide custom code goes here */
-	/**/
+	aethos.functions = {};
 
 	aethos.anim.smoothScroll = function () {
 		gsap.registerPlugin(ScrollSmoother);
@@ -78,83 +74,14 @@ function aethos_main() {
 		);
 	};
 
-	aethos.anim.headerLogo = function () {
-		/* on page load, if we are on homepage
-		header inner starts out hidden
-		big logo starts out visible
-		on scroll (100vh?), big logo reduces in size until its size of small logo
-		then big logo disappears and header inner appears
-		anim doesn't repeat on scroll back
-		it does scrub before finishing though
-
-		- home hero needs to be 200vh tall [x]
-		- add attr to page so we know we are on home [x]
-		- add 100dvh trigger element [x]
-
-
-		.page-wrap[data-page="home"]
-		.hero-home-trigger
-
-		*/
-		// gsap.set(".header-bar_big-logo-wrap", { display: "block" });
-		// gsap.to(".header-bar_big-logo-wrap", {
-		// 	scrollTrigger: {
-		// 		trigger: ".hero-home-trigger",
-		// 		scrub: true,
-		// 		start: "top top",
-		// 		end: "bottom top",
-		// 	},
-		// 	scale: 0,
-
-		// 	transformOrigin: "center top",
-		// 	ease: "none",
-		// });
-
-		/* if on homepage */
-		if (!document.querySelector('.page-wrap[data-page="home"]')) {
-			return;
-		}
-
-		/* set start size of logo */
-		const window_w = window.innerWidth;
-		const header_logo_wrap = document.querySelector(".header-bar_logo-wrap");
-		const scaled_size = window_w - 64;
-		const orig_size = header_logo_wrap.offsetWidth;
-		const scale = scaled_size / orig_size;
-
-		gsap.set([".header-bar_left", ".header-bar_right"], {
-			opacity: 0,
-		});
-
-		gsap.from(header_logo_wrap, {
-			scrollTrigger: {
-				trigger: ".hero-home-trigger",
-				scrub: true,
-				start: "top top",
-				end: "bottom top",
-				once: true, //ScrollTrigger will kill() itself as soon as the end position is reached once
-				onLeave: () => {
-					gsap.to([".header-bar_left", ".header-bar_right"], {
-						opacity: 1,
-					});
-				},
-			},
-			scale: scale,
-
-			transformOrigin: "center top",
-			ease: "none",
-		});
-	};
-
-	(function updateCopyrightYear() {
+	aethos.functions.updateCopyrightYear = function () {
 		const year = new Date().getFullYear().toString();
 		document
 			.querySelectorAll('[copyright="year"]')
 			.forEach((el) => (el.textContent = year));
-	})();
+	};
 
-	/* filter draw open/close */
-	(function filterDrawerOpenClose() {
+	aethos.anim.filterDrawerOpenClose = function () {
 		document.querySelectorAll(".grid-header_filter-btn").forEach((trigger) => {
 			trigger.addEventListener("click", function () {
 				this.x = ((this.x || 0) + 1) % 2;
@@ -165,11 +92,9 @@ function aethos_main() {
 				}
 			});
 		});
-	})();
+	};
 
-	/* add an active class on hover to any items with .hover-trigger set */
-	/* we can then use CSS to target other items */
-	(function HoverTrigger() {
+	aethos.anim.HoverTrigger = function () {
 		const hover_triggers = document.querySelectorAll(".hover-trigger");
 		hover_triggers.forEach((trigger) => {
 			console.log(trigger);
@@ -184,11 +109,9 @@ function aethos_main() {
 				parent.classList.remove("is-child-active");
 			});
 		});
-	})();
+	};
 
-	/* nav image change on hover */
-
-	(function NavImage() {
+	aethos.anim.NavImage = function () {
 		const nav_link_triggers = document.querySelectorAll(
 			".nav-link[data-link-id]"
 		);
@@ -218,17 +141,6 @@ function aethos_main() {
 					}
 				});
 			});
-		});
-	})();
-
-	/* progress bar */
-	aethos.helpers.splide_progress = function (splide_instance) {
-		let bar = splide_instance.root.querySelector(".carousel_progress-bar");
-		// Updates the bar width whenever the carousel loads and updates:
-		splide_instance.on("ready active", function () {
-			let end = splide_instance.Components.Controller.getEnd() + 1;
-			let rate = Math.min((splide_instance.index + 1) / end, 1);
-			bar.style.width = String(100 * rate) + "%";
 		});
 	};
 
@@ -279,15 +191,7 @@ function aethos_main() {
 		}
 	};
 
-	aethos.anim.splitText();
-	// aethos.anim.headerLogo();
-	aethos.anim.smoothScroll();
-
-	aethos.anim.arch();
-
-	loadSliders();
-
-	function loadSliders() {
+	aethos.anim.loadSliders = function () {
 		/* splide defaults */
 		Splide.defaults = {
 			perMove: 1,
@@ -303,7 +207,7 @@ function aethos_main() {
 			waitForTransition: false,
 			updateOnMove: true,
 			trimSpace: "move",
-			type: "loop",
+			type: "slide",
 			drag: true,
 			snap: true,
 			autoWidth: false,
@@ -326,7 +230,17 @@ function aethos_main() {
 
 				// Apply progress bar if enabled
 				if (useProgressBar) {
-					aethos.helpers.splide_progress(splide);
+					splide.on("mounted move", function () {
+						// Calculate the width of the bar based on the number of slides
+						let slideCount = splide.Components.Controller.getEnd() + 1;
+						let bar = splide.root.querySelector(".progress_bar");
+						let rate = Math.min(splide.index / slideCount, 1);
+						bar.style.width = String(100 / slideCount) + "%";
+						bar.style.left = String(100 * rate) + "%";
+						aethos.log("slide count: " + slideCount);
+						aethos.log("slide rate: " + rate);
+						aethos.log("slide index: " + splide.index);
+					});
 				}
 
 				// Mount splide instance with or without extensions
@@ -348,16 +262,18 @@ function aethos_main() {
 			{
 				selector: ".carousel",
 				options: {
-					type: "loop",
-					perPage: 3,
+					type: "slide",
+					autoWidth: true,
 					autoplay: false,
 					autoScroll: {
 						autoStart: false,
 					},
-					breakpoints: {
-						767: { perPage: 1 },
-						991: { perPage: 2 },
-					},
+					focus: 0,
+					trimSpace: false,
+					// breakpoints: {
+					// 	767: { perPage: 1 },
+					// 	991: { perPage: 2 },
+					// },
 				},
 				useExtensions: false,
 				useProgressBar: true,
@@ -366,35 +282,14 @@ function aethos_main() {
 
 		/* loop through and initialize each slider */
 		sliders.forEach(initializeSplide);
-	}
-	/**/
-	// window.fsAttributes = window.fsAttributes || [];
-	// window.fsAttributes.push([
-	// 	"cmsfilter",
-	// 	(filterInstances) => {
-	// 		console.log("cmsfilter Successfully loaded!");
+	};
 
-	// 		// The callback passes a `filterInstances` array with all the `CMSFilters` instances on the page.
-	// 		const [filterInstance] = filterInstances;
-
-	// 		// The `renderitems` event runs whenever the list renders items after filtering.
-	// 		filterInstance.listInstance.on("renderitems", (renderedItems) => {
-	// 			console.log(renderedItems);
-	// 		});
-	// 		// setTimeout(addFilterClear, 3000);
-	// 	},
-	// ]);
-
-	// function addFilterClear() {
-	// 	console.log("fire");
-	// 	const filterButtons = document.querySelectorAll(
-	// 		'[fs-cmsfilter-field="location"]'
-	// 	);
-	// 	const resetLink = document.querySelector('[fs-cmsfilter-element="clear"]');
-	// 	filterButtons.forEach((filterButton) => {
-	// 		filterButton.addEventListener("click", () => {
-	// 			resetLink.click();
-	// 		});
-	// 	});
-	// }
+	aethos.anim.splitText();
+	aethos.anim.smoothScroll();
+	// aethos.functions.updateCopyrightYear();
+	aethos.anim.filterDrawerOpenClose();
+	aethos.anim.HoverTrigger();
+	aethos.anim.arch();
+	aethos.anim.NavImage();
+	aethos.anim.loadSliders();
 }
