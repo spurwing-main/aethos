@@ -237,8 +237,8 @@ function main() {
 						trigger: $(this),
 						// trigger element - viewport
 						start: "top 90%",
-						// end: "bottom center",
-						// scrub: 1,
+						end: "bottom 10%",
+						scrub: 1,
 					},
 				});
 				tl.to($(this).find("." + maskClass), {
