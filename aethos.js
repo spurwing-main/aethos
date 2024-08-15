@@ -252,12 +252,13 @@ function main() {
 
 	aethos.anim.splitText = function () {
 		let typeSplit;
+		let targetClass = "anim-split";
 		let linesClass = "anim-split_line"; // class to add to lines
 		let maskClass = "anim-split_line-mask"; // class to add to masks
 
 		// Split the text up
 		function runSplit() {
-			typeSplit = new SplitText(".anim-split", {
+			typeSplit = new SplitText("." + targetClass, {
 				types: "lines",
 				linesClass: linesClass,
 			});
@@ -277,7 +278,7 @@ function main() {
 		});
 
 		function createAnimation() {
-			const trigger = document.querySelector(".anim-split");
+			const trigger = document.querySelector("." + targetClass);
 			const lines = $("." + linesClass);
 
 			let tl = gsap.timeline({
@@ -303,6 +304,40 @@ function main() {
 			let totalScrollDistance = tl.scrollTrigger.end - tl.scrollTrigger.start;
 			tl.totalDuration(totalScrollDistance / 1000); // Adjusting the total duration to match scroll distance
 		}
+	};
+
+	aethos.anim.splitTextBasic = function () {
+		const targets = document.querySelectorAll(".anim-split-basic");
+
+		function setupSplits() {
+			targets.forEach((target) => {
+				// Reset if needed
+				if (target.anim) {
+					target.anim.progress(1).kill();
+					target.split.revert();
+				}
+
+				target.split = new SplitText(target, {
+					type: "lines",
+				});
+
+				let stagger = 1 / target.split.lines.length; // make stagger quicker if we have more lines;
+
+				// Set up the anim
+				target.anim = gsap.from(target.split.lines, {
+					scrollTrigger: {
+						trigger: target,
+						start: "top 70%",
+					},
+					duration: 1,
+					opacity: 0,
+					stagger: stagger,
+				});
+			});
+		}
+
+		ScrollTrigger.addEventListener("refresh", setupSplits);
+		setupSplits();
 	};
 
 	aethos.anim.loadSliders = function () {
@@ -400,6 +435,8 @@ function main() {
 	};
 
 	aethos.anim.splitText();
+	aethos.anim.splitTextBasic();
+
 	aethos.anim.smoothScroll();
 	// aethos.functions.updateCopyrightYear();
 	aethos.anim.filterDrawerOpenClose();
