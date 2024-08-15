@@ -15,6 +15,64 @@ function main() {
 		});
 	};
 
+	aethos.anim.navReveal = function () {
+		const showAnim = gsap
+			.to(".header-bar", {
+				paused: true,
+				duration: 0.2,
+				yPercent: 100,
+			})
+			.reverse();
+
+		const pinHead = gsap.timeline({
+			scrollTrigger: {
+				trigger: ".header-bar",
+				start: "bottom top",
+				end: "max",
+				pin: ".header-bar",
+				pinSpacing: false,
+				scrub: true,
+				onUpdate: (self) => showAnim.reversed(self.direction > 0),
+				onLeaveBack: (self) => showAnim.reverse(), // Reverse on scroll back all the way
+				markers: false,
+			},
+		});
+	};
+
+	aethos.anim.navGrow = function () {
+		return;
+		gsap.from(".header-bar_middle", {
+			scrollTrigger: {
+				trigger: ".header-bar_middle",
+				toggleActions: "play complete reverse reset",
+			},
+			duration: 10,
+			delay: 0.2,
+			height: "7rem",
+		});
+
+		// const showAnim = gsap.from(".header-bar_middle", {
+		// 	paused: true,
+		// 	duration: 0.2,
+		// 	height: "7rem",
+		// });
+		// // .reverse();
+
+		// const pinHead = gsap.timeline({
+		// 	scrollTrigger: {
+		// 		trigger: ".header-bar",
+		// 		start: "bottom top",
+		// 		// end: "max",
+		// 		// pin: ".header-bar",
+		// 		// pinSpacing: false,
+		// 		// scrub: true,
+		// 		// onUpdate: (self) => showAnim.reversed(self.direction > 0),
+		// 		// onLeaveBack: (self) => showAnim.reverse(), // Reverse on scroll back all the way
+		// 		markers: false,
+		// 	},
+		// });
+	};
+
 	aethos.anim.arch = function () {
 		let trigger =
 			document.querySelector(
@@ -185,7 +243,7 @@ function main() {
 				});
 				tl.to($(this).find("." + maskClass), {
 					width: "0%",
-					duration: 2,
+					duration: 3,
 				});
 			});
 		}
@@ -293,4 +351,6 @@ function main() {
 	aethos.anim.arch();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
+	// aethos.anim.navReveal();
+	aethos.anim.navGrow();
 }
