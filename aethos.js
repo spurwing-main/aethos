@@ -19,7 +19,7 @@ function main() {
 		const showAnim = gsap
 			.to(".header-bar", {
 				paused: true,
-				duration: 0.2,
+				duration: 0.5,
 				yPercent: 100,
 			})
 			.reverse();
@@ -202,7 +202,7 @@ function main() {
 		});
 	};
 
-	aethos.anim.splitText = function () {
+	aethos.anim.splitText_old = function () {
 		// return;
 		let typeSplit;
 		let linesClass = "anim-split_line"; // class to add to lines
@@ -239,13 +239,69 @@ function main() {
 						start: "top 90%",
 						end: "bottom 10%",
 						scrub: 1,
+						markers: true,
 					},
 				});
 				tl.to($(this).find("." + maskClass), {
 					width: "0%",
-					duration: 3,
+					// duration: 3,
 				});
 			});
+		}
+	};
+
+	aethos.anim.splitText = function () {
+		let typeSplit;
+		let linesClass = "anim-split_line"; // class to add to lines
+		let maskClass = "anim-split_line-mask"; // class to add to masks
+
+		// Split the text up
+		function runSplit() {
+			typeSplit = new SplitText(".anim-split", {
+				types: "lines",
+				linesClass: linesClass,
+			});
+			$("." + linesClass).append("<div class='" + maskClass + "'></div>");
+			createAnimation();
+		}
+		runSplit();
+
+		// Update on window resize
+		let windowWidth = $(window).innerWidth();
+		window.addEventListener("resize", function () {
+			if (windowWidth !== $(window).innerWidth()) {
+				windowWidth = $(window).innerWidth();
+				typeSplit.revert();
+				runSplit();
+			}
+		});
+
+		function createAnimation() {
+			const trigger = document.querySelector(".anim-split");
+			const lines = $("." + linesClass);
+
+			let tl = gsap.timeline({
+				scrollTrigger: {
+					trigger: trigger,
+					start: "top 90%",
+					end: "bottom 10%",
+					scrub: true,
+				},
+			});
+
+			tl.to(lines.find("." + maskClass), {
+				width: "0%",
+				duration: 1,
+				ease: "power2.out",
+				stagger: {
+					each: 0.5,
+					onComplete: () => {},
+				},
+			});
+
+			// Ensure that the animation duration matches the scroll distance
+			let totalScrollDistance = tl.scrollTrigger.end - tl.scrollTrigger.start;
+			tl.totalDuration(totalScrollDistance / 1000); // Adjusting the total duration to match scroll distance
 		}
 	};
 
