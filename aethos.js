@@ -351,6 +351,6 @@ function main() {
 	aethos.anim.arch();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
-	// aethos.anim.navReveal();
-	aethos.anim.navGrow();
+	aethos.anim.navReveal();
+	// aethos.anim.navGrow();
 }
