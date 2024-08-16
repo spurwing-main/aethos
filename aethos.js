@@ -51,6 +51,24 @@ function main() {
 			},
 		});
 	};
+	aethos.anim.navReveal_2 = function () {
+		const showAnim = gsap
+			.from(".header-bar", {
+				yPercent: -100,
+				paused: true,
+				duration: 0.2,
+			})
+			.progress(1);
+
+		ScrollTrigger.create({
+			start: "top top",
+			end: "max",
+			markers: true,
+			onUpdate: (self) => {
+				self.direction === -1 ? showAnim.play() : showAnim.reverse();
+			},
+		});
+	};
 
 	/* basic slide and fade anim */
 	aethos.anim.fadeUp = function () {
@@ -373,7 +391,7 @@ function main() {
 		};
 
 		/* get and launch all chosen splide instances */
-		function initializeSplide({
+		function initializeSplide_old({
 			selector,
 			options,
 			useExtensions = false,
@@ -412,6 +430,87 @@ function main() {
 			});
 
 			/* return all created splide instances */
+			return splides;
+		}
+
+		function initializeSplide({
+			selector,
+			options,
+			useExtensions = false,
+			useProgressBar = false,
+		}) {
+			let targets = document.querySelectorAll(selector);
+			let splides = [];
+
+			targets.forEach((target) => {
+				// New splide instance
+				let splide = new Splide(target, options);
+
+				if (useProgressBar) {
+					let progressWrapper = target.querySelector(".progress");
+					console.log(target);
+					let bar = target.querySelector(".progress_bar");
+
+					// Update progress bar position on carousel move
+					splide.on("mounted move", function () {
+						updateProgressBar();
+					});
+
+					// Function to update the progress bar
+					function updateProgressBar() {
+						let slideCount = splide.Components.Controller.getEnd() + 1;
+						let rate = Math.min(splide.index / slideCount, 1);
+						bar.style.width = String(100 / slideCount) + "%";
+						bar.style.left = String(100 * rate) + "%";
+					}
+
+					// Click event to move carousel based on click position on the progress bar
+					progressWrapper.addEventListener("click", function (e) {
+						let rect = progressWrapper.getBoundingClientRect();
+						let clickPos = (e.clientX - rect.left) / rect.width;
+						let targetSlide = Math.floor(clickPos * splide.length);
+						splide.go(targetSlide);
+					});
+
+					// Draggable progress bar
+					let isDragging = false;
+
+					progressWrapper.addEventListener("mousedown", function (e) {
+						isDragging = true;
+					});
+
+					document.addEventListener("mouseup", function () {
+						if (isDragging) {
+							isDragging = false;
+							// Snap to closest slide when dragging ends
+							let slideCount = splide.Components.Controller.getEnd() + 1;
+							let rate = parseFloat(bar.style.left) / 100;
+							let targetSlide = Math.round(rate * slideCount);
+							splide.go(targetSlide);
+						}
+					});
+
+					document.addEventListener("mousemove", function (e) {
+						if (isDragging) {
+							let rect = progressWrapper.getBoundingClientRect();
+							let dragPos = (e.clientX - rect.left) / rect.width;
+							dragPos = Math.max(0, Math.min(1, dragPos)); // Ensure it's within [0, 1]
+							let slideCount = splide.Components.Controller.getEnd() + 1;
+							bar.style.left = String(100 * dragPos) + "%";
+						}
+					});
+				}
+
+				// Mount splide instance with or without extensions
+				if (useExtensions) {
+					splide.mount(window.splide.Extensions);
+				} else {
+					splide.mount();
+				}
+
+				splides.push(splide);
+			});
+
 			return splides;
 		}
 
