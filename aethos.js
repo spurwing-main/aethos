@@ -19,7 +19,7 @@ function main() {
 
 	aethos.anim.navReveal = function () {
 		const showAnim = gsap
-			.to(".header-bar", {
+			.to(".header", {
 				paused: true,
 				duration: 0.5,
 				yPercent: 100,
@@ -28,10 +28,10 @@ function main() {
 
 		const pinHead = gsap.timeline({
 			scrollTrigger: {
-				trigger: ".header-bar",
+				trigger: ".header",
 				start: "bottom top",
 				end: "max",
-				pin: ".header-bar",
+				pin: ".header",
 				pinSpacing: false,
 				scrub: true,
 				onUpdate: (self) => {
@@ -53,7 +53,7 @@ function main() {
 	};
 	aethos.anim.navReveal_2 = function () {
 		const showAnim = gsap
-			.from(".header-bar", {
+			.from(".header", {
 				yPercent: -100,
 				paused: true,
 				duration: 0.2,
