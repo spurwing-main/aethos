@@ -20,10 +20,10 @@ function main() {
 	aethos.functions.nav = function () {
 		// Function to open the modal and prevent background scrolling
 		function openModal() {
-			const currentWidth = document.body.offsetWidth;
+			// const currentWidth = document.body.offsetWidth;
 			// document.body.style.overflow = "hidden";
-			const scrollBarWidth = document.body.offsetWidth - currentWidth;
-			document.body.style.marginRight = `${scrollBarWidth}px`;
+			// const scrollBarWidth = document.body.offsetWidth - currentWidth;
+			// document.body.style.marginRight = `${scrollBarWidth}px`;
 
 			// Add the 'modal-open' class to the body to indicate the modal is open
 			document.body.classList.add("nav-open");
@@ -32,7 +32,7 @@ function main() {
 		// Function to close the modal and restore scrolling
 		function closeModal() {
 			// document.body.style.overflow = "auto";
-			document.body.style.marginRight = "";
+			// document.body.style.marginRight = "";
 
 			// Remove the 'modal-open' class from the body
 			document.body.classList.remove("nav-open");
