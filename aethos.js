@@ -4,6 +4,8 @@ function main() {
 	aethos.splides = {};
 	aethos.functions = {};
 
+	gsap.registerPlugin(SplitText, ScrollSmoother);
+
 	aethos.anim.smoothScroll = function () {
 		gsap.registerPlugin(ScrollSmoother);
 
