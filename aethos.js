@@ -17,6 +17,40 @@ function main() {
 		});
 	};
 
+	aethos.functions.nav = function () {
+		// Function to open the modal and prevent background scrolling
+		function openModal() {
+			const currentWidth = document.body.offsetWidth;
+			// document.body.style.overflow = "hidden";
+			const scrollBarWidth = document.body.offsetWidth - currentWidth;
+			document.body.style.marginRight = `${scrollBarWidth}px`;
+
+			// Add the 'modal-open' class to the body to indicate the modal is open
+			document.body.classList.add("nav-open");
+		}
+
+		// Function to close the modal and restore scrolling
+		function closeModal() {
+			// document.body.style.overflow = "auto";
+			document.body.style.marginRight = "";
+
+			// Remove the 'modal-open' class from the body
+			document.body.classList.remove("nav-open");
+		}
+
+		// Toggle function to handle opening and closing based on the state
+		function toggleModal() {
+			if (document.body.classList.contains("nav-open")) {
+				closeModal(); // If modal is open, close it
+			} else {
+				openModal(); // If modal is closed, open it
+			}
+		}
+
+		// Event listener to toggle the modal when the .nav-btn is clicked
+		document.querySelector(".nav-btn").addEventListener("click", toggleModal);
+	};
+
 	aethos.anim.navReveal = function () {
 		const showAnim = gsap
 			.to(".header", {
@@ -554,5 +588,6 @@ function main() {
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
 	aethos.anim.navReveal();
+	aethos.functions.nav();
 	// aethos.anim.navGrow();
 }
