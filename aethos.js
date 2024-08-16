@@ -183,62 +183,61 @@ function main() {
 	};
 
 	aethos.anim.arch = function () {
-		let trigger =
-			document.querySelector(
-				".c-intro-home"
-			); /* TO DO - SUPPORT MULTIPLE INSTANCES */
-		let selector = gsap.utils.selector(trigger);
-		let img_wrap = selector(".intro-home_img-wrap");
-		let arch_path = document.querySelector("#shape-arch path");
-		let arch_path_bg = document.querySelector("#shape-arch-bg path");
+		/* TO DO - SUPPORT MULTIPLE INSTANCES */
+		let trigger = document.querySelector(".anim-arch_trigger"); // the wrapper element
+		let arch_path = document.querySelector("#shape-arch path"); // the clip path for the front img
+		let arch_path_bg = document.querySelector("#shape-arch-bg path"); // the clip path for the bg img
+		let arch_arch = gsap.utils.toArray(".anim-arch_arch"); // the element that clips the imgs into arch shapes
+		let arch_img = document.querySelector(".anim-arch_img"); // the front img
+		let arch_img_bg = document.querySelector(".anim-arch_img-bg"); // the bg img
 
-		let tl_arch = gsap.timeline({
+		gsap.set(arch_path, {
+			transformOrigin: "bottom left",
+		});
+
+		let arch_h = 0.2; // the amount of vertical straight bit of the arch on load
+		let arch_d =
+			"M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v" +
+			arch_h +
+			"H0.001 v-" +
+			arch_h;
+
+		gsap.from(arch_arch, {
 			scrollTrigger: {
 				trigger: trigger,
-				start: "top 30%",
-				// end: "top 10%",
-				// scrub: 0,
+				start: "50% 95%",
+				end: "bottom 90%",
+				scrub: 0,
+				// markers: true,
 			},
+			y: "90%",
 		});
 
-		tl_arch.from(img_wrap, {
-			y: "10%",
-			ease: "linear",
+		gsap.from([arch_path, arch_path_bg], {
+			scrollTrigger: {
+				trigger: trigger,
+				start: "90% bottom",
+				end: "bottom 90%",
+				scrub: 0,
+				// markers: true,
+			},
+			attr: {
+				d: arch_d, // move clip path up - it is in turn clipped by parent wrapper so arch is shorter at start
+			},
+			y: 0.2,
 		});
 
-		// move clip path up - it is in turn clipped by parent wrapper so arch is shorter at start
-		tl_arch.from(
-			arch_path,
-			{
-				attr: {
-					d: "M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v0.441 H0.001 v-0.441",
-				},
-				// y: 0.5,
-				ease: "linear",
+		gsap.from(arch_path, {
+			scrollTrigger: {
+				trigger: trigger,
+				start: "bottom 95%",
+				end: "bottom 90%",
+				scrub: 0,
+				markers: true,
 			},
-			"-+25%" //start this anim 75% of way through previous step
-		);
-		tl_arch.from(
-			arch_path_bg,
-			{
-				attr: {
-					d: "M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v0.441 H0.001 v-0.441",
-				},
-				// y: 0.5,
-				ease: "linear",
-			},
-			"-+25%" //start this anim 75% of way through previous step
-		);
-
-		tl_arch.from(
-			arch_path,
-			{
-				scale: 0.86,
-				transformOrigin: "bottom left",
-				ease: "linear",
-			},
-			"-+25%" //start this anim 75% of way through previous step
-		);
+			scale: 0.9,
+			// transformOrigin: "bottom left",
+		});
 	};
 
 	aethos.functions.updateCopyrightYear = function () {
