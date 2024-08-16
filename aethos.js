@@ -34,8 +34,19 @@ function main() {
 				pin: ".header-bar",
 				pinSpacing: false,
 				scrub: true,
-				onUpdate: (self) => showAnim.reversed(self.direction > 0),
-				onLeaveBack: (self) => showAnim.reverse(), // Reverse on scroll back all the way
+				onUpdate: (self) => {
+					if (self.direction > 0) {
+						// Scroll down - hide the nav at normal speed (0.5s)
+						showAnim.timeScale(1).reverse();
+					} else {
+						// Scroll up - show the nav slowly (adjust timeScale as needed)
+						showAnim.timeScale(0.75).play(); // Adjust the timeScale factor (e.g., 0.5 for half speed)
+					}
+				},
+				onLeaveBack: (self) => {
+					// Ensure the animation is played at normal speed when the nav is fully revealed
+					showAnim.timeScale(1).reverse();
+				},
 				markers: false,
 			},
 		});
