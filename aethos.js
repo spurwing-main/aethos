@@ -233,7 +233,7 @@ function main() {
 				start: "bottom 95%",
 				end: "bottom 90%",
 				scrub: 0,
-				markers: true,
+				// markers: true,
 			},
 			scale: 0.9,
 			// transformOrigin: "bottom left",
