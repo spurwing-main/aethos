@@ -117,7 +117,7 @@ function main() {
 				paused: true,
 				scrollTrigger: {
 					trigger: target,
-					start: "top 70%", // start 30% from bottom
+					start: "top 80%", // start 30% from bottom
 					scrub: false,
 				},
 			});
