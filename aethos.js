@@ -211,6 +211,8 @@ function main() {
 			},
 		});
 
+		tl.timeScale(0.75);
+
 		// move whole element (incl bg image) up
 		tl.from(arch_arch, {
 			y: "90%",
