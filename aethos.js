@@ -213,7 +213,8 @@ function main() {
 
 		tl.from(arch_arch, {
 			y: "90%",
-			duration: 1,
+			duration: 1.75,
+			ease: "power1.inOut",
 		});
 
 		tl.from(
@@ -224,6 +225,7 @@ function main() {
 				},
 				y: 0.2,
 				duration: 1.5,
+				ease: "power1.inOut",
 			},
 			"<+=0.4"
 		);
@@ -232,7 +234,8 @@ function main() {
 			arch_path,
 			{
 				scale: 0.9,
-				duration: 1.5,
+				duration: 1,
+				ease: "power1.inOut",
 			},
 			"<+=0.4"
 		);
