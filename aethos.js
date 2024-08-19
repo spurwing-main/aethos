@@ -211,25 +211,29 @@ function main() {
 			},
 		});
 
+		// move whole element (incl bg image) up
 		tl.from(arch_arch, {
 			y: "90%",
 			duration: 1.75,
 			ease: "power1.inOut",
 		});
 
+		// extend both fg & bg clipping paths to make arches 'taller'
+		// also apply a transform up
 		tl.from(
 			[arch_path, arch_path_bg],
 			{
 				attr: {
-					d: arch_d, // move clip path up - it is in turn clipped by parent wrapper so arch is shorter at start
+					d: arch_d,
 				},
 				y: 0.2,
 				duration: 1.5,
 				ease: "power1.inOut",
 			},
-			"<+=0.4"
+			"<+=0.4" // start anim 0.4 after start of prev anim
 		);
 
+		// scale fg path up
 		tl.from(
 			arch_path,
 			{
@@ -237,7 +241,7 @@ function main() {
 				duration: 1,
 				ease: "power1.inOut",
 			},
-			"<+=0.4"
+			"<+=0.4" // start anim 0.4 after start of prev anim
 		);
 	};
 
