@@ -347,10 +347,10 @@ function main() {
 
 	aethos.anim.NavImage = function () {
 		const nav_link_triggers = document.querySelectorAll(
-			".nav-link[data-link-id]"
+			".anim-nav-img_trigger[data-link-id]"
 		);
 		const nav_link_imgs = document.querySelectorAll(
-			".nav_img-wrap[data-link-id]"
+			".anim-nav-img_target[data-link-id]"
 		);
 
 		nav_link_triggers.forEach((link) => {
