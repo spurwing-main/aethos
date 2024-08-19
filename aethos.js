@@ -207,7 +207,7 @@ function main() {
 			scrollTrigger: {
 				trigger: trigger,
 				start: "20% 95%",
-				markers: true,
+				// markers: true,
 			},
 		});
 
