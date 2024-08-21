@@ -471,6 +471,94 @@ function main() {
 		setupSplits();
 	};
 
+	aethos.anim.blockCarousel = function () {
+		// Loop through all .block elements on the page
+		document.querySelectorAll(".block").forEach(function (block) {
+			// Check if the block contains a .block_media-list element
+			const mediaList = block.querySelector(".block_media-list");
+			if (!mediaList) return; // If it doesn't, stop and move on to the next block
+
+			// Get all the .img-wrap elements (slides) within the media list
+			const slides = mediaList.querySelectorAll(".img-wrap");
+			const slidesCount = slides.length;
+			if (slidesCount === 0) return;
+
+			// Pagination set up
+			const pagination = block.querySelector(".block_pagination");
+			if (!pagination) return;
+
+			pagination.innerHTML = ""; // Clear existing dots and add correct number
+			slides.forEach(() => {
+				const dot = document.createElement("div");
+				dot.classList.add("block_pagination-dot");
+				pagination.appendChild(dot);
+			});
+			const dots = pagination.querySelectorAll(".block_pagination-dot");
+
+			/* for autoplay - currently disabled */
+			// const autoplay = block.getAttribute("data-carousel-autoplay") || false; // should we enable autoplay?
+			if (true) {
+				handleAutoplay();
+
+				function handleAutoplay() {
+					const pause =
+						parseInt(block.getAttribute("data-carousel-duration")) || 3; // how long img is onscreen - get from attribute
+					const transition = 1; // length of fade
+					let stagger = pause + transition;
+					let repeatDelay = stagger * (slidesCount - 1) + pause;
+
+					// GSAP timeline for fade in/out of slides
+					const tl = gsap.timeline({
+						repeat: -1,
+						// paused: true,
+						onUpdate: function () {
+							// Update active dot based on the current time of the timeline
+							let currentSlide =
+								Math.floor(tl.time() / stagger) % slides.length;
+							dots.forEach((dot, index) => {
+								dot.classList.toggle("is-active", index === currentSlide);
+							});
+						},
+					});
+
+					function init() {
+						gsap.set(slides, { autoAlpha: 1 }); // hide all slides
+						tl.from(slides, {
+							autoAlpha: 0,
+							duration: transition,
+							opacity: 0,
+							ease: "power4.inOut",
+							stagger: {
+								each: stagger,
+								repeat: -1,
+								repeatDelay: repeatDelay,
+							},
+						}).to(
+							slides,
+							{
+								autoAlpha: 0,
+								duration: transition,
+								opacity: 0,
+								ease: "power4.inOut",
+								stagger: {
+									each: stagger,
+									repeat: -1,
+									repeatDelay: repeatDelay,
+								},
+							},
+							stagger
+						);
+					}
+
+					// Start the timeline
+					init();
+				}
+			}
+
+			/* slide transition */
+		});
+	};
+
 	aethos.anim.loadSliders = function () {
 		/* splide defaults */
 		Splide.defaults = {
@@ -659,5 +747,6 @@ function main() {
 	aethos.anim.loadSliders();
 	aethos.anim.navReveal();
 	aethos.functions.nav();
+	aethos.anim.blockCarousel();
 	// aethos.anim.navGrow();
 }
