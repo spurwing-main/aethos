@@ -857,11 +857,9 @@ function main() {
 				scrollTrigger: {
 					trigger: section, // trigger is the whole section
 					start: "top top",
-					// end: () => `+=${values.length * 100}%`,
 					end: "bottom bottom",
 					pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
 					pinSpacing: false,
-					markers: true,
 				},
 			});
 
@@ -871,17 +869,13 @@ function main() {
 				let body = bodies[index];
 				let image = images[index];
 
+				// add a scrolltrigger for each image that toggles an active class on/off the corresponding title and body elements
 				ScrollTrigger.create({
 					trigger: image,
 					start: "top 70%",
 					end: "bottom 70%",
-					markers: true,
 					toggleClass: { targets: [title, body], className: "is-active" },
-					// toggleActions: "play complete reverse reset",
 					scrub: true,
-					// animation: tl, // on scroll trigger, animate in each value
-					// onEnter: () => tl.play(0),
-					// onLeaveBack: () => tl.reverse(),
 				});
 				// }
 			});
