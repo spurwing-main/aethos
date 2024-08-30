@@ -471,6 +471,71 @@ function main() {
 		setupSplits();
 	};
 
+	aethos.anim.langSwitcher = function () {
+		// Select the modal and buttons
+		const modal = document.querySelector(".lang-switcher_modal");
+		const toggleButton = document.querySelector(".lang-switcher_dd-toggle");
+		const closeButton = document.querySelector(".lang-switcher_close");
+		const linkItems = document.querySelectorAll(".lang-switcher_link");
+
+		// Function to open/close the modal
+		function toggleModal() {
+			modal.classList.toggle("is-open");
+		}
+
+		// Function to close the modal
+		function closeModal() {
+			modal.classList.remove("is-open");
+		}
+
+		// Event listener for the toggle button
+		toggleButton.addEventListener("click", toggleModal);
+
+		// Event listener for the close button
+		closeButton.addEventListener("click", closeModal);
+
+		// Event listeners for each link item
+		linkItems.forEach((link) => {
+			link.addEventListener("click", closeModal);
+		});
+
+		// close on page load if already open
+		closeModal();
+	};
+
+	aethos.anim.langSwitcherMob = function () {
+		// Select mobile modal elements
+		const mobModal = document.querySelector(".lang-switcher-mob");
+		const mobTrigger = mobModal.querySelector(".lang-switcher-mob_trigger");
+		const mobClose = mobModal.querySelector(".lang-switcher-mob_close");
+		const mobOverlay = mobModal.querySelector(".lang-switcher-mob_overlay");
+		const mobLinks = mobModal.querySelectorAll(".lang-switcher-mob_link");
+
+		// Function to toggle the mobile modal
+		function toggleMobModal() {
+			mobModal.classList.toggle("is-open");
+		}
+
+		// Function to close the mobile modal
+		function closeMobModal() {
+			mobModal.classList.remove("is-open");
+		}
+
+		// Event listener for the trigger button
+		mobTrigger.addEventListener("click", toggleMobModal);
+
+		// Event listener for the close button
+		mobClose.addEventListener("click", closeMobModal);
+
+		// Event listener for the overlay (clicking on the overlay should also close the modal)
+		mobOverlay.addEventListener("click", closeMobModal);
+
+		// Event listeners for each mobile link
+		mobLinks.forEach((link) => {
+			link.addEventListener("click", closeMobModal);
+		});
+	};
+
 	aethos.anim.blockCarousel = function () {
 		// Loop through all .block elements on the page
 		document.querySelectorAll(".block").forEach(function (block) {
@@ -734,6 +799,106 @@ function main() {
 		sliders.forEach(initializeSplide);
 	};
 
+	aethos.anim.values = function () {
+		/*
+		Build all values components: 
+		- get all values components on page, for each
+		- get the list of N value items
+		- get the title, body and image elements for each
+		- move each to the appropriate list element in the parent values component
+		- then do GSAP stuff for each:
+
+		- add a scroll trigger that's N times some height
+		- make the parent component sticky
+		- generate a scroll trigger for each of N
+		- on that scroll:
+			- add/remove is-active class from the heading
+			- fade in/out each body
+		- add click events to each header so we can jump ahead to that scroll position
+
+		- TBC if we want snapping
+
+		*/
+
+		// get all values components on page
+		let valuesSections = document.querySelectorAll(".s-values");
+		valuesSections.forEach((section) => {
+			// assemble the component
+			let values = section.querySelectorAll(".values_item");
+			values.forEach((value) => {
+				section
+					.querySelector(".values_title-list")
+					.append(value.querySelector(".values_item-title"));
+				section
+					.querySelector(".values_body-list")
+					.append(value.querySelector(".values_item-body"));
+				section
+					.querySelector(".values_img-list")
+					.append(value.querySelector(".values_item-img"));
+			});
+
+			// check component has some values
+			if (values.length == 0) return;
+
+			// gsap selector fn
+			let gsap_section = gsap.utils.selector(section);
+
+			// get elements to animate within this component
+			let titles = gsap_section(".values_item-title");
+			let bodies = gsap_section(".values_item-body");
+			let images = gsap_section(".values_item-img");
+
+			// get first items
+			let title_first = titles[0];
+			let body_first = bodies[0];
+
+			// Set the parent component to be pinned
+			gsap.to(section, {
+				scrollTrigger: {
+					trigger: section, // trigger is the whole section
+					start: "top top",
+					// end: () => `+=${values.length * 100}%`,
+					end: "bottom bottom",
+					pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
+					pinSpacing: false,
+					markers: true,
+				},
+			});
+
+			// Set up scroll triggers for each value
+			values.forEach((value, index) => {
+				let title = titles[index];
+				let body = bodies[index];
+				let image = images[index];
+
+				ScrollTrigger.create({
+					trigger: image,
+					start: "top 70%",
+					end: "bottom 70%",
+					markers: true,
+					toggleClass: { targets: [title, body], className: "is-active" },
+					// toggleActions: "play complete reverse reset",
+					scrub: true,
+					// animation: tl, // on scroll trigger, animate in each value
+					// onEnter: () => tl.play(0),
+					// onLeaveBack: () => tl.reverse(),
+				});
+				// }
+			});
+		});
+
+		// // Add click events to each title to scroll to the corresponding section
+		// Array.from(titles).forEach((title, index) => {
+		// 	title.addEventListener("click", () => {
+		// 		let scrollToPosition = index * window.innerHeight;
+		// 		gsap.to(window, {
+		// 			scrollTo: { y: scrollToPosition, autoKill: false },
+		// 			duration: 1,
+		// 		});
+		// 	});
+		// });
+	};
+
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
@@ -748,5 +913,9 @@ function main() {
 	aethos.anim.navReveal();
 	aethos.functions.nav();
 	aethos.anim.blockCarousel();
+	aethos.anim.values();
+	// aethos.anim.langSwitcher();
+	// aethos.anim.langSwitcherMob();
+
 	// aethos.anim.navGrow();
 }
