@@ -954,7 +954,10 @@ function main() {
 		}
 
 		// Initialize the map (without setting view yet)
-		var map = L.map(mapData.mapEl, { attributionControl: false });
+		var map = L.map(mapData.mapEl, {
+			attributionControl: false,
+			scrollWheelZoom: false,
+		});
 
 		// Add Mapbox tile layer to Leaflet
 		L.tileLayer(
