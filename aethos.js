@@ -917,6 +917,80 @@ function main() {
 		});
 	};
 
+	aethos.anim.map = function () {
+		const mapData = {};
+		mapData.accessToken =
+			"pk.eyJ1Ijoic3B1cndpbmctc3AiLCJhIjoiY20wcGFkaDN5MDNkMTJpcXhldHVlZG9mZyJ9.ZcEDjMqfRf412QgW9OiSCw";
+		mapData.mapEl = document.querySelector(".map");
+		if (!mapData.mapEl) {
+			return;
+		}
+		mapData.offices = [];
+
+		// Function to add marker pins
+		function addMarkers() {
+			document.querySelectorAll(".office").forEach(function (officeEl) {
+				var office = {}; // Using a different variable name here
+
+				// Fetch office data
+				const lat = parseFloat(officeEl.getAttribute("data-lat"));
+				const long = parseFloat(officeEl.getAttribute("data-long"));
+
+				if (isNaN(lat) || isNaN(long)) {
+					console.error(
+						`Invalid lat/long for office: ${officeEl.textContent.trim()}`
+					);
+					return; // Skip this office if lat/long is not valid
+				}
+
+				office.lat = lat;
+				office.long = long;
+
+				mapData.offices.push(office);
+
+				// Add marker
+				var marker = L.marker([office.lat, office.long]).addTo(map);
+			});
+		}
+
+		// Initialize the map (without setting view yet)
+		var map = L.map(mapData.mapEl, { attributionControl: false });
+
+		// Add Mapbox tile layer to Leaflet
+		L.tileLayer(
+			"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+			{
+				id: "spurwing-sp/cm0pfyq2r00je01pb5lf74zb3",
+				accessToken: mapData.accessToken,
+			}
+		).addTo(map);
+
+		// Call the function to add pins for offices and set default view
+		addMarkers();
+		map.setView([mapData.offices[0].lat, mapData.offices[0].long], 12);
+
+		// Add click event for each office in the list
+		document.querySelectorAll(".office").forEach(function (officeEl) {
+			officeEl.addEventListener("click", function () {
+				var lat = parseFloat(officeEl.getAttribute("data-lat"));
+				var long = parseFloat(officeEl.getAttribute("data-long"));
+
+				if (isNaN(lat) || isNaN(long)) {
+					console.error(
+						`Invalid lat/long for office: ${officeEl.textContent.trim()}`
+					);
+					return;
+				}
+
+				// Pan to the selected office with easing
+				map.flyTo([lat, long], 12, {
+					animate: true,
+					duration: 1.5, // seconds
+				});
+			});
+		});
+	};
+
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
@@ -933,6 +1007,7 @@ function main() {
 	aethos.anim.blockCarousel();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
+	aethos.anim.map();
 	// aethos.anim.langSwitcher();
 	// aethos.anim.langSwitcherMob();
 
