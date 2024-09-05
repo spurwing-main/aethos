@@ -354,8 +354,10 @@ function main() {
 		);
 
 		nav_link_triggers.forEach((link) => {
-			link.addEventListener("mouseover", () => {
+			link.addEventListener("mouseenter", () => {
+				//NB - we use mousenter and leave instead of over and out, because this stops event bubbling, which would fire the Destinations dropdown img when hoving over a single child destination
 				const linkId = link.getAttribute("data-link-id");
+				aethos.log("nav link trigger: " + linkId);
 
 				nav_link_imgs.forEach((img) => {
 					if (img.getAttribute("data-link-id") === linkId) {
@@ -368,7 +370,7 @@ function main() {
 				});
 			});
 
-			link.addEventListener("mouseout", () => {
+			link.addEventListener("mouseleave", () => {
 				const linkId = link.getAttribute("data-link-id");
 
 				nav_link_imgs.forEach((img) => {
