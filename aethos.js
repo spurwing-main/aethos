@@ -893,6 +893,30 @@ function main() {
 		// });
 	};
 
+	aethos.anim.articleSticky = function () {
+		let mm = gsap.matchMedia();
+		mm.add("(min-width: 768px)", () => {
+			// only make sticky on large screens
+			let parents = document.querySelectorAll(".article-grid");
+
+			parents.forEach((parent) => {
+				let gsap_section = gsap.utils.selector(parent);
+				let child = gsap_section(".article-sticky:not(.is-quote)");
+				console.log(parent);
+				console.log(child);
+
+				ScrollTrigger.create({
+					trigger: parent,
+					start: "top 20px",
+					end: () => `${parent.offsetHeight - child[0].offsetHeight}px 0px`,
+					pin: child,
+					invalidateOnRefresh: true,
+					pinSpacing: false,
+				});
+			});
+		});
+	};
+
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
@@ -908,6 +932,7 @@ function main() {
 	aethos.functions.nav();
 	aethos.anim.blockCarousel();
 	aethos.anim.values();
+	aethos.anim.articleSticky();
 	// aethos.anim.langSwitcher();
 	// aethos.anim.langSwitcherMob();
 
