@@ -1,11 +1,14 @@
 function main() {
+	/* declare function types */
 	aethos.anim = {};
 	aethos.helpers = {};
 	aethos.splides = {};
 	aethos.functions = {};
 
+	/* register GSAP plugins */
 	gsap.registerPlugin(SplitText, ScrollSmoother);
 
+	/* set up GSAP smooth scroll */
 	aethos.anim.smoothScroll = function () {
 		gsap.registerPlugin(ScrollSmoother);
 
@@ -14,90 +17,45 @@ function main() {
 			effects: true,
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
+			onUpdate: () => {
+				// Add logic here if needed to update when smooth scroll occurs
+			},
+			onRefresh: () => {
+				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
+				ScrollTrigger.refresh();
+			},
 		});
 	};
 
+	/* add class to <body> when .nav is open. Used for animating nav burger icon, potentially for handling other elements down the line */
 	aethos.functions.nav = function () {
-		// Function to open the modal and prevent background scrolling
-		function openModal() {
-			// const currentWidth = document.body.offsetWidth;
-			// document.body.style.overflow = "hidden";
-			// const scrollBarWidth = document.body.offsetWidth - currentWidth;
-			// document.body.style.marginRight = `${scrollBarWidth}px`;
-
-			// Add the 'modal-open' class to the body to indicate the modal is open
-			document.body.classList.add("nav-open");
-		}
-
-		// Function to close the modal and restore scrolling
-		function closeModal() {
-			// document.body.style.overflow = "auto";
-			// document.body.style.marginRight = "";
-
-			// Remove the 'modal-open' class from the body
-			document.body.classList.remove("nav-open");
-		}
-
-		// Toggle function to handle opening and closing based on the state
-		function toggleModal() {
+		function toggleNavClass() {
 			if (document.body.classList.contains("nav-open")) {
-				closeModal(); // If modal is open, close it
+				document.body.classList.remove("nav-open");
 			} else {
-				openModal(); // If modal is closed, open it
+				document.body.classList.add("nav-open");
 			}
 		}
 
-		// Event listener to toggle the modal when the .nav-btn is clicked
-		document.querySelector(".nav-btn").addEventListener("click", toggleModal);
+		document
+			.querySelector(".nav-btn")
+			.addEventListener("click", toggleNavClass);
 	};
 
 	aethos.anim.navReveal = function () {
 		const showAnim = gsap
-			.to(".header", {
-				paused: true,
-				duration: 0.5,
-				yPercent: 100,
-			})
-			.reverse();
-
-		const pinHead = gsap.timeline({
-			scrollTrigger: {
-				trigger: ".header",
-				start: "bottom top",
-				end: "max",
-				pin: ".header",
-				pinSpacing: false,
-				scrub: true,
-				onUpdate: (self) => {
-					if (self.direction > 0) {
-						// Scroll down - hide the nav at normal speed (0.5s)
-						showAnim.timeScale(1).reverse();
-					} else {
-						// Scroll up - show the nav slowly (adjust timeScale as needed)
-						showAnim.timeScale(0.75).play(); // Adjust the timeScale factor (e.g., 0.5 for half speed)
-					}
-				},
-				onLeaveBack: (self) => {
-					// Ensure the animation is played at normal speed when the nav is fully revealed
-					showAnim.timeScale(1).reverse();
-				},
-				markers: false,
-			},
-		});
-	};
-	aethos.anim.navReveal_2 = function () {
-		const showAnim = gsap
 			.from(".header", {
 				yPercent: -100,
 				paused: true,
-				duration: 0.2,
+				duration: 0.5,
 			})
 			.progress(1);
 
 		ScrollTrigger.create({
-			start: "top top",
+			start: "top -1px",
 			end: "max",
-			markers: true,
+			pin: ".header",
+			// markers: true,
 			onUpdate: (self) => {
 				self.direction === -1 ? showAnim.play() : showAnim.reverse();
 			},
@@ -148,40 +106,7 @@ function main() {
 		});
 	};
 
-	aethos.anim.navGrow = function () {
-		return;
-		gsap.from(".header-bar_middle", {
-			scrollTrigger: {
-				trigger: ".header-bar_middle",
-				toggleActions: "play complete reverse reset",
-			},
-			duration: 10,
-			delay: 0.2,
-			height: "7rem",
-		});
-
-		// const showAnim = gsap.from(".header-bar_middle", {
-		// 	paused: true,
-		// 	duration: 0.2,
-		// 	height: "7rem",
-		// });
-		// // .reverse();
-
-		// const pinHead = gsap.timeline({
-		// 	scrollTrigger: {
-		// 		trigger: ".header-bar",
-		// 		start: "bottom top",
-		// 		// end: "max",
-		// 		// pin: ".header-bar",
-		// 		// pinSpacing: false,
-		// 		// scrub: true,
-		// 		// onUpdate: (self) => showAnim.reversed(self.direction > 0),
-		// 		// onLeaveBack: (self) => showAnim.reverse(), // Reverse on scroll back all the way
-		// 		markers: false,
-		// 	},
-		// });
-	};
-
+	/* arch animation */
 	aethos.anim.arch = function () {
 		/* TO DO - SUPPORT MULTIPLE INSTANCES */
 		let trigger = document.querySelector(".anim-arch_trigger"); // the wrapper element
@@ -247,74 +172,7 @@ function main() {
 		);
 	};
 
-	// aethos.anim.arch_v1_scrub = function () {
-	// 	/* TO DO - SUPPORT MULTIPLE INSTANCES */
-	// 	let trigger = document.querySelector(".anim-arch_trigger"); // the wrapper element
-	// 	let arch_path = document.querySelector("#shape-arch path"); // the clip path for the front img
-	// 	let arch_path_bg = document.querySelector("#shape-arch-bg path"); // the clip path for the bg img
-	// 	let arch_arch = gsap.utils.toArray(".anim-arch_arch"); // the element that clips the imgs into arch shapes
-	// 	let arch_img = document.querySelector(".anim-arch_img"); // the front img
-	// 	let arch_img_bg = document.querySelector(".anim-arch_img-bg"); // the bg img
-
-	// 	gsap.set(arch_path, {
-	// 		transformOrigin: "bottom left",
-	// 	});
-
-	// 	let arch_h = 0.2; // the amount of vertical straight bit of the arch on load
-	// 	let arch_d =
-	// 		"M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v" +
-	// 		arch_h +
-	// 		"H0.001 v-" +
-	// 		arch_h;
-
-	// 	gsap.from(arch_arch, {
-	// 		scrollTrigger: {
-	// 			trigger: trigger,
-	// 			start: "50% 95%",
-	// 			// end: "bottom 90%",
-	// 			// scrub: 0,
-	// 			markers: true,
-	// 		},
-	// 		y: "90%",
-	// 		duration: 1,
-	// 	});
-
-	// 	gsap.from([arch_path, arch_path_bg], {
-	// 		scrollTrigger: {
-	// 			trigger: trigger,
-	// 			start: "90% bottom",
-	// 			// end: "bottom 90%",
-	// 			// scrub: 0,
-	// 			markers: true,
-	// 		},
-	// 		attr: {
-	// 			d: arch_d, // move clip path up - it is in turn clipped by parent wrapper so arch is shorter at start
-	// 		},
-	// 		y: 0.2,
-	// 		duration: 1,
-	// 	});
-
-	// 	gsap.from(arch_path, {
-	// 		scrollTrigger: {
-	// 			trigger: trigger,
-	// 			start: "bottom 95%",
-	// 			// end: "bottom 90%",
-	// 			// scrub: 0,
-	// 			markers: true,
-	// 		},
-	// 		scale: 0.9,
-	// 		duration: 1,
-	// 		// transformOrigin: "bottom left",
-	// 	});
-	// };
-
-	aethos.functions.updateCopyrightYear = function () {
-		const year = new Date().getFullYear().toString();
-		document
-			.querySelectorAll('[copyright="year"]')
-			.forEach((el) => (el.textContent = year));
-	};
-
+	/* add class when filter drawer is opened/closed */
 	aethos.anim.filterDrawerOpenClose = function () {
 		document.querySelectorAll(".grid-header_filter-btn").forEach((trigger) => {
 			trigger.addEventListener("click", function () {
@@ -328,6 +186,7 @@ function main() {
 		});
 	};
 
+	/* lets us detect when one child in a group is hovered over, so we can style the others - e.g. nav links on desktop */
 	aethos.anim.HoverTrigger = function () {
 		const hover_triggers = document.querySelectorAll(".hover-trigger");
 		hover_triggers.forEach((trigger) => {
@@ -345,6 +204,7 @@ function main() {
 		});
 	};
 
+	/* show nav images on nav link hover */
 	aethos.anim.NavImage = function () {
 		const nav_link_triggers = document.querySelectorAll(
 			".anim-nav-img_trigger[data-link-id]"
@@ -383,6 +243,7 @@ function main() {
 		});
 	};
 
+	/* animated text effect 1 */
 	aethos.anim.splitText = function () {
 		let typeSplit;
 		let targetClass = "anim-split";
@@ -439,6 +300,7 @@ function main() {
 		}
 	};
 
+	/* animated text effect 2 */
 	aethos.anim.splitTextBasic = function () {
 		const targets = document.querySelectorAll(".anim-split-basic");
 
@@ -473,71 +335,7 @@ function main() {
 		setupSplits();
 	};
 
-	aethos.anim.langSwitcher = function () {
-		// Select the modal and buttons
-		const modal = document.querySelector(".lang-switcher_modal");
-		const toggleButton = document.querySelector(".lang-switcher_dd-toggle");
-		const closeButton = document.querySelector(".lang-switcher_close");
-		const linkItems = document.querySelectorAll(".lang-switcher_link");
-
-		// Function to open/close the modal
-		function toggleModal() {
-			modal.classList.toggle("is-open");
-		}
-
-		// Function to close the modal
-		function closeModal() {
-			modal.classList.remove("is-open");
-		}
-
-		// Event listener for the toggle button
-		toggleButton.addEventListener("click", toggleModal);
-
-		// Event listener for the close button
-		closeButton.addEventListener("click", closeModal);
-
-		// Event listeners for each link item
-		linkItems.forEach((link) => {
-			link.addEventListener("click", closeModal);
-		});
-
-		// close on page load if already open
-		closeModal();
-	};
-
-	aethos.anim.langSwitcherMob = function () {
-		// Select mobile modal elements
-		const mobModal = document.querySelector(".lang-switcher-mob");
-		const mobTrigger = mobModal.querySelector(".lang-switcher-mob_trigger");
-		const mobClose = mobModal.querySelector(".lang-switcher-mob_close");
-		const mobOverlay = mobModal.querySelector(".lang-switcher-mob_overlay");
-		const mobLinks = mobModal.querySelectorAll(".lang-switcher-mob_link");
-
-		// Function to toggle the mobile modal
-		function toggleMobModal() {
-			mobModal.classList.toggle("is-open");
-		}
-
-		// Function to close the mobile modal
-		function closeMobModal() {
-			mobModal.classList.remove("is-open");
-		}
-
-		// Event listener for the trigger button
-		mobTrigger.addEventListener("click", toggleMobModal);
-
-		// Event listener for the close button
-		mobClose.addEventListener("click", closeMobModal);
-
-		// Event listener for the overlay (clicking on the overlay should also close the modal)
-		mobOverlay.addEventListener("click", closeMobModal);
-
-		// Event listeners for each mobile link
-		mobLinks.forEach((link) => {
-			link.addEventListener("click", closeMobModal);
-		});
-	};
-
+	/* generate a carousel for block (5050) elements */
 	aethos.anim.blockCarousel = function () {
 		// Loop through all .block elements on the page
 		document.querySelectorAll(".block").forEach(function (block) {
@@ -626,6 +424,7 @@ function main() {
 		});
 	};
 
+	/* create sliders */
 	aethos.anim.loadSliders = function () {
 		/* splide defaults */
 		Splide.defaults = {
@@ -801,6 +600,7 @@ function main() {
 		sliders.forEach(initializeSplide);
 	};
 
+	/* About page Values section */
 	aethos.anim.values = function () {
 		/*
 		Build all values components: 
@@ -895,6 +695,7 @@ function main() {
 		// });
 	};
 
+	/* sticky images in articles */
 	aethos.anim.articleSticky = function () {
 		let mm = gsap.matchMedia();
 		mm.add("(min-width: 768px)", () => {
@@ -919,6 +720,7 @@ function main() {
 		});
 	};
 
+	/* offices map */
 	aethos.anim.map = function () {
 		const mapData = {};
 		mapData.accessToken =
@@ -996,25 +798,27 @@ function main() {
 		});
 	};
 
+	aethos.functions.updateCopyrightYear = function () {
+		const year = new Date().getFullYear().toString();
+		document
+			.querySelectorAll('[copyright="year"]')
+			.forEach((el) => (el.textContent = year));
+	};
+
+	/* call functions */
+	aethos.functions.nav();
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
-
 	aethos.anim.smoothScroll();
-	// aethos.functions.updateCopyrightYear();
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
 	aethos.anim.navReveal();
-	aethos.functions.nav();
 	aethos.anim.blockCarousel();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
 	aethos.anim.map();
-	// aethos.anim.langSwitcher();
-	// aethos.anim.langSwitcherMob();
-
-	// aethos.anim.navGrow();
 }
