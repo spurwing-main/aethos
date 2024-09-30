@@ -743,14 +743,17 @@ function main() {
 			cards.forEach((card) => {
 				if (
 					getComputedStyle(card).getPropertyValue("--c--journal-card--type") ==
-					"large"
+						"large" &&
+					!card.getAttribute("data-scrollTrigger-processed")
 				) {
 					sticky_cards.push(card);
-					console.log(card);
+					card.setAttribute("data-scrollTrigger-processed", "true"); // tracking if we've already processed this card
+				} else {
 				}
 			});
 
 			sticky_cards.forEach((card) => {
+				console.log(card);
 				let card_wrapper = card.closest(".journal-grid_item");
 				ScrollTrigger.create({
 					trigger: card_wrapper,
