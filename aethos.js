@@ -852,6 +852,46 @@ function main() {
 			.forEach((el) => (el.textContent = year));
 	};
 
+	aethos.anim.loadHero = function () {
+		/* get all the animated sections */
+		let parents = document.querySelectorAll(".anim-load-hero_parent");
+		parents.forEach((parent) => {
+			let gsap_section = gsap.utils.selector(parent); // gsap selector
+			let content = gsap_section(".anim-load-hero_content"); // content element
+			let media = gsap_section(".anim-load-hero_media"); // media element
+			let content_bg = gsap_section(".anim-load-hero_content-bg"); // bg element behind content - already exists on page
+
+			/* set section to a darker bg color */
+			const section_bg_color = getComputedStyle(
+				document.documentElement
+			).getPropertyValue("--color--slate--medium");
+
+			let tl = gsap.timeline({
+				scrollTrigger: {
+					trigger: parent,
+					start: "top bottom",
+					scrub: false,
+				},
+			});
+			tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
+			tl.from(
+				content,
+				{ opacity: 0, duration: 0.6, ease: "power2.inOut" },
+				">"
+			);
+			tl.from(media, { opacity: 0, duration: 0.8, ease: "power2.inOut" }, ">");
+			tl.from(
+				parent,
+				{
+					backgroundColor: section_bg_color,
+					duration: 0.6,
+					ease: "power2.inOut",
+				},
+				"<"
+			);
+		});
+	};
+
 	/* call functions */
 	aethos.functions.nav();
 	aethos.anim.splitText();
@@ -869,4 +909,5 @@ function main() {
 	aethos.anim.articleSticky();
 	aethos.anim.journalSticky();
 	aethos.anim.map();
+	aethos.anim.loadHero();
 }
