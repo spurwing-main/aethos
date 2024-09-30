@@ -602,32 +602,18 @@ function main() {
 
 	/* About page Values section */
 	aethos.anim.values = function () {
-		/*
-		Build all values components: 
-		- get all values components on page, for each
-		- get the list of N value items
-		- get the title, body and image elements for each
-		- move each to the appropriate list element in the parent values component
-		- then do GSAP stuff for each:
-
-		- add a scroll trigger that's N times some height
-		- make the parent component sticky
-		- generate a scroll trigger for each of N
-		- on that scroll:
-			- add/remove is-active class from the heading
-			- fade in/out each body
-		- add click events to each header so we can jump ahead to that scroll position
-
-		- TBC if we want snapping
-
-		*/
-
 		// get all values components on page
 		let valuesSections = document.querySelectorAll(".s-values");
 		valuesSections.forEach((section) => {
 			// assemble the component
 			let values = section.querySelectorAll(".values_item");
 			values.forEach((value) => {
+				// get id and set it on the title link
+				let id = /[^/]*$/.exec(
+					value.querySelector(".values_item-title").getAttribute("data-id")
+				)[0];
+				value.querySelector(".values_item-title").href = "#" + id;
+
 				section
 					.querySelector(".values_title-list")
 					.append(value.querySelector(".values_item-title"));
@@ -654,6 +640,16 @@ function main() {
 			let title_first = titles[0];
 			let body_first = bodies[0];
 
+			// resize last img so we can fine control end of pinning. We set last img to be the same height as the RHS content so the section unsticks when top of img is at same height as top of content.
+			const values_pin = section.querySelector(".values_pin");
+			var h =
+				gsap.getProperty(values_pin, "height") -
+				gsap.getProperty(values_pin, "padding-top") -
+				gsap.getProperty(values_pin, "padding-bottom");
+			gsap.set(images[images.length - 1], {
+				height: h,
+			});
+
 			// Set the parent component to be pinned
 			gsap.to(section, {
 				scrollTrigger: {
@@ -662,6 +658,7 @@ function main() {
 					end: "bottom bottom",
 					pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
 					pinSpacing: false,
+					//markers: true,
 				},
 			});
 
@@ -682,6 +679,19 @@ function main() {
 				// }
 			});
 		});
+
+		// gsap.utils.toArray(".values_item-title").forEach(function (a) {
+		// 	a.addEventListener("click", function (e) {
+		// 		e.preventDefault();
+		// 		const id = e.target.getAttribute("href"),
+		// 			trigger = ScrollTrigger.getById(id);
+		// 		aethos.log(id);
+		// 		gsap.to(window, {
+		// 			duration: 1,
+		// 			scrollTo: trigger ? trigger.start : id,
+		// 		});
+		// 	});
+		// });
 
 		// // Add click events to each title to scroll to the corresponding section
 		// Array.from(titles).forEach((title, index) => {
@@ -710,7 +720,7 @@ function main() {
 
 				ScrollTrigger.create({
 					trigger: parent,
-					start: "top 20px",
+					start: "top 32px",
 					end: () => `${parent.offsetHeight - child[0].offsetHeight}px 0px`,
 					pin: child,
 					invalidateOnRefresh: true,
