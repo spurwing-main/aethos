@@ -705,24 +705,58 @@ function main() {
 		// });
 	};
 
-	/* sticky images in articles */
+	/* sticky images and quotes in articles */
 	aethos.anim.articleSticky = function () {
 		let mm = gsap.matchMedia();
 		mm.add("(min-width: 768px)", () => {
 			// only make sticky on large screens
-			let parents = document.querySelectorAll(".article-grid");
+			let parents = document.querySelectorAll(
+				".article-grid:not(.w-condition-invisible)" // exclude any sections that are unused/hidden
+			);
 
 			parents.forEach((parent) => {
 				let gsap_section = gsap.utils.selector(parent);
-				let child = gsap_section(".article-sticky:not(.is-quote)");
-				console.log(parent);
-				console.log(child);
+
+				let child = gsap_section(".article-sticky:not(.w-condition-invisible)"); // exclude any sticky quotes/imgs that are unused/hidden
 
 				ScrollTrigger.create({
 					trigger: parent,
-					start: "top 32px",
+					start: "top 32px", // annoyingly doesn't seem possible to set this in rem
 					end: () => `${parent.offsetHeight - child[0].offsetHeight}px 0px`,
 					pin: child,
+					invalidateOnRefresh: true,
+					pinSpacing: false,
+				});
+			});
+		});
+	};
+
+	/* sticky cards in journal */
+	aethos.anim.journalSticky = function () {
+		let mm = gsap.matchMedia();
+		mm.add("(min-width: 768px)", () => {
+			// only make sticky on large screens
+
+			// get sticky cards. We have already done the logic in CSS to identify the ones to be restyled as large, so we hook off a CSS variable rather than doing all this logic again
+			let cards = document.querySelectorAll(".journal-card");
+			let sticky_cards = []; // cards to make sticky
+			cards.forEach((card) => {
+				if (
+					getComputedStyle(card).getPropertyValue("--c--journal-card--type") ==
+					"large"
+				) {
+					sticky_cards.push(card);
+					console.log(card);
+				}
+			});
+
+			sticky_cards.forEach((card) => {
+				let card_wrapper = card.closest(".journal-grid_item");
+				ScrollTrigger.create({
+					trigger: card_wrapper,
+					start: "top 32px", // annoyingly doesn't seem possible to set this in rem
+					end: () => `${card_wrapper.offsetHeight - card.offsetHeight}px 0px`,
+					pin: card,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
 				});
@@ -830,5 +864,6 @@ function main() {
 	aethos.anim.blockCarousel();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
+	aethos.anim.journalSticky();
 	aethos.anim.map();
 }
