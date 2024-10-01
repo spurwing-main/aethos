@@ -876,10 +876,14 @@ function main() {
 			tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
 			tl.from(
 				content,
-				{ opacity: 0, duration: 0.6, ease: "power2.inOut" },
+				{ autoAlpha: 0, duration: 0.6, ease: "power2.inOut" },
 				">"
 			);
-			tl.from(media, { opacity: 0, duration: 0.8, ease: "power2.inOut" }, ">");
+			tl.from(
+				media,
+				{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
+				">"
+			);
 			tl.from(
 				parent,
 				{
