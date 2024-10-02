@@ -462,7 +462,8 @@ function main() {
 
 		// for elements that have a different trigger
 		const triggers = gsap.utils.toArray(".anim_fade-up_trigger");
-		const stagger = 0.2; // optional stagger
+		// const stagger = 0.2; // optional stagger
+		const stagger = 0; // removing stagger for now
 		gsap.set(".anim_fade-up_target", {
 			y: 20,
 			opacity: 0,
