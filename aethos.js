@@ -833,7 +833,6 @@ function main() {
 		}) {
 			let targets = document.querySelectorAll(selector);
 			let splides = [];
-
 			targets.forEach((target) => {
 				let splide = new Splide(target, options);
 
@@ -863,11 +862,15 @@ function main() {
 						// Ensure the rate is clamped between 0 and 1 to avoid overshooting
 						rate = Math.min(Math.max(rate, 0), 1);
 
-						// Calculate the maximum left position for the progress bar
-						const maxMove = 100 - 100 / count;
+						// Calculate the maximum movement in the x-direction for the progress bar
+						const maxX = (count - 1) * 100; // The bar can move up to (N-1) * 100%
 
-						// Adjust the bar's left position based on the clamped rate
-						bar.style.left = `${rate * maxMove}%`;
+						// Use GSAP to animate the 'x' transform of the progress bar
+						gsap.to(bar, {
+							duration: 0.3, // Animation duration
+							x: `${rate * maxX}%`, // Move the bar between 0% and (N-1) * 100%
+							ease: "power2.out", // Easing function for smoother transitions
+						});
 					}
 
 					// // Click event to move carousel based on click position on the progress bar
@@ -888,11 +891,12 @@ function main() {
 					// document.addEventListener("mouseup", function () {
 					// 	if (isDragging) {
 					// 		isDragging = false;
-					// 		// Snap to closest slide when dragging ends
+
+					// 		// Snap to the closest slide when dragging ends
 					// 		let slideCount = splide.Components.Controller.getEnd() + 1;
 					// 		let rate = parseFloat(bar.style.left) / 100;
 					// 		let targetSlide = Math.round(rate * slideCount);
-					// 		splide.go(targetSlide); /* required to disable snapping */
+					// 		splide.go(targetSlide); // Moves to the corresponding slide
 					// 	}
 					// });
 
@@ -900,9 +904,24 @@ function main() {
 					// 	if (isDragging) {
 					// 		let rect = progressWrapper.getBoundingClientRect();
 					// 		let dragPos = (e.clientX - rect.left) / rect.width;
-					// 		dragPos = Math.max(0, Math.min(1, dragPos)); // Ensure it's within [0, 1]
+
+					// 		// Ensure drag position is within [0, 1]
+					// 		dragPos = Math.max(0, Math.min(1, dragPos));
+
+					// 		// Calculate slideCount and maxX movement for the bar
 					// 		let slideCount = splide.Components.Controller.getEnd() + 1;
-					// 		bar.style.left = String(100 * dragPos) + "%";
+					// 		let maxX = (slideCount - 1) * 100;
+
+					// 		// Use GSAP to animate the 'x' transform of the progress bar during dragging
+					// 		gsap.to(bar, {
+					// 			duration: 0.1, // Quick animation during dragging
+					// 			x: `${dragPos * maxX}%`, // Set the 'x' transform relative to the progress wrapper
+					// 			ease: "none", // Linear easing for direct dragging
+					// 		});
+
+					// 		// Update carousel position based on the drag position
+					// 		let targetPos = dragPos * splide.Components.Controller.getEnd();
+					// 		splide.Components.Move.move(targetPos);
 					// 	}
 					// });
 				}
