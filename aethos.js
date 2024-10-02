@@ -493,6 +493,7 @@ function main() {
 		let arch_arch = gsap.utils.toArray(".anim-arch_arch"); // the element that clips the imgs into arch shapes
 		let arch_img = document.querySelector(".anim-arch_img"); // the front img
 		let arch_img_bg = document.querySelector(".anim-arch_img-bg"); // the bg img
+		let arch_logo = document.querySelector(".contact-hero_media-logo"); // only exists on contact hero
 
 		gsap.set(arch_path, {
 			transformOrigin: "bottom left",
@@ -548,6 +549,18 @@ function main() {
 			},
 			"<+=0.4" // start anim 0.4 after start of prev anim
 		);
+
+		if (arch_logo) {
+			tl.from(
+				arch_logo,
+				{
+					opacity: 0,
+					duration: 1,
+					ease: "power1.inOut",
+				},
+				"<+=0.4" // start anim 0.4 after start of prev anim
+			);
+		}
 	};
 
 	/* add class when filter drawer is opened/closed */
