@@ -517,6 +517,10 @@ function main() {
 
 		tl.timeScale(0.75);
 
+		if (aethos.settings.pageName == "contact") {
+			tl.timeScale(1.5);
+		}
+
 		// move whole element (incl bg image) up
 		tl.from(arch_arch, {
 			y: "90%",
