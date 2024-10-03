@@ -1342,7 +1342,7 @@ function main() {
 			/* set section to a darker bg color */
 			const section_bg_color = getComputedStyle(
 				document.documentElement
-			).getPropertyValue("--color--slate--medium");
+			).getPropertyValue("--color--sand--light");
 
 			let tl = gsap.timeline({
 				scrollTrigger: {
