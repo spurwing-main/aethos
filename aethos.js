@@ -1351,26 +1351,33 @@ function main() {
 					scrub: false,
 				},
 			});
-			tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
-			tl.from(
-				content,
-				{ autoAlpha: 0, duration: 0.6, ease: "power2.inOut" },
-				">"
-			);
+			if (content.length) {
+				// if this hero has a content element - ie we are animating the content too, we do the bg colour anim as well. Otherwise, the only thing that animates is the img fade
+				tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
+			}
+			if (content.length) {
+				tl.from(
+					content,
+					{ autoAlpha: 0, duration: 0.6, ease: "power2.inOut" },
+					">"
+				);
+			}
 			tl.from(
 				media,
 				{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
 				">"
 			);
-			tl.from(
-				parent,
-				{
-					backgroundColor: section_bg_color,
-					duration: 0.6,
-					ease: "power2.inOut",
-				},
-				"<"
-			);
+			if (content.length) {
+				tl.from(
+					parent,
+					{
+						backgroundColor: section_bg_color,
+						duration: 0.6,
+						ease: "power2.inOut",
+					},
+					"<"
+				);
+			}
 		});
 	};
 
