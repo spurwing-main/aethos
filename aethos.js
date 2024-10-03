@@ -64,6 +64,8 @@ function main() {
 
 	/* add class to <body> when .nav is open. Used for animating nav burger icon, potentially for handling other elements down the line */
 	aethos.functions.nav = function () {
+		const mobileBreakpoint = 768; // Define the mobile breakpoint width (adjust as needed)
+
 		function toggleNavClass() {
 			if (document.body.classList.contains("nav-open")) {
 				document.body.classList.remove("nav-open");
@@ -72,9 +74,23 @@ function main() {
 			}
 		}
 
+		function handleResize() {
+			// Close the menu if the window width drops below the mobile breakpoint
+			if (window.innerWidth < mobileBreakpoint) {
+				document.body.classList.remove("nav-open");
+			}
+		}
+
+		// Add click event listener to the nav button
 		document
 			.querySelector(".nav-btn")
 			.addEventListener("click", toggleNavClass);
+
+		// Add resize event listener to handle window resizing
+		window.addEventListener("resize", handleResize);
+
+		// Initial check in case the page loads in mobile size
+		handleResize();
 	};
 
 	/* nav hide/show */
