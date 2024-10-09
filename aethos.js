@@ -502,85 +502,165 @@ function main() {
 
 	/* arch animation */
 	aethos.anim.arch = function () {
-		/* TO DO - SUPPORT MULTIPLE INSTANCES */
-		let trigger = document.querySelector(".anim-arch_trigger"); // the wrapper element
-		let arch_path = document.querySelector("#shape-arch path"); // the clip path for the front img
-		let arch_path_bg = document.querySelector("#shape-arch-bg path"); // the clip path for the bg img
-		let arch_arch = gsap.utils.toArray(".anim-arch_arch"); // the element that clips the imgs into arch shapes
-		let arch_img = document.querySelector(".anim-arch_img"); // the front img
-		let arch_img_bg = document.querySelector(".anim-arch_img-bg"); // the bg img
-		let arch_logo = document.querySelector(".contact-hero_media-logo"); // only exists on contact hero
+		/* get all arch triggers on page */
+		let arch_triggers = document.querySelectorAll(".anim-arch_trigger");
+		arch_triggers.forEach((trigger) => {
+			/* get the clip paths */
+			let arch_path = document.querySelector("#shape-arch path"); // front img SVG clip path
+			let arch_path_bg = document.querySelector("#shape-arch-bg path"); // bg image SVG clip path
+			let arch_arch = gsap.utils.toArray(".anim-arch_arch", trigger); // the actual clip elements
+			let arch_logo = trigger.querySelector(".contact-hero_media-logo"); // logo - only exists on contact hero
 
-		gsap.set(arch_path, {
-			transformOrigin: "bottom left",
-		});
+			gsap.set(arch_path, {
+				transformOrigin: "bottom left",
+			});
 
-		let arch_h = 0.2; // the amount of vertical straight bit of the arch on load
-		let arch_d =
-			"M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v" +
-			arch_h +
-			"H0.001 v-" +
-			arch_h;
+			let arch_h = 0.2; // the amount of vertical straight bit of the arch on load
+			let arch_d =
+				"M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v" +
+				arch_h +
+				"H0.001 v-" +
+				arch_h;
 
-		// timeline and scroll trigger. Trigger element is the default position of the img wrapper, the same as the top of the text
-		let tl = gsap.timeline({
-			scrollTrigger: {
-				trigger: trigger,
-				start: "20% 95%",
-				// markers: true,
-			},
-		});
-
-		tl.timeScale(0.75);
-
-		if (aethos.settings.pageName == "contact") {
-			tl.timeScale(1.5);
-		}
-
-		// move whole element (incl bg image) up
-		tl.from(arch_arch, {
-			y: "90%",
-			duration: 1.75,
-			ease: "power1.inOut",
-		});
-
-		// extend both fg & bg clipping paths to make arches 'taller'
-		// also apply a transform up
-		tl.from(
-			[arch_path, arch_path_bg],
-			{
-				attr: {
-					d: arch_d,
+			// timeline and scroll trigger. Trigger element is the default position of the img wrapper, the same as the top of the text
+			let tl = gsap.timeline({
+				scrollTrigger: {
+					trigger: trigger,
+					start: "20% 95%",
+					// markers: true,
 				},
-				y: 0.2,
-				duration: 1.5,
-				ease: "power1.inOut",
-			},
-			"<+=0.4" // start anim 0.4 after start of prev anim
-		);
+			});
 
-		// scale fg path up
-		tl.from(
-			arch_path,
-			{
-				scale: 0.9,
-				duration: 1,
-				ease: "power1.inOut",
-			},
-			"<+=0.4" // start anim 0.4 after start of prev anim
-		);
+			tl.timeScale(0.75);
 
-		if (arch_logo) {
+			if (aethos.settings.pageName == "contact") {
+				tl.timeScale(1.5);
+			}
+
+			// move whole element (incl bg image) up
+			tl.from(arch_arch, {
+				y: "90%",
+				duration: 1.75,
+				ease: "power1.inOut",
+			});
+
+			// extend both fg & bg clipping paths to make arches 'taller'
+			// also apply a transform up
 			tl.from(
-				arch_logo,
+				[arch_path, arch_path_bg],
 				{
-					opacity: 0,
+					attr: {
+						d: arch_d,
+					},
+					y: 0.2,
+					duration: 1.5,
+					ease: "power1.inOut",
+				},
+				"<+=0.4" // start anim 0.4 after start of prev anim
+			);
+
+			// scale fg path up
+			tl.from(
+				arch_path,
+				{
+					scale: 0.9,
 					duration: 1,
 					ease: "power1.inOut",
 				},
 				"<+=0.4" // start anim 0.4 after start of prev anim
 			);
-		}
+
+			if (arch_logo) {
+				tl.from(
+					arch_logo,
+					{
+						opacity: 0,
+						duration: 1,
+						ease: "power1.inOut",
+					},
+					"<+=0.4" // start anim 0.4 after start of prev anim
+				);
+			}
+		});
+	};
+
+	/* short arch animation on Destination Homepage */
+	aethos.anim.arch_short = function () {
+		/* get all arch triggers on page */
+		let arch_triggers = document.querySelectorAll(".anim-arch-short_trigger");
+		arch_triggers.forEach((trigger) => {
+			let arch_path_short = document.querySelector("#shape-arch-short path"); // short front img SVG clip path - used on Destination Homepage
+			let arch_arch = gsap.utils.toArray(".anim-arch-short_arch", trigger); // the actual clip elements inside the trigger
+			gsap.set(arch_path_short, {
+				transformOrigin: "bottom center",
+			});
+
+			// timeline and scroll trigger. Trigger element is the default position of the img wrapper, the same as the top of the text
+			let tl = gsap.timeline({
+				scrollTrigger: {
+					trigger: trigger,
+					start: "20% 95%",
+					markers: false,
+				},
+			});
+
+			// move whole element (incl bg image) up
+			tl.from(arch_arch, {
+				y: "90%",
+				duration: 1.75,
+				ease: "power1.inOut",
+			});
+
+			//  apply a transform up to clip path
+			tl.from(
+				arch_path_short,
+				{
+					y: 0.2,
+					duration: 1.5,
+					ease: "power1.inOut",
+				},
+				"<+=0.4"
+			);
+
+			// scale clip path up
+			tl.from(
+				arch_path_short,
+				{
+					scale: 0.9,
+					duration: 1,
+					ease: "power1.inOut",
+				},
+				"<+=0.4"
+			);
+		});
+	};
+
+	/* stagger in anim - used in Destination Homepage Intro second part */
+	aethos.anim.staggerIn = function () {
+		/* get all stagger sections on page */
+		/* we use a wrapper section to help us associate trigger to items easily, ie where the trigger is not necessarily a parent of the animated items */
+		let stagger_sections = document.querySelectorAll(".anim-stagger-in_sect");
+		console.log(stagger_sections);
+		stagger_sections.forEach((section) => {
+			let trigger = section.querySelector(".anim-stagger-in_trigger"); // trigger
+			let items = gsap.utils.toArray(".anim-stagger-in_item", section); // elements to animate
+
+			let tl = gsap.timeline({
+				scrollTrigger: {
+					trigger: trigger,
+					start: "20% 80%",
+					markers: false,
+				},
+			});
+
+			gsap.set(items, {
+				y: 20,
+				opacity: 0,
+			});
+
+			tl.to(items, { y: 0, duration: 0.5, stagger: 0.25 });
+			tl.to(items, { opacity: 1, duration: 2, stagger: 0.25 }, "<"); // opacity anim is slightly longer
+		});
 	};
 
 	/* add class when filter drawer is opened/closed */
@@ -1099,105 +1179,6 @@ function main() {
 		});
 	};
 
-	// /* About page Values section */
-	// aethos.anim.values = function () {
-	// 	// only run for larger screen
-	// 	let mm = gsap.matchMedia();
-
-	// 	// add a media query. When it matches, the associated function will run
-	// 	mm.add("(min-width: 768px)", () => {
-	// 		// get all values components on page
-	// 		let valuesSections = document.querySelectorAll(".s-values");
-	// 		valuesSections.forEach((section) => {
-	// 			// Check if the section has already been processed
-	// 			if (section.hasAttribute("data-processed")) {
-	// 				return; // Skip this section if already processed
-	// 			}
-
-	// 			// Mark the section as processed
-	// 			section.setAttribute("data-processed", "true");
-
-	// 			// assemble the component
-	// 			let values = section.querySelectorAll(".values_item");
-	// 			values.forEach((value) => {
-	// 				// get id and set it on the title link
-	// 				let id = /[^/]*$/.exec(
-	// 					value.querySelector(".values_item-title").getAttribute("data-id")
-	// 				)[0];
-	// 				value.querySelector(".values_item-title").href = "#" + id;
-
-	// 				// Clone the elements
-	// 				let titleClone = value
-	// 					.querySelector(".values_item-title")
-	// 					.cloneNode(true);
-	// 				let bodyClone = value
-	// 					.querySelector(".values_item-body")
-	// 					.cloneNode(true);
-	// 				let imgClone = value
-	// 					.querySelector(".values_item-img")
-	// 					.cloneNode(true);
-
-	// 				// Append the clones to the respective lists
-	// 				section.querySelector(".values_title-list").append(titleClone);
-	// 				section.querySelector(".values_body-list").append(bodyClone);
-	// 				section.querySelector(".values_img-list").append(imgClone);
-	// 			});
-
-	// 			// check component has some values
-	// 			if (values.length == 0) return;
-
-	// 			// gsap selector fn
-	// 			let gsap_section = gsap.utils.selector(section);
-
-	// 			// get elements to animate within this component
-	// 			let titles = gsap_section(".values_title-list .values_item-title");
-	// 			let bodies = gsap_section(".values_body-list .values_item-body");
-	// 			let images = gsap_section(".values_img-list .values_item-img");
-
-	// 			// get first items
-	// 			let title_first = titles[0];
-	// 			let body_first = bodies[0];
-
-	// 			// resize last img so we can fine control end of pinning. We set last img to be the same height as the RHS content so the section unsticks when top of img is at same height as top of content.
-	// 			const values_pin = section.querySelector(".values_pin");
-	// 			var h =
-	// 				gsap.getProperty(values_pin, "height") -
-	// 				gsap.getProperty(values_pin, "padding-top") -
-	// 				gsap.getProperty(values_pin, "padding-bottom");
-	// 			gsap.set(images[images.length - 1], {
-	// 				height: h,
-	// 			});
-
-	// 			// Set the parent component to be pinned
-	// 			gsap.to(section, {
-	// 				scrollTrigger: {
-	// 					trigger: section, // trigger is the whole section
-	// 					start: "top top",
-	// 					end: "bottom bottom",
-	// 					pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
-	// 					pinSpacing: false,
-	// 				},
-	// 			});
-
-	// 			// Set up scroll triggers for each value
-	// 			values.forEach((value, index) => {
-	// 				let title = titles[index];
-	// 				let body = bodies[index];
-	// 				let image = images[index];
-
-	// 				// add a scrolltrigger for each image that toggles an active class on/off the corresponding title and body elements
-	// 				ScrollTrigger.create({
-	// 					trigger: image,
-	// 					start: "top 70%",
-	// 					end: "bottom 70%",
-	// 					toggleClass: { targets: [title, body], className: "is-active" },
-	// 					scrub: true,
-	// 				});
-	// 			});
-	// 		});
-	// 	});
-	// };
-
 	/* sticky images and quotes in articles */
 	aethos.anim.articleSticky = function () {
 		let mm = gsap.matchMedia();
@@ -1354,8 +1335,6 @@ function main() {
 			let content = gsap_section(".anim-load-hero_content"); // content element
 			let media = gsap_section(".anim-load-hero_media"); // media element
 			let content_bg = gsap_section(".anim-load-hero_content-bg"); // bg element behind content - already exists on page
-
-			/* set section to a darker bg color */
 			const section_bg_color = getComputedStyle(
 				document.documentElement
 			).getPropertyValue("--color--sand--light");
@@ -1367,6 +1346,7 @@ function main() {
 					scrub: false,
 				},
 			});
+
 			if (content.length) {
 				// if this hero has a content element - ie we are animating the content too, we do the bg colour anim as well. Otherwise, the only thing that animates is the img fade
 				tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
@@ -1397,15 +1377,79 @@ function main() {
 		});
 	};
 
+	aethos.functions.loadVideos = function (
+		mediaSelector = '[data-has-video="true"]', // parent media element that contains the video
+		vimeoSelector = ".video-cover", // div we are loading vimeo into
+		idAttr = "data-aethos-vimeo-id", // attr with the vimeo id. attr must be on media element
+		imgSelector = ".img-cover" // fallback / thumbnail imgs
+	) {
+		const mediaEls = document.querySelectorAll(mediaSelector);
+		mediaEls.forEach((mediaEl) => {
+			const vimeoContainer = mediaEl.querySelector(vimeoSelector);
+			if (!vimeoContainer) {
+				return;
+			} // if no video, stop here
+			const vimeoId = mediaEl.getAttribute(idAttr);
+			const imgs = mediaEl.querySelectorAll(imgSelector);
+			const player = initVimeo(vimeoContainer, vimeoId);
+			// if (player) {
+			// 	// if video loads successfully
+			// 	// toggleVideoElements(vimeoContainer, imgs);
+			// }
+		});
+
+		function initVimeo(vimeoContainer, vimeoId) {
+			const options = {
+				id: vimeoId,
+				byline: false,
+				title: false,
+				muted: true,
+				controls: false,
+				vimeo_logo: false,
+				autoplay: true,
+				speed: false,
+			};
+
+			const player = new Vimeo.Player(vimeoContainer, options);
+
+			player.loadVideo(vimeoId).then(function (id) {
+				aethos.log(`video ${id} loaded`);
+				player.play();
+			});
+
+			player.on("play", (event) => {
+				aethos.log(`video ${id} playing`);
+			});
+
+			return player;
+		}
+
+		// function toggleVideoElements(vimeoContainer, imgs) {
+		// 	// Hide elements if they exist
+		// 	imgs.forEach((img) => {
+		// 		gsap.to(img, { opacity: 0 });
+		// 	});
+
+		// 	// Show Vimeo player if it exists
+		// 	if (vimeoContainer) {
+		// 		gsap.from(vimeoContainer, { opacity: 0 });
+		// 	} else {
+		// 		console.error("Vimeo player element not found.");
+		// 	}
+		// }
+	};
+
 	/* call functions */
 	aethos.functions.nav();
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
+	aethos.anim.staggerIn();
 	aethos.anim.smoothScroll();
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
+	aethos.anim.arch_short();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
 	aethos.anim.navReveal();
@@ -1418,4 +1462,6 @@ function main() {
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
+
+	// aethos.functions.loadVideos();
 }
