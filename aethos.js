@@ -915,6 +915,144 @@ function main() {
 		});
 	};
 
+	/* generate a carousel for room cards */
+	aethos.anim.roomCardCarousel = function () {
+		// Loop through all .room-card elements on the page
+		document.querySelectorAll(".room-card").forEach(function (roomCard) {
+			// Check if the card contains a media list element
+			const mediaList = roomCard.querySelector(".room-card_media-list");
+
+			// If it doesn't, stop and move on to the next one
+			if (!mediaList) return;
+
+			// Get all the slides within the media list
+			const slides_original = mediaList.querySelectorAll(".img-wrap");
+
+			/* limit to 8 slides */
+			let slides = [];
+			slides_original.forEach((slide, index) => {
+				if (index < 8) {
+					slides.push(slide);
+				}
+			});
+
+			let slidesCount = slides.length;
+
+			// get pagination
+			const pagination = roomCard.querySelector(".room-card_pagination");
+			const counters = roomCard.querySelector(".room-card_counters");
+			let dots, activeCounter;
+
+			// if none or one slide, hide pagination and counters and don't run carousel
+			if (slidesCount < 2) {
+				if (pagination) {
+					pagination.style.display = "none";
+				}
+				if (counters) {
+					counters.style.display = "none";
+				}
+				return;
+			}
+			// otherwise run pagination and counter setup
+			else {
+				if (pagination) {
+					dots = setUpPagination(pagination);
+				}
+				if (counters) {
+					activeCounter = setUpCounters(counters, slidesCount);
+				}
+			}
+
+			// Pagination set up
+			function setUpPagination(pagination) {
+				pagination.innerHTML = ""; // Clear existing dots and add correct number
+				slides.forEach(() => {
+					const dot = document.createElement("div");
+					dot.classList.add("room-card_pagination-dot");
+					pagination.appendChild(dot);
+				});
+				const dots = pagination.querySelectorAll(".room-card_pagination-dot");
+				return dots;
+			}
+
+			// Slide counter set up
+			function setUpCounters(counters, slidesCount) {
+				const totalCounter = counters.querySelector(
+					".room-card_counter-item.is-total"
+				);
+				const activeCounter = counters.querySelector(
+					".room-card_counter-item.is-active"
+				);
+				totalCounter.innerHTML = slidesCount; // update total counter with slide count
+
+				return activeCounter;
+			}
+
+			/* for autoplay - currently disabled */
+			// const autoplay = roomCard.getAttribute("data-carousel-autoplay") || false; // should we enable autoplay?
+			if (true) {
+				handleAutoplay();
+
+				function handleAutoplay() {
+					const pause =
+						parseInt(roomCard.getAttribute("data-carousel-duration")) || 3; // how long img is onscreen - get from attribute
+					const transition = 1; // length of fade
+					let stagger = pause + transition;
+					let repeatDelay = stagger * (slidesCount - 1) + pause;
+
+					// GSAP timeline for fade in/out of slides
+					const tl = gsap.timeline({
+						repeat: -1,
+						// paused: true,
+						onUpdate: function () {
+							// Update active counter
+							let currentSlide =
+								Math.floor(tl.time() / stagger) % slides.length;
+							activeCounter.innerHTML = currentSlide + 1;
+							dots.forEach((dot, index) => {
+								dot.classList.toggle("is-active", index === currentSlide);
+							});
+						},
+					});
+
+					function init() {
+						gsap.set(slides, { autoAlpha: 1 }); // hide all slides
+						tl.from(slides, {
+							autoAlpha: 0,
+							duration: transition,
+							opacity: 0,
+							ease: "power4.inOut",
+							stagger: {
+								each: stagger,
+								repeat: -1,
+								repeatDelay: repeatDelay,
+							},
+						}).to(
+							slides,
+							{
+								autoAlpha: 0,
+								duration: transition,
+								opacity: 0,
+								ease: "power4.inOut",
+								stagger: {
+									each: stagger,
+									repeat: -1,
+									repeatDelay: repeatDelay,
+								},
+							},
+							stagger
+						);
+					}
+
+					// Start the timeline
+					init();
+				}
+			}
+
+			/* slide transition */
+		});
+	};
+
 	/* create sliders */
 	aethos.anim.loadSliders = function () {
 		/* splide defaults */
@@ -1454,6 +1592,7 @@ function main() {
 	aethos.anim.loadSliders();
 	aethos.anim.navReveal();
 	aethos.anim.blockCarousel();
+	aethos.anim.roomCardCarousel();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
 	aethos.anim.journalSticky();
