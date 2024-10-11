@@ -1062,6 +1062,7 @@ function main() {
 			arrows: false,
 			pagination: false,
 			focus: "center",
+			flickPower: 400,
 			speed: 600,
 			dragAngleThreshold: 60,
 			autoWidth: false,
@@ -1198,17 +1199,41 @@ function main() {
 				options: {
 					type: "slide",
 					autoWidth: true,
-					autoplay: false,
 					autoScroll: {
 						autoStart: false,
 					},
 					focus: 0,
 					trimSpace: "move",
-					flickPower: 400,
-					// breakpoints: {
-					// 	767: { perPage: 1 },
-					// 	991: { perPage: 2 },
-					// },
+				},
+				useExtensions: false,
+				useProgressBar: true,
+			},
+			{
+				selector: ".c-more-rooms",
+				options: {
+					type: "slide",
+					autoWidth: true,
+					autoScroll: {
+						autoStart: false,
+					},
+					focus: 0,
+					trimSpace: "move",
+					arrows: true,
+				},
+				useExtensions: false,
+				useProgressBar: false,
+			},
+			{
+				selector: ".c-carousel-loose",
+				options: {
+					type: "slide",
+					autoWidth: true,
+					autoScroll: {
+						autoStart: false,
+					},
+					focus: 0,
+					trimSpace: "move",
+					arrows: false,
 				},
 				useExtensions: false,
 				useProgressBar: true,
