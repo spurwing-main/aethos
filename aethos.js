@@ -1539,6 +1539,8 @@ function main() {
 	/* load vibes into listing cards */
 	aethos.functions.loadVibes = function () {
 		const targets = document.querySelectorAll("[aethos-vibes='target']");
+		const fetchPromises = []; // Array to store fetch promises
+
 		targets.forEach((target) => {
 			const slug = target.getAttribute("aethos-item-slug");
 			const type = target.getAttribute("aethos-item-type");
@@ -1552,8 +1554,8 @@ function main() {
 				return; // If type is not recognized, exit the function for this target
 			}
 
-			// Fetch content from the source path
-			fetch(sourcePath)
+			// Create a fetch promise for each target
+			const fetchPromise = fetch(sourcePath)
 				.then((response) => {
 					if (!response.ok) {
 						throw new Error(`Error fetching content from ${sourcePath}`);
@@ -1580,10 +1582,20 @@ function main() {
 				.catch((error) => {
 					console.error(`Failed to load content from ${sourcePath}:`, error);
 				});
+
+			// Add the fetch promise to the array
+			fetchPromises.push(fetchPromise);
 		});
 
-		/* call FS filter again after vibes loaded */
-		window.fsAttributes.cmsfilter.init();
+		// When all fetch requests have completed, refresh the Finsweet filter
+		Promise.all(fetchPromises)
+			.then(() => {
+				console.log("All vibes loaded. Initializing Finsweet filter...");
+				window.fsAttributes.cmsfilter.init(); // Initialize the Finsweet filter
+			})
+			.catch((error) => {
+				console.error("An error occurred while loading vibes:", error);
+			});
 	};
 
 	aethos.functions.addExperienceFilterLinks = function () {
