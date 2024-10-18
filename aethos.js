@@ -35,7 +35,7 @@ function main() {
 		if (!value) {
 			console.warn(`CSS property "${propName}" not found on the element.`);
 		} else {
-			aethos.log(value);
+			// aethos.log(value);
 		}
 		return value;
 	};
@@ -640,7 +640,6 @@ function main() {
 		/* get all stagger sections on page */
 		/* we use a wrapper section to help us associate trigger to items easily, ie where the trigger is not necessarily a parent of the animated items */
 		let stagger_sections = document.querySelectorAll(".anim-stagger-in_sect");
-		console.log(stagger_sections);
 		stagger_sections.forEach((section) => {
 			let trigger = section.querySelector(".anim-stagger-in_trigger"); // trigger
 			let items = gsap.utils.toArray(".anim-stagger-in_item", section); // elements to animate
@@ -681,8 +680,6 @@ function main() {
 	aethos.anim.HoverTrigger = function () {
 		const hover_triggers = document.querySelectorAll(".hover-trigger");
 		hover_triggers.forEach((trigger) => {
-			console.log(trigger);
-
 			const parent = trigger.closest(".hover-trigger-parent");
 			trigger.addEventListener("mouseover", function () {
 				trigger.classList.add("is-active");
@@ -1390,7 +1387,6 @@ function main() {
 			});
 
 			sticky_cards.forEach((card) => {
-				console.log(card);
 				let card_wrapper = card.closest(".journal-grid_item");
 				ScrollTrigger.create({
 					trigger: card_wrapper,
@@ -1540,6 +1536,88 @@ function main() {
 		});
 	};
 
+	/* load vibes into listing cards */
+	aethos.functions.loadVibes = function () {
+		const targets = document.querySelectorAll("[aethos-vibes='target']");
+		targets.forEach((target) => {
+			const slug = target.getAttribute("aethos-item-slug");
+			const type = target.getAttribute("aethos-item-type");
+			let sourcePath;
+
+			if (type == "experience") {
+				sourcePath = "/experiences/" + slug;
+			} else if (type == "wellness") {
+				sourcePath = "/wellness/" + slug;
+			} else {
+				return; // If type is not recognized, exit the function for this target
+			}
+
+			// Fetch content from the source path
+			fetch(sourcePath)
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error(`Error fetching content from ${sourcePath}`);
+					}
+					return response.text();
+				})
+				.then((html) => {
+					// Create a temporary DOM element to parse the HTML content
+					const parser = new DOMParser();
+					const doc = parser.parseFromString(html, "text/html");
+
+					// Find the element with aethos-vibes='source' in the fetched document
+					const sourceElement = doc.querySelector("[aethos-vibes='source']");
+
+					if (sourceElement) {
+						// Insert the sourceElement content into the target element
+						target.innerHTML = sourceElement.innerHTML;
+					} else {
+						console.warn(
+							`No element with aethos-vibes='source' found in ${sourcePath}`
+						);
+					}
+				})
+				.catch((error) => {
+					console.error(`Failed to load content from ${sourcePath}:`, error);
+				});
+		});
+
+		/* call FS filter again after vibes loaded */
+		window.fsAttributes.cmsfilter.init();
+	};
+
+	aethos.functions.addExperienceFilterLinks = function () {
+		const blocks = document.querySelectorAll("[aethos-experience-category]");
+
+		blocks.forEach((block) => {
+			// Get the filter slug and destination slug
+			const experienceCategory = block.getAttribute(
+				"aethos-experience-category"
+			);
+			const destinationSlug = block.getAttribute("aethos-destination-slug");
+
+			// Check if the filter slug or destination slug are missing or empty
+			if (!experienceCategory || !destinationSlug) {
+				console.warn("Missing filter or destination slug for block:", block);
+				return; // Skip this block if either attribute is missing
+			}
+
+			// Find the button within the block
+			const button = block.querySelector(".button .button_link");
+			if (!button) {
+				console.warn("No button found in block:", block);
+				return; // Skip if no button is found
+			}
+
+			// Set the button href with the correct link
+			try {
+				button.href = `/destination-subpages/all-experiences/${destinationSlug}?category=${experienceCategory}`;
+			} catch (error) {
+				console.error("Error setting href for button:", error);
+			}
+		});
+	};
+
 	aethos.functions.loadVideos = function (
 		mediaSelector = '[data-has-video="true"]', // parent media element that contains the video
 		vimeoSelector = ".video-cover", // div we are loading vimeo into
@@ -1623,6 +1701,8 @@ function main() {
 	aethos.anim.journalSticky();
 	aethos.anim.map();
 	aethos.anim.loadHero();
+	aethos.functions.loadVibes();
+	aethos.functions.addExperienceFilterLinks();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
