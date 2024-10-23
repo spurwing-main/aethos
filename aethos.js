@@ -1692,6 +1692,65 @@ function main() {
 		// }
 	};
 
+	aethos.functions.formatDates = function () {
+		let dateEls = document.querySelectorAll(
+			".date:not([aethos-date-formatted='true']"
+		); // get all date elements on the page that haven't been formatted already
+
+		dateEls.forEach((dateEl) => {
+			var startDate = dateEl.getAttribute("aethos-date-start");
+			var endDate = dateEl.getAttribute("aethos-date-end");
+			if (!startDate) {
+				return; // if no start date, return
+			}
+			if (!endDate) {
+				endDate = startDate; // if end date is not set, assume single date
+			}
+			dateEl.innerHTML = formatDateRange(startDate, endDate); // update element
+			dateEl.setAttribute("aethos-date-formatted", "true"); // mark as formatted
+		});
+
+		function formatDateRange(dateStr1, dateStr2) {
+			// Helper function to format a single date
+			function formatDate(date) {
+				const options = { year: "numeric", month: "short", day: "2-digit" };
+				return date.toLocaleDateString("en-US", options);
+			}
+
+			// Convert date strings to Date objects
+			const date1 = new Date(dateStr1);
+			const date2 = new Date(dateStr2);
+
+			// Check if the two dates are the same
+			if (date1.getTime() === date2.getTime()) {
+				return formatDate(date1);
+			}
+
+			// Format date range
+			const day1 = date1.getDate();
+			const day2 = date2.getDate();
+
+			const month1 = date1.toLocaleDateString("en-US", { month: "short" });
+			const month2 = date2.toLocaleDateString("en-US", { month: "short" });
+
+			const year1 = date1.getFullYear();
+			const year2 = date2.getFullYear();
+
+			if (year1 === year2) {
+				if (month1 === month2) {
+					// Same month and year: format as Nov 03 - 04, 2024
+					return `${month1} ${day1} - ${day2}, ${year1}`;
+				} else {
+					// Different months, same year: format as Nov 30 - Dec 01, 2024
+					return `${month1} ${day1} - ${month2} ${day2}, ${year1}`;
+				}
+			} else {
+				// Different years: format as Nov 30, 2024 - Jan 01, 2025
+				return `${formatDate(date1)} - ${formatDate(date2)}`;
+			}
+		}
+	};
+
 	/* call functions */
 	aethos.functions.nav();
 	aethos.anim.splitText();
@@ -1715,6 +1774,7 @@ function main() {
 	aethos.anim.loadHero();
 	aethos.functions.loadVibes();
 	aethos.functions.addExperienceFilterLinks();
+	aethos.functions.formatDates();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
