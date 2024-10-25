@@ -1,0 +1,118 @@
+/* old sccale 
+  html { font-size: calc(0.625rem + 0.41666666666666663vw); }
+  @media screen and (max-width:1920px) { html { font-size: calc(0.625rem + 0.41666666666666674vw); } }
+  @media screen and (max-width:1440px) { html { font-size: calc(0.8285714285714286rem + 0.19047619047619047vw); } }
+  @media screen and (max-width:390px) { html { font-size: calc(0.7496786632390745rem + 0.5141388174807198vw); } }
+*/
+
+html {
+	font-size: calc(0.625rem + 0.41666666666666663vw);
+}
+@media screen and (max-width: 1920px) {
+	html {
+		font-size: calc(0.625rem + 0.41666666666666674vw);
+	}
+}
+@media screen and (max-width: 1440px) {
+	html {
+		font-size: calc(0.7325408618127787rem + 0.2971768202080238vw);
+	}
+}
+@media screen and (max-width: 767px) {
+	html {
+		font-size: calc(0.8706896551724138rem + 0.5305039787798409vw);
+	}
+}
+@media screen and (max-width: 390px) {
+	html {
+		font-size: calc(0.7493573264781491rem + 1.0282776349614395vw);
+	}
+}
+
+/* Gets rid of top margin on first element in any rich text */
+.w-richtext > :first-child {
+	margin-top: 0;
+}
+
+/* Gets rid of bottom margin on last element in any rich text */
+.w-richtext > :last-child,
+.w-richtext ol li:last-child,
+.w-richtext ul li:last-child {
+	margin-bottom: 0;
+}
+
+.flow > * + *,
+.w-richtext > * + * {
+	margin-top: var(--flow-space, 1em);
+}
+.flow,
+.w-richtext {
+	--flow-space: 1em;
+}
+
+/* Adds inline flex display */
+.inline-flex {
+	display: inline-flex;
+}
+
+/* Overflow clip allows position sticky children */
+.overflow-clip {
+	overflow: clip;
+}
+
+/* hide from view but not from screen readers */
+.visually-hidden {
+	border: 0;
+	clip: rect(0 0 0 0);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+}
+
+/* clamp text */
+.line-clamp-1 {
+	display: -webkit-box;
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.line-clamp-2 {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.line-clamp-3 {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.line-clamp-4 {
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.line-clamp-5 {
+	display: -webkit-box;
+	-webkit-line-clamp: 5;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+/* add grab cursor */
+.grabbable {
+	cursor: move; /* fallback if grab cursor is unsupported */
+	cursor: grab;
+	cursor: -moz-grab;
+	cursor: -webkit-grab;
+}
+.grabbable:active {
+	cursor: grabbing;
+	cursor: -moz-grabbing;
+	cursor: -webkit-grabbing;
+}

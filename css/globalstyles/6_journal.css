@@ -1,0 +1,170 @@
+/*** JOURNAL GRID ***/
+
+/* DEFAULT (we can't set in WF variables panel) and SMALL type */
+:root,
+.journal-card[data-card-type="small"] {
+	--c--journal-card--align: left; /* content is left aligned */
+	--c--journal-card--body-display: none; /* no body */
+	--c--journal-card--type: small; /* doesn't apply any styling, but we hook off this variable w/ JS for large sticky cards */
+}
+
+/* SMALL VARIANTS - ASPECT RATIOS */
+.journal-card[data-card-media="square"] {
+	--c--journal-card--media-ratio: 1 / 1;
+}
+.journal-card[data-card-media="landscape"] {
+	--c--journal-card--media-ratio: 11 / 8;
+}
+.journal-card[data-card-media="portrait"] {
+	--c--journal-card--media-ratio: 11 / 12;
+}
+
+/* SMALL VARIANTS - SWAP MARGINS */
+.journal-grid_secondary .journal-grid_item {
+	margin-left: 6.014712%; /* magic number */
+	margin-right: 0%;
+}
+.journal-grid_secondary
+	.journal-grid_item:is(
+		:nth-child(14n + 1),
+		:nth-child(14n + 4),
+		:nth-child(14n + 6),
+		:nth-child(14n + 9),
+		:nth-child(14n + 11),
+		:nth-child(14n + 13)
+	) {
+	margin-right: 6.014712%;
+	margin-left: 0%;
+}
+
+/* LARGE */
+/* card settings */
+.journal-card[data-card-type="large"],
+.journal-grid_secondary
+	.journal-grid_item:is(:nth-child(14n + 3), :nth-child(14n + 8))
+	.journal-card {
+	/* title styling (same as Standfirst) */
+	--c--journal-card--title-fs: 2.5rem;
+	--c--journal-card--title-lh: 3rem;
+	--c--journal-card--title-font: var(--fonts--primary);
+	--c--journal-card--title-letter-spacing: -0.02em;
+
+	/* layout */
+	--c--journal-card--gap: 1rem;
+	--c--journal-card--header-gap: 0.5rem;
+	--c--journal-card--content-gap: 0.5rem;
+	--c--journal-card--align: center; /* text alignment */
+	--c--journal-card--body-display: block; /* show body */
+	--c--journal-card--margin-l: auto; /* this is the alignment of the content - centered */
+	--c--journal-card--margin-r: auto; /* this is the alignment of the content - centered */
+
+	/* media */
+	--c--journal-card--media-ratio: 16 / 9;
+
+	/* doesn't apply any styling, but we hook off this variable w/ JS for large sticky cards */
+	--c--journal-card--type: large;
+}
+/* wrapper settings */
+.journal-grid_secondary
+	.journal-grid_item:is(:nth-child(14n + 3), :nth-child(14n + 8)) {
+	/* sizing */
+	grid-column: span 12; /* width of card */
+	grid-row: span 3; /* card should be as high as three small ones */
+	margin-left: 16.67%; /* more space between small and large cards. This works because gap is 2cols and large cards are 10 cols */
+	margin-right: 0px;
+	margin-bottom: var(--spacing--v-pad-dsk);
+}
+
+/* LARGE VARIANT - SWAP MARGINS */
+.journal-grid_secondary .journal-grid_item:nth-child(14n + 8) {
+	margin-right: 16.67%; /* swap margins around */
+	margin-left: 0px;
+}
+
+/* LARGE GAP ABOVE EACH 'SECTION' - when filters not applied */
+@media screen and (min-width: 768px) {
+	.journal-grid_secondary:not(.is-filtered)
+		.journal-grid_item:is(
+			:nth-child(14n + 1),
+			:nth-child(14n + 2),
+			:nth-child(14n + 3),
+			:nth-child(14n + 8),
+			:nth-child(14n + 9),
+			:nth-child(14n + 10)
+		) {
+		margin-top: var(--spacing--v-pad-dsk);
+	}
+}
+
+/* MOBILE */
+@media screen and (max-width: 768px) {
+	/* set some new defaults for card wrappers */
+	.journal-grid_item {
+		margin-inline: 0px !important; /* all items no longer have any horizontal margin */
+		margin-block: 0px !important; /* all items no longer have any vertical margin */
+		grid-row: auto !important; /* all items just take up one row and 1 col by default */
+		grid-column: span 1;
+	}
+	/* set some new defaults for cards */
+	.journal-card {
+		--c--journal-card--align: left !important;
+		--c--journal-card--margin-l: 0px !important;
+		--c--journal-card--margin-r: 0px !important;
+		--c--journal-card--title-fs: 0.75rem;
+		--c--journal-card--title-lh: 0.875rem;
+	}
+
+	.journal-card[data-card-type="large"],
+	.journal-grid_secondary .journal-grid_item:nth-child(14n + 3) .journal-card,
+	.journal-grid_secondary .journal-grid_item:nth-child(14n + 8) .journal-card {
+		--c--journal-card--title-fs: 1.5rem;
+		--c--journal-card--title-lh: 2rem;
+
+		/* layout */
+		--c--journal-card--gap: var(--gap--gap-4xl);
+		--c--journal-card--header-gap: var(--gap--gap-md);
+		--c--journal-card--content-gap: var(--gap--gap-md);
+		--c--journal-card--media-ratio: 19 / 14;
+	}
+	.journal-grid_secondary .journal-grid_item:nth-child(14n + 3),
+	.journal-grid_secondary .journal-grid_item:nth-child(14n + 8) {
+		grid-column: 1 / -1; /* large cards span full width */
+	}
+}
+
+/* when filters on journal active, hide other collection lists - but not in Designer */
+.s-journal-grid:has(.active-tag)
+	:is(.journal-grid_primary, .journal-grid_secondary.is-display) {
+	display: none;
+}
+.s-journal-grid:has(.active-tag) .journal-grid_secondary.is-filtered {
+	display: block;
+}
+html.wf-design-mode :is(.journal-grid_primary, .journal-grid_secondary) {
+	display: block !important;
+}
+
+/* hover behaviour - here to avoid adding to multiple different components */
+.journal-card,
+.journal-primary-1,
+.journal-primary-2,
+.journal-primary-3,
+.journal-primary-4 {
+	cursor: pointer;
+	transition: opacity 0.3s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+:is(
+		.journal-card,
+		.journal-primary-1,
+		.journal-primary-2,
+		.journal-primary-3,
+		.journal-primary-4
+	):hover {
+	opacity: 0.6;
+}
+
+/* add more spacing below last paragraph before a heading */
+.rich-text-article p + :not(p) {
+	margin-top: 3rem;
+}

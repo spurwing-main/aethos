@@ -1,0 +1,42 @@
+/* add labels to elements in style guide */
+.style-list > *:before {
+	content: "." attr(class);
+	display: block;
+	position: absolute;
+	left: 0%;
+	top: 0%;
+	right: auto;
+	bottom: auto;
+	padding-top: 0.25rem;
+	padding-right: 0.25rem;
+	padding-bottom: 0.25rem;
+	padding-left: 0.25rem;
+	background-color: hsla(59, 100%, 78.57%, 1);
+	color: hsla(0, 0%, 0%, 1);
+	font-size: 0.5rem;
+	line-height: 1;
+	letter-spacing: 0.125rem;
+	text-transform: uppercase;
+	z-index: 100;
+}
+.style-list > * {
+	min-height: 5rem;
+	width: 100%;
+	outline: 1px solid black !important;
+	outline-offset: 0px !important;
+	box-shadow: none;
+	padding: 1rem;
+	font-size: inherit;
+	line-height: normal;
+	position: relative;
+	overflow: hidden;
+}
+
+/* Adds a red outline to links in the designer that are not linked up */
+xhtml.wf-design-mode a[href="#"] {
+	outline: 2px solid red !important;
+}
+
+* {
+	xoutline: 1px solid red;
+}

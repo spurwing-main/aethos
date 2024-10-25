@@ -1,0 +1,162 @@
+/* negative container padding - where we need to extend something outside the container */
+/* dsk, mbl and dynamic versions */
+:root {
+	--container--neg-pad-dsk: calc(-1 * var(--spacing--h-pad-dsk));
+	--container--neg-pad-mbl: calc(-1 * var(--spacing--h-pad-mob));
+	--container--neg-pad: var(--container--neg-pad-dsk);
+}
+@media (max-width: 767px) {
+	:root {
+		--container--neg-pad: var(--container--neg-pad-mbl);
+	}
+}
+
+/* grid set up */
+/* all grid variables are listed in WF variables, but due to WF limitations some are defined here */
+:root {
+	/* number of cols */
+	--grid--columns-dsk: 12;
+	--grid--columns-mbl: 4;
+
+	/* grid container width - this is always 100% since we add the site's container padding separately on the .container component */
+	--grid--container-w-dsk: calc(100% - 0rem);
+	--grid--container-w-mbl: calc(100% - 0rem);
+
+	/* half values of gutter, used for some components */
+	--grid--half-gutter-dsk: calc(var(--grid--gutter-dsk) / 2);
+	--grid--half-gutter-mbl: calc(var(--grid--gutter-mbl) / 2);
+
+	/* width of one col */
+	--grid--col-w-dsk: calc(
+		(
+				var(--grid--container-w-dsk) -
+					((var(--grid--columns-dsk) - 1) * var(--grid--gutter-dsk))
+			) / var(--grid--columns-dsk)
+	);
+	--grid--col-w-mbl: calc(
+		(
+				var(--grid--container-w-mbl) -
+					((var(--grid--columns-mbl) - 1) * var(--grid--gutter-mbl))
+			) / var(--grid--columns-mbl)
+	);
+
+	/* width of half a col */
+	--grid--half-col-dsk: calc(0.5 * var(--grid--col-w-dsk));
+	--grid--half-col-mbl: calc(0.5 * var(--grid--col-w-mbl));
+
+	/* Desktop Column Widths */
+	--cols--no-gutter--1-dsk: var(--grid--col-w-dsk);
+	--cols--gutter--1-dsk: calc(var(--grid--col-w-dsk) + var(--grid--gutter-dsk));
+
+	--cols--no-gutter--2-dsk: calc(
+		2 * var(--grid--col-w-dsk) + var(--grid--gutter-dsk)
+	);
+	--cols--gutter--2-dsk: calc(
+		2 * var(--grid--col-w-dsk) + 2 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--3-dsk: calc(
+		3 * var(--grid--col-w-dsk) + 2 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--3-dsk: calc(
+		3 * var(--grid--col-w-dsk) + 3 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--4-dsk: calc(
+		4 * var(--grid--col-w-dsk) + 3 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--4-dsk: calc(
+		4 * var(--grid--col-w-dsk) + 4 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--5-dsk: calc(
+		5 * var(--grid--col-w-dsk) + 4 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--5-dsk: calc(
+		5 * var(--grid--col-w-dsk) + 5 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--6-dsk: calc(
+		6 * var(--grid--col-w-dsk) + 5 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--6-dsk: calc(
+		6 * var(--grid--col-w-dsk) + 6 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--7-dsk: calc(
+		7 * var(--grid--col-w-dsk) + 6 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--7-dsk: calc(
+		7 * var(--grid--col-w-dsk) + 7 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--8-dsk: calc(
+		8 * var(--grid--col-w-dsk) + 7 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--8-dsk: calc(
+		8 * var(--grid--col-w-dsk) + 8 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--9-dsk: calc(
+		9 * var(--grid--col-w-dsk) + 8 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--9-dsk: calc(
+		9 * var(--grid--col-w-dsk) + 9 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--10-dsk: calc(
+		10 * var(--grid--col-w-dsk) + 9 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--10-dsk: calc(
+		10 * var(--grid--col-w-dsk) + 10 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--11-dsk: calc(
+		11 * var(--grid--col-w-dsk) + 10 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--11-dsk: calc(
+		11 * var(--grid--col-w-dsk) + 11 * var(--grid--gutter-dsk)
+	);
+
+	--cols--no-gutter--12-dsk: calc(
+		12 * var(--grid--col-w-dsk) + 11 * var(--grid--gutter-dsk)
+	);
+	--cols--gutter--12-dsk: calc(
+		12 * var(--grid--col-w-dsk) + 12 * var(--grid--gutter-dsk)
+	);
+
+	/* Mobile Column Widths */
+	--cols--no-gutter--1-mbl: var(--grid--col-w-mbl);
+	--cols--gutter--1-mbl: calc(var(--grid--col-w-mbl) + var(--grid--gutter-mbl));
+
+	--cols--no-gutter--2-mbl: calc(
+		2 * var(--grid--col-w-mbl) + var(--grid--gutter-mbl)
+	);
+	--cols--gutter--2-mbl: calc(
+		2 * var(--grid--col-w-mbl) + 2 * var(--grid--gutter-mbl)
+	);
+
+	--cols--no-gutter--3-mbl: calc(
+		3 * var(--grid--col-w-mbl) + 2 * var(--grid--gutter-mbl)
+	);
+	--cols--gutter--3-mbl: calc(
+		3 * var(--grid--col-w-mbl) + 3 * var(--grid--gutter-mbl)
+	);
+
+	--cols--no-gutter--4-mbl: calc(
+		4 * var(--grid--col-w-mbl) + 3 * var(--grid--gutter-mbl)
+	);
+	--cols--gutter--4-mbl: calc(
+		4 * var(--grid--col-w-mbl) + 4 * var(--grid--gutter-mbl)
+	);
+}
+
+/* 100dvw accounting for container padding */
+:root {
+	--container--w: calc(100dvw - var(--spacing--h-pad-dsk));
+}
+@media (max-width: 767px) {
+	:root {
+		--container--w: calc(100dvw - var(--spacing--h-pad-mob));
+	}
+}

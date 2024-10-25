@@ -1,0 +1,45 @@
+/* for correctly calculating height of home hero wrt nav */
+:root {
+	/* first get height of header - logo h plus padding */
+	--c--header--h: calc(var(--c--header--logo-h) + (2 * var(--padding--pad-md)));
+	/* then h of hero is 100dvh minus header */
+	/* NB for the component itself, we add an extra 100dvh to the h for the scroll anim */
+	--c--home-hero--h: calc(100dvh - var(--c--header--h));
+}
+
+/* page loader */
+[data-page-loader="true"] {
+	--logo-ratio: calc(80 / 295); /* aspect ratio of wordmark */
+	--logo-width: 39vw;
+	--max-logo-width: 914px;
+	--c--header--logo-h-lg: min(
+		calc(var(--logo-ratio) * var(--logo-width)),
+		calc(var(--logo-ratio) * var(--max-logo-width))
+	);
+	--c--header--logo-h: var(--c--header--logo-h-lg); /* logo is larger */
+	--c--header--h: calc(var(--c--header--logo-h) + (2 * var(--padding--pad-md)));
+	--c--home-hero--h: calc(100dvh - var(--c--header--h));
+}
+
+/* nav height anim */
+.site-header.scrolled {
+	--c--header--logo-h: var(--c--header--logo-h-sm);
+	--c--header--h: calc(
+		var(--c--header--logo-h) + (2 * var(--padding--pad-md))
+	); /* recalc header h */
+}
+
+/* fix for nav width lagging when window resized - due to gsap pinning */
+.pin-spacer:has(.header) {
+	width: 100% !important; /* otherwise GSAP sets a px width on the pin-spacer wrapping the header and updates it with JS
+    */
+}
+.header {
+	width: 100% !important;
+	max-width: none !important; /* same with the header itself */
+}
+
+/* patch to color header to cream light for those pages that need it. WF interaction for opening nav sets a fixed color otherwise */
+[data-page-bg="cream-light"] .header-bar {
+	background-color: var(--color--cream--light) !important;
+}

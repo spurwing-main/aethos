@@ -1,0 +1,241 @@
+:root {
+	--anim--quart-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.button {
+	transition: all 350ms cubic-bezier(0.25, 1, 0.5, 1) 0s;
+}
+
+.splide__track {
+	overflow: visible;
+}
+.splide__sr {
+	display: none !important; /* hide random loading thing */
+}
+
+/* active state for filters */
+.filter-custom:before {
+	content: "";
+	width: 4px;
+	height: 4px;
+	position: absolute;
+	display: block;
+	left: -10px;
+	border-radius: 100%;
+	background-color: var(--color--charcoal--dark);
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+.filter-custom.fs-cmsfilter_active:before {
+	opacity: 1;
+}
+
+/* filter drawer open/closed */
+.grid-header:not(.is-open) .grid-header_icon.is-closed {
+	opacity: 1;
+}
+.grid-header.is-open .grid-header_icon.is-open {
+	opacity: 1;
+}
+/* change color of line under filter btn when filter drawer is open */
+.grid-header.is-open {
+	--c--grid-header--btn-line-color: var(--color--charcoal--dark);
+}
+/* fade active tags wrapper in/out when empty/not empty, so keyline isn't visible when no tags set EDIT - now just hiding completely without anim */
+.card-grid-header_active-tags:empty {
+	opacity: 0;
+	display: none;
+}
+
+/* change colors of other destination list items when one is hovered */
+.hover-trigger-parent:has(.hover-trigger:hover) .hover-trigger:not(.is-active) {
+	color: red !important;
+}
+
+/* remove blank pseudo element WF adds to rich text so we can use grid properly */
+.company-retreats_body:before,
+.company-retreats_body:after {
+	display: none !important;
+}
+
+/* nav link hover - not on mob */
+@media (min-width: 786px) {
+	.nav-links.anim-hover-group:has(.anim-hover-item:hover)
+		.anim-hover-item:not(:hover) {
+		opacity: 0.3;
+		filter: blur(2px);
+	}
+	.nav-links .anim-hover-item:not(:hover) {
+		transition: opacity 0.6s ease, filter 0.6s ease;
+	}
+
+	/* dest list hover */
+	.card-list_list.anim-hover-group:has(.anim-hover-item:hover)
+		.anim-hover-item:not(:hover)
+		:is(p, h3) {
+		color: var(--color--slate--dark) !important;
+	}
+	.card-list_list.anim-hover-group :is(p, h3) {
+		transition: color 0.6s ease;
+	}
+}
+
+/* nav button icon anim */
+.nav-btn_icon-wrap > svg path {
+	transition: transform 0.4s ease, opacity 0.4s ease;
+	transform-origin: center;
+}
+
+/* Open state (when .is-open class is applied) */
+.nav-open .nav-btn_icon-wrap > svg path:nth-child(1) {
+	transform: rotate(45deg) translateY(7px);
+}
+
+.nav-open .nav-btn_icon-wrap > svg path:nth-child(2) {
+	opacity: 0;
+}
+
+.nav-open .nav-btn_icon-wrap > svg path:nth-child(3) {
+	transform: rotate(-45deg) translateY(-7px);
+}
+
+/* blocks */
+
+/* reverse order on desktop only */
+@media (min-width: 768px) {
+	.block[data-layout="reversed"] .block_content {
+		order: 4;
+	}
+	.block[data-layout="reversed"] .block_media {
+		order: 2;
+	}
+}
+
+/* set aspect ratio for portrait type, and also adjust cols */
+.block[data-type="portrait"] .img-wrap {
+	aspect-ratio: 11 / 12;
+}
+.block[data-type="portrait"] .block_media {
+	grid-column: span 5;
+}
+.block[data-type="portrait"] .block_content {
+	grid-column: span 4;
+}
+
+/* set aspect ratio for landscape type */
+.block[data-type="landscape"] .img-wrap {
+	aspect-ratio: 8 / 5;
+}
+
+/* for imgs placed in a carousel in a block, stack them all by default */
+.block_media-list > * {
+	grid-column: 1 / -1;
+	grid-row: 1;
+}
+
+/* gap between team cards */
+/* this comes from wanting team cards to be 3 col wide each, with a row of 3 cards having a total width of 10 cols. Easist to look at Figma file to see why this calculation works */
+:root {
+	--c--team-list--gap: calc(
+		(0.5 * var(--grid--col-w-dsk)) + (1.5 * var(--grid--gutter-dsk))
+	);
+}
+
+/* link hover anim - for standard unstyled links in text */
+a:not([class]) {
+	text-decoration: underline;
+	text-decoration-color: var(--color--sand--dark);
+	text-underline-offset: 0.4em;
+	transition: text-underline-offset 500ms var(--anim--quart-in-out),
+		text-decoration-color 500ms var(--anim--quart-in-out);
+}
+a:not([class]):hover {
+	text-decoration-color: var(--color--charcoal--dark);
+}
+
+/* cookie banner links */
+.cookies_link.is-primary {
+	text-decoration: underline;
+	text-underline-offset: 0.4em;
+	text-decoration-color: var(--color--body);
+	transition: text-underline-offset 500ms var(--anim--quart-in-out),
+		text-decoration-color 500ms var(--anim--quart-in-out);
+}
+.cookies_link.is-primary:hover {
+	text-underline-offset: 0.2em;
+	text-decoration-color: var(--color--body);
+}
+
+/* button disabled states */
+.button[disabled] {
+	color: var(--color--slate--dark);
+	border-color: var(--color--slate--dark);
+}
+.button.secondary[disabled] {
+	color: var(--color--sand--light);
+	border-color: var(--color--sand--light);
+}
+.button.tertiary[disabled] {
+	color: var(--color--charcoal--light);
+	border-color: var(--color--charcoal--light);
+}
+.button.quaternary[disabled] {
+	background-color: var(--color--slate--dark);
+	color: var(--color--charcoal--light);
+	border-color: var(--color--charcoal--light);
+}
+
+/* lang switcher - desktop */
+.lang-switcher_modal {
+	/* Delay the opacity transition by 0.2s so it ends with the transform */
+	/* set here as we can't do delays in WF */
+	transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+		opacity 0.2s ease-in-out 0.2s;
+}
+
+/* and mobile*/
+.lang-switcher-mob.is-open .lang-switcher-mob_overlay {
+	display: block; /* Show the overlay */
+}
+.lang-switcher-mob.is-open .lang-switcher-mob_drawer-wrap {
+	height: auto; /* Expand the height of the drawer */
+}
+
+/* press grid layout */
+.press-grid_list > *:nth-child(5n + 1),
+.press-grid_list > *:nth-child(5n + 2) {
+	grid-column: span 3;
+}
+
+/* article */
+/* make full w images full */
+.article-rich-text
+	.w-richtext-align-fullwidth.w-richtext-figure-type-image
+	> div {
+	width: 100% !important;
+	margin-inline: 0px !important;
+}
+
+/* min height on hero image on larger screens */
+@media (min-width: 1280px) {
+	.hero_media {
+		min-height: 40.625rem;
+	}
+}
+
+/* page bg color */
+[data-page-bg="cream-light"] {
+	--color--page-bg: var(--color--cream--light);
+}
+
+/* card hover */
+.c-carousel-card:hover .carousel-card_media,
+.c-journal-card-carousel:hover .journal-card-carousel_media,
+.c-dest-card:hover .dest-card_media {
+	opacity: 0.8;
+}
+
+/* patch to remove apparent clipping of header logo */
+svg.logo {
+	overflow: visible !important;
+}

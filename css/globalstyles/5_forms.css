@@ -1,0 +1,78 @@
+/* invalid footer form states */
+
+/* make input color red */
+.footer-form_field:user-invalid {
+	color: var(--color--terracotta--light) !important;
+}
+.footer-form_field:user-invalid::placeholder {
+	color: var(--color--terracotta--light) !important;
+}
+
+/* mobile */
+/* don't show individual error text */
+.footer-form_field-wrap:has(:user-invalid) .footer-form_field-error {
+	display: none;
+}
+/* show error bar only */
+.footer-form_field-wrap:has(:user-invalid) .footer-form_field-error-wrap {
+	display: block;
+}
+/* show overall error */
+.footer-form:has(:user-invalid) .footer-form_form-master-error {
+	display: block;
+}
+
+/* desktop */
+@media screen and (min-width: 768px) {
+	/* show individual error text AND bar */
+	.footer-form_field-wrap:has(:user-invalid)
+		:is(.footer-form_field-error, .footer-form_field-error-wrap) {
+		display: block;
+	}
+	/* don't show overall error ever on dsk */
+	.footer-form:has(:user-invalid) .footer-form_form-master-error {
+		display: none !important;
+	}
+}
+
+/* proposal form */
+
+/* hide default date placeholder as we can't edit this */
+input[type="date"].is-date-placeholder {
+	position: relative;
+	color: transparent;
+}
+
+/* custom date placeholder */
+input[type="date"].is-date-placeholder::before {
+	position: absolute;
+	content: attr(placeholder);
+	color: var(--color--body);
+}
+
+input[type="date"].is-date-placeholder:focus::before {
+	content: "" !important;
+	display: none;
+	color: var(--color--body);
+}
+
+/* radio button */
+.proposal-form_radio:checked + .proposal-form_radio-label {
+	text-decoration: underline;
+}
+
+/* autofill styling hack to override browser defaults */
+.footer input:-webkit-autofill,
+.footer input:-webkit-autofill:hover,
+.footer input:-webkit-autofill:focus,
+.footer input:-webkit-autofill:active {
+	-webkit-box-shadow: 0 0 0 100px var(--color--body) inset !important;
+	color: white !important;
+	-webkit-text-fill-color: white;
+	transition: background-color 5000s ease-in-out 0s;
+}
+
+/* keep correct border color when focused */
+.footer-form_field:focus {
+	border-color: black var(--color--charcoal--medium) black black;
+}

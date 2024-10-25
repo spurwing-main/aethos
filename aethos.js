@@ -1812,7 +1812,9 @@ function main() {
 					}
 
 					// Insert the fetched nav into the .header element
-					const headerElement = document.querySelector(".header");
+					const headerElement = document.querySelector(
+						".header .dest-nav-wrap"
+					);
 					if (!headerElement) {
 						console.warn(".header element not found on the page");
 						return reject(".header element not found");
