@@ -11,12 +11,17 @@ function main() {
 		const pageWrap = document.querySelector(".page-wrap");
 
 		if (pageWrap) {
-			// Retrieve and store the data-page-bg, data-page, and data-page-loader attributes
-			aethos.settings.pageBg = pageWrap.getAttribute("data-page-bg") || null;
-			aethos.settings.pageName = pageWrap.getAttribute("data-page") || null;
-			aethos.settings.pageLoader =
-				pageWrap.getAttribute("data-page-loader") === "true";
+			// Retrieve and store the aethos-page-bg, aethos-page, and aethos-page-loader attributes
 			aethos.settings.pageWrap = pageWrap;
+			aethos.settings.pageBg = pageWrap.getAttribute("aethos-page-bg") || null;
+			aethos.settings.pageName =
+				pageWrap.getAttribute("aethos-page-name") || null;
+			aethos.settings.pageLoader =
+				pageWrap.getAttribute("aethos-page-loader") || null;
+			aethos.settings.destinationSlug =
+				pageWrap.getAttribute("aethos-destination-slug") || null;
+			aethos.settings.destinationStatus =
+				pageWrap.getAttribute("aethos-destination-status") || null;
 
 			// Log the settings if debug mode is on
 			aethos.log(`Page settings loaded: ${JSON.stringify(aethos.settings)}`);
@@ -1631,9 +1636,9 @@ function main() {
 	};
 
 	aethos.functions.loadVideos = function (
-		mediaSelector = '[data-has-video="true"]', // parent media element that contains the video
+		mediaSelector = '[aethos-has-video="true"]', // parent media element that contains the video
 		vimeoSelector = ".video-cover", // div we are loading vimeo into
-		idAttr = "data-aethos-vimeo-id", // attr with the vimeo id. attr must be on media element
+		idAttr = "aethos-vimeo-id", // attr with the vimeo id. attr must be on media element
 		imgSelector = ".img-cover" // fallback / thumbnail imgs
 	) {
 		const mediaEls = document.querySelectorAll(mediaSelector);
@@ -1751,6 +1756,272 @@ function main() {
 		}
 	};
 
+	// Define the buildDestinationNav function within the aethos.functions object
+	aethos.functions.buildDestinationNav = async function () {
+		// Helper function to fetch the destination-specific nav
+		async function fetchDestinationNav(destinationSlug) {
+			try {
+				console.log(`Fetching navigation for destination: ${destinationSlug}`);
+
+				// Fetch the destination-specific page
+				const response = await fetch(`/destinations-data/${destinationSlug}`);
+				if (!response.ok)
+					throw new Error("Failed to fetch the destination nav");
+
+				// Parse the response HTML to extract the .dest-nav element
+				const responseText = await response.text();
+				const tempDiv = document.createElement("div");
+				tempDiv.innerHTML = responseText;
+				const fetchedNav = tempDiv.querySelector(".dest-nav");
+
+				if (!fetchedNav)
+					throw new Error(".dest-nav element not found in the fetched page");
+
+				console.log(
+					`Successfully fetched navigation for destination: ${destinationSlug}`
+				);
+				return fetchedNav;
+			} catch (error) {
+				console.error(`Error fetching navigation: ${error.message}`);
+				return null;
+			}
+		}
+
+		// Main function to handle nav fetching, inserting, and processing
+		async function setupNavigation() {
+			return new Promise(async (resolve, reject) => {
+				try {
+					// Retrieve the destination slug from aethos.settings
+					const destinationSlug = aethos.settings.destinationSlug;
+
+					if (!destinationSlug) {
+						console.warn("Destination slug not found in aethos.settings");
+						return reject("Destination slug not found");
+					}
+
+					console.log(
+						`Starting navigation setup for destination: ${destinationSlug}`
+					);
+
+					// Fetch the destination-specific navigation
+					const navElement = await fetchDestinationNav(destinationSlug);
+
+					if (!navElement) {
+						console.warn("Failed to retrieve the navigation");
+						return reject("Failed to retrieve navigation");
+					}
+
+					// Insert the fetched nav into the .header element
+					const headerElement = document.querySelector(".header");
+					if (!headerElement) {
+						console.warn(".header element not found on the page");
+						return reject(".header element not found");
+					}
+
+					// Keep the nav hidden during processing
+					console.log(
+						"Inserting navigation into the .header element and keeping it hidden during processing"
+					);
+					navElement.style.display = "none";
+					headerElement.appendChild(navElement);
+
+					// Process the navigation
+					console.log("Processing the navigation structure");
+					processNavigation(navElement);
+
+					// Show the navigation after processing
+					navElement.style.display = "";
+					console.log(
+						"Navigation processing complete. Navigation is now visible."
+					);
+
+					// Resolve the promise when done
+					resolve();
+				} catch (error) {
+					console.error(`Error during navigation setup: ${error}`);
+					reject(error);
+				}
+			});
+		}
+
+		// Function to process the navigation
+		function processNavigation(navElement) {
+			// Select all nav items within the fetched .dest-nav element
+			const navItems = Array.from(
+				navElement.querySelectorAll(".dest-nav_item")
+			);
+
+			// Separate primary and secondary items
+			const primaryItems = [];
+			const secondaryItems = [];
+
+			navItems.forEach((item) => {
+				const level = item.getAttribute("aethos-nav-level");
+				const parentId = item.getAttribute("aethos-nav-parent-id");
+
+				if (!level) {
+					// If `aethos-nav-level` is blank, it's a primary item
+					primaryItems.push({
+						element: item,
+						id: item.getAttribute("aethos-nav-id"),
+					});
+				} else if (level === "secondary") {
+					// If `aethos-nav-level` is 'secondary', it's a secondary item
+					secondaryItems.push({
+						element: item,
+						parentId: parentId || null, // Set to null if empty
+					});
+				}
+			});
+
+			// Reference to the .dest-nav_bottom container within the fetched nav
+			const bottomContainer = navElement.querySelector(".dest-nav_bottom");
+
+			if (!bottomContainer) {
+				console.warn(
+					".dest-nav_bottom element not found within the fetched nav"
+				);
+				return;
+			}
+
+			// Process primary items
+			primaryItems.forEach((primary) => {
+				// Create a container for the secondary links related to this primary
+				const childContainer = document.createElement("div");
+				childContainer.classList.add("dest-nav_list");
+
+				// Assign the primary ID to the child container
+				if (primary.id) {
+					childContainer.setAttribute("aethos-nav-id", primary.id);
+					console.log(
+						`Creating child container for primary item with ID: ${primary.id}`
+					);
+				}
+
+				// Append secondary items that belong to this primary
+				secondaryItems.forEach((secondary) => {
+					if (secondary.parentId === primary.id) {
+						console.log(
+							`Appending secondary item to primary item with ID: ${primary.id}`
+						);
+						childContainer.appendChild(secondary.element);
+					}
+				});
+
+				// Append the child container to the .dest-nav_bottom if it has children
+				if (childContainer.children.length > 0) {
+					bottomContainer.appendChild(childContainer);
+					console.log(
+						`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
+					);
+				}
+			});
+
+			// Hide any secondary items with no parent or invalid parent reference
+			secondaryItems.forEach((secondary) => {
+				if (
+					!secondary.parentId ||
+					!primaryItems.some((primary) => primary.id === secondary.parentId)
+				) {
+					// Hide the orphaned secondary link
+					secondary.element.style.display = "none";
+					console.warn(
+						`Hiding orphaned secondary item with parent ID: ${secondary.parentId}`
+					);
+				}
+			});
+		}
+
+		// Function to add animation to the navigation
+		function addNavigationAnimation() {
+			const menus = document.querySelectorAll(".dest-nav_list");
+
+			menus.forEach((menu) => {
+				menu.addEventListener("mouseover", (event) => {
+					if (event.target.classList.contains("link-cover")) {
+						console.log("offset: " + event.target.offsetLeft);
+
+						const menuRect = menu.getBoundingClientRect();
+						const menuOffsetX = menuRect.left;
+
+						const rect = event.target.getBoundingClientRect();
+						const offsetX = rect.left; // Position relative to the viewport
+
+						menu.style.setProperty(
+							"--dest-nav-underline-width",
+							`${event.target.offsetWidth}px`
+						);
+						// menu.style.setProperty(
+						// 	"--dest-nav-underline-offset-x",
+						// 	`${event.target.offsetLeft}px`
+						// );
+
+						menu.style.setProperty(
+							"--dest-nav-underline-offset-x",
+							`${offsetX - menuOffsetX}px`
+						);
+					}
+				});
+
+				menu.addEventListener("mouseleave", () =>
+					menu.style.setProperty("--dest-nav-underline-width", "0")
+				);
+			});
+		}
+
+		// Run the setup and animation functions sequentially
+		try {
+			// Wait for the navigation setup to complete
+			await setupNavigation();
+
+			// Now add the animations
+			addNavigationAnimation();
+		} catch (error) {
+			console.error("Error setting up the destination navigation:", error);
+		}
+	};
+
+	aethos.functions.updateThemeOnStaticPages = function () {
+		// Function to apply theme based on destination slug in URL
+
+		// 1. Get the destination name from the URL
+		const urlParts = window.location.pathname.split("/");
+		const destinationName = urlParts[urlParts.indexOf("destinations") + 1]; // Assuming the URL has /destinations/<name>/
+
+		if (!destinationName) {
+			console.error("Destination name not found in URL.");
+			return;
+		}
+
+		// 2. Get the hidden .dest-data_item element that has the matching data-dest-slug attribute
+		const destinationElement = document.querySelector(
+			`.dest-data_item[aethos-destination-slug="${destinationName}"]`
+		);
+
+		if (!destinationElement) {
+			console.error("Matching destination element not found.");
+			return;
+		}
+
+		// 3. Get the theme from the data-theme attribute of the destination element
+		const theme = destinationElement.getAttribute("aethos-theme");
+
+		if (!theme) {
+			console.error("Theme not found on the destination element.");
+			return;
+		}
+
+		// 4. Get the .page-wrap element and update its data-theme attribute
+		const pageWrap = document.querySelector(".page-wrap");
+
+		if (!pageWrap) {
+			console.error(".page-wrap element not found.");
+			return;
+		}
+
+		pageWrap.setAttribute("aethos-theme", theme);
+	};
+
 	/* call functions */
 	aethos.functions.nav();
 	aethos.anim.splitText();
@@ -1775,6 +2046,8 @@ function main() {
 	aethos.functions.loadVibes();
 	aethos.functions.addExperienceFilterLinks();
 	aethos.functions.formatDates();
+	aethos.functions.buildDestinationNav();
+	aethos.functions.updateThemeOnStaticPages();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
