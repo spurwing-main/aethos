@@ -2044,6 +2044,9 @@ function main() {
 			// Wait for the navigation setup to complete
 			await setupNavigation();
 
+			// refresh scrolltrigger pagewide
+			ScrollTrigger.refresh();
+
 			// Now add the animations
 			addNavigationAnimation();
 		} catch (error) {
@@ -2092,70 +2095,137 @@ function main() {
 		pageWrap.setAttribute("aethos-theme", theme);
 	};
 
-	/* load room card carousels on room landing page */
-	aethos.functions.loadRoomCarousels = function () {
-		document.querySelectorAll(".room-card").forEach((roomCard) => {
-			const slug = roomCard.getAttribute("aethos-room-slug");
-			if (slug) {
-				const carouselWrap = roomCard.querySelector(".room-card_carousel-wrap");
+	aethos.functions.loadCMSCarousels = function () {
+		document.querySelectorAll(".cms-carousel").forEach((carousel) => {
+			const slug = carousel.getAttribute("aethos-cms-carousel-slug");
+			const path = carousel.getAttribute("aethos-cms-carousel-path");
+			const maxSlides =
+				parseInt(carousel.getAttribute("aethos-cms-carousel-max")) || 8;
+
+			if (slug && path) {
+				const carouselWrap = carousel.querySelector(".cms-carousel_wrap");
 
 				if (carouselWrap) {
 					ScrollTrigger.create({
-						trigger: roomCard,
-						start: "top 10%", // Trigger when the top of the card is at 75% of the viewport height
+						trigger: carousel,
+						start: "top 10%",
 						onEnter: () => {
-							const fetchUrl = `/rooms/${slug}`;
+							const fetchUrl = `${path}/${slug}`;
 
-							// Fetch the carousel content
 							fetch(fetchUrl)
 								.then((response) => {
 									if (response.ok) return response.text();
 									throw new Error("Network response was not ok.");
 								})
 								.then((html) => {
-									console.log(slug);
-									// Parse the fetched HTML
 									const parser = new DOMParser();
 									const doc = parser.parseFromString(html, "text/html");
 
-									// Find the carousel element
-									const carouselElement = doc.querySelector(".card-carousel");
+									let carouselInner = doc.querySelector(
+										".page-resources .cms-carousel_inner"
+									);
 
-									if (carouselElement) {
-										// Inject the carousel content into the wrap
-										carouselWrap.appendChild(carouselElement);
+									if (carouselInner) {
+										carouselInner = carouselWrap.appendChild(carouselInner);
+										carouselInner
+											.querySelectorAll("script[type='x-wf-template']")
+											.forEach((script) => script.remove());
 
-										console.log(carouselElement);
+										// Select slides and filter based on maxSlides
+										const slides = Array.from(
+											carouselInner.querySelectorAll(".cms-carousel_list-item")
+										);
+										slides.slice(maxSlides).forEach((slide) => slide.remove()); // Remove unwanted slides
 
-										// Initialize Splide.JS
-										new Splide(carouselElement, {
-											type: "loop",
-											perPage: 1,
-											perMove: 1,
-											autoplay: false,
-											pagination: false,
-											arrows: false,
-											drag: true,
-										}).mount();
-										aethos.log("Room carousel loaded");
+										const slideCount = Math.min(slides.length, maxSlides);
+
+										// Traverse up to find the room-card and retrieve pagination and counters within it
+										const roomCard = carousel.closest(".room-card");
+										const pagination = roomCard
+											? roomCard.querySelector(".room-card_pagination")
+											: null;
+										const counters = roomCard
+											? roomCard.querySelector(".room-card_counters")
+											: null;
+										let dots, activeCounter;
+
+										// Skip Splide initialization for single-slide carousels
+										if (slideCount < 2) {
+											hidePagination(pagination, counters);
+											return;
+										}
+
+										// Initialize pagination and counters if they exist
+										if (pagination)
+											dots = setUpPagination(pagination, slideCount);
+										if (counters)
+											activeCounter = setUpCounters(counters, slideCount);
+
+										const splideEl = carouselInner.classList.contains("splide")
+											? carouselInner
+											: carouselInner.querySelector(".splide");
+
+										if (splideEl) {
+											const splideInstance = new Splide(splideEl, {
+												type: "loop",
+												perPage: 1,
+												perMove: 1,
+												autoplay: false,
+												pagination: false,
+												arrows: false,
+												drag: true,
+											}).mount();
+
+											splideInstance.on("move", (newIndex) => {
+												if (activeCounter)
+													activeCounter.innerHTML = newIndex + 1;
+												dots.forEach((dot, index) => {
+													dot.classList.toggle("is-active", index === newIndex);
+												});
+											});
+
+											aethos.log("Carousel loaded");
+										}
 									}
 								})
 								.catch((error) => {
 									console.error("Error fetching the carousel:", error);
 								});
-
-							// Disable the ScrollTrigger once it has been triggered
-							// ScrollTrigger.kill();
 						},
-						once: true, // Ensures the ScrollTrigger only fires once
+						once: true,
 					});
 				}
 			}
+
+			function setUpPagination(pagination, slideCount) {
+				pagination.innerHTML = "";
+				const dots = [];
+				for (let i = 0; i < slideCount; i++) {
+					const dot = document.createElement("div");
+					dot.classList.add("room-card_pagination-dot");
+					pagination.appendChild(dot);
+					dots.push(dot);
+				}
+				return dots;
+			}
+
+			function setUpCounters(counters, slideCount) {
+				const totalCounter = counters.querySelector(
+					".room-card_counter-item.is-total"
+				);
+				const activeCounter = counters.querySelector(
+					".room-card_counter-item.is-active"
+				);
+				if (totalCounter) totalCounter.innerHTML = slideCount;
+				return activeCounter;
+			}
+
+			function hidePagination(pagination, counters) {
+				if (pagination) pagination.style.display = "none";
+				if (counters) counters.style.display = "none";
+			}
 		});
 	};
-
-	// Call the function when needed
-	aethos.functions.loadRoomCarousels();
 
 	/* call functions */
 	aethos.functions.nav();
@@ -2183,10 +2253,11 @@ function main() {
 	aethos.functions.formatDates();
 	aethos.functions.buildDestinationNav();
 	aethos.functions.updateThemeOnStaticPages();
-	aethos.functions.loadRoomCarousels();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
 
 	// aethos.functions.loadVideos();
+
+	aethos.functions.loadCMSCarousels();
 }
