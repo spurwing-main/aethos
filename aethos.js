@@ -31,6 +31,63 @@ function main() {
 	};
 	aethos.functions.getPageSettings();
 
+	/* update any relative destination links */
+	aethos.functions.updateRelativeLinks = function () {
+		try {
+			// Ensure destinationSlug is available in settings
+			if (!aethos || !aethos.settings || !aethos.settings.destinationSlug) {
+				throw new Error("Destination slug not found in aethos settings.");
+			}
+
+			const destinationSlug = aethos.settings.destinationSlug;
+
+			// Select all links with the attribute `aethos-relative-link` and href starting with "./" or "http://./"
+			const relativeLinks = document.querySelectorAll(
+				'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"]'
+			);
+
+			if (relativeLinks.length === 0) {
+				console.warn(
+					"No links with aethos-relative-link attribute and './' or 'http://./' href found."
+				);
+			}
+
+			relativeLinks.forEach((link) => {
+				try {
+					// Ensure the href attribute is available
+					const originalHref = link.getAttribute("href");
+					if (!originalHref) {
+						throw new Error("Href attribute is missing on one of the links.");
+					}
+
+					// Determine relative path by handling both "./" and "http://./" cases
+					const relativePath = originalHref.startsWith("http://./")
+						? originalHref.substring(8) // Removes "http://./"
+						: originalHref.substring(2); // Removes "./"
+
+					// Construct the new href with the destination slug
+					const newHref = `/destinations/${destinationSlug}/${relativePath.replace(
+						/^\/+/,
+						""
+					)}`;
+
+					// Update the href of the link
+					link.setAttribute("href", newHref);
+
+					// Log success message for each updated link
+					console.log(
+						`Link updated successfully: ${originalHref} ➔ ${newHref}`
+					);
+				} catch (error) {
+					console.error("Error processing link:", link, error.message);
+				}
+			});
+		} catch (error) {
+			console.error("Failed to update destination links:", error.message);
+		}
+	};
+	aethos.functions.updateRelativeLinks();
+
 	/* helper to get a custom prop value */
 	aethos.helpers.getProp = function (
 		propName,
@@ -1791,41 +1848,52 @@ function main() {
 		async function setupNavigation() {
 			return new Promise(async (resolve, reject) => {
 				try {
-					// Retrieve the destination slug from aethos.settings
-					const destinationSlug = aethos.settings.destinationSlug;
-
-					if (!destinationSlug) {
-						console.warn("Destination slug not found in aethos.settings");
-						return reject("Destination slug not found");
-					}
-
-					console.log(
-						`Starting navigation setup for destination: ${destinationSlug}`
+					// Check if navigation already exists on the page
+					let navElement = document.querySelector(
+						".header .dest-nav-wrap .dest-nav"
 					);
 
-					// Fetch the destination-specific navigation
-					const navElement = await fetchDestinationNav(destinationSlug);
+					if (navElement) {
+						console.log(
+							"Navigation already exists on the page. Skipping fetch."
+						);
+					} else {
+						// Retrieve the destination slug from aethos.settings
+						const destinationSlug = aethos.settings.destinationSlug;
 
-					if (!navElement) {
-						console.warn("Failed to retrieve the navigation");
-						return reject("Failed to retrieve navigation");
+						if (!destinationSlug) {
+							console.warn("Destination slug not found in aethos.settings");
+							return reject("Destination slug not found");
+						}
+
+						console.log(
+							`Starting navigation setup for destination: ${destinationSlug}`
+						);
+
+						// Fetch the destination-specific navigation
+						navElement = await fetchDestinationNav(destinationSlug);
+
+						if (!navElement) {
+							console.warn("Failed to retrieve the navigation");
+							return reject("Failed to retrieve navigation");
+						}
+
+						// Insert the fetched nav into the .header element
+						const headerElement = document.querySelector(
+							".header .dest-nav-wrap"
+						);
+						if (!headerElement) {
+							console.warn(".header element not found on the page");
+							return reject(".header element not found");
+						}
+
+						// Keep the nav hidden during processing
+						console.log(
+							"Inserting navigation into the .header element and keeping it hidden during processing"
+						);
+						navElement.style.display = "none";
+						headerElement.appendChild(navElement);
 					}
-
-					// Insert the fetched nav into the .header element
-					const headerElement = document.querySelector(
-						".header .dest-nav-wrap"
-					);
-					if (!headerElement) {
-						console.warn(".header element not found on the page");
-						return reject(".header element not found");
-					}
-
-					// Keep the nav hidden during processing
-					console.log(
-						"Inserting navigation into the .header element and keeping it hidden during processing"
-					);
-					navElement.style.display = "none";
-					headerElement.appendChild(navElement);
 
 					// Process the navigation
 					console.log("Processing the navigation structure");
@@ -2024,6 +2092,71 @@ function main() {
 		pageWrap.setAttribute("aethos-theme", theme);
 	};
 
+	/* load room card carousels on room landing page */
+	aethos.functions.loadRoomCarousels = function () {
+		document.querySelectorAll(".room-card").forEach((roomCard) => {
+			const slug = roomCard.getAttribute("aethos-room-slug");
+			if (slug) {
+				const carouselWrap = roomCard.querySelector(".room-card_carousel-wrap");
+
+				if (carouselWrap) {
+					ScrollTrigger.create({
+						trigger: roomCard,
+						start: "top 10%", // Trigger when the top of the card is at 75% of the viewport height
+						onEnter: () => {
+							const fetchUrl = `/rooms/${slug}`;
+
+							// Fetch the carousel content
+							fetch(fetchUrl)
+								.then((response) => {
+									if (response.ok) return response.text();
+									throw new Error("Network response was not ok.");
+								})
+								.then((html) => {
+									console.log(slug);
+									// Parse the fetched HTML
+									const parser = new DOMParser();
+									const doc = parser.parseFromString(html, "text/html");
+
+									// Find the carousel element
+									const carouselElement = doc.querySelector(".card-carousel");
+
+									if (carouselElement) {
+										// Inject the carousel content into the wrap
+										carouselWrap.appendChild(carouselElement);
+
+										console.log(carouselElement);
+
+										// Initialize Splide.JS
+										new Splide(carouselElement, {
+											type: "loop",
+											perPage: 1,
+											perMove: 1,
+											autoplay: false,
+											pagination: false,
+											arrows: false,
+											drag: true,
+										}).mount();
+										aethos.log("Room carousel loaded");
+									}
+								})
+								.catch((error) => {
+									console.error("Error fetching the carousel:", error);
+								});
+
+							// Disable the ScrollTrigger once it has been triggered
+							// ScrollTrigger.kill();
+						},
+						once: true, // Ensures the ScrollTrigger only fires once
+					});
+				}
+			}
+		});
+	};
+
+	// Call the function when needed
+	aethos.functions.loadRoomCarousels();
+
 	/* call functions */
 	aethos.functions.nav();
 	aethos.anim.splitText();
@@ -2050,6 +2183,7 @@ function main() {
 	aethos.functions.formatDates();
 	aethos.functions.buildDestinationNav();
 	aethos.functions.updateThemeOnStaticPages();
+	aethos.functions.loadRoomCarousels();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
