@@ -5,6 +5,60 @@ function main() {
 	aethos.splides = {};
 	aethos.functions = {};
 	aethos.settings = {};
+	aethos.map = aethos.map || {}; // Ensure aethos.map exists
+
+	// Get themes
+	(function () {
+		aethos.themes = aethos.themes || {};
+
+		// City Theme
+		aethos.themes.city = {
+			dark: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--dark")
+				.trim(),
+			medium: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--medium")
+				.trim(),
+			light: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--light")
+				.trim(),
+			background: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--bg")
+				.trim(),
+		};
+
+		// Coast Theme
+		aethos.themes.coast = {
+			dark: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--dark")
+				.trim(),
+			medium: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--medium")
+				.trim(),
+			light: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--light")
+				.trim(),
+			background: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--bg")
+				.trim(),
+		};
+
+		// Country Theme
+		aethos.themes.country = {
+			dark: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--dark")
+				.trim(),
+			medium: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--medium")
+				.trim(),
+			light: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--light")
+				.trim(),
+			background: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--bg")
+				.trim(),
+		};
+	})();
 
 	/* load aethos settings */
 	aethos.functions.getPageSettings = function () {
@@ -1462,82 +1516,147 @@ function main() {
 		});
 	};
 
-	/* offices map */
-	aethos.anim.map = function () {
-		const mapData = {};
-		mapData.accessToken =
+	aethos.map.init = function () {
+		// Store map data within aethos.map.data
+		aethos.map.accessToken =
 			"pk.eyJ1Ijoic3B1cndpbmctc3AiLCJhIjoiY20wcGFkaDN5MDNkMTJpcXhldHVlZG9mZyJ9.ZcEDjMqfRf412QgW9OiSCw";
-		mapData.mapEl = document.querySelector(".map");
-		if (!mapData.mapEl) {
+		aethos.map.mapElement = document.querySelector(".map");
+		aethos.map.destinations = [];
+
+		// return if no map on page
+		if (!aethos.map.mapElement) {
 			return;
 		}
-		mapData.offices = [];
 
-		// Function to add marker pins
-		function addMarkers() {
-			document.querySelectorAll(".office").forEach(function (officeEl) {
-				var office = {}; // Using a different variable name here
+		aethos.log("Map found, building...");
 
-				// Fetch office data
-				const lat = parseFloat(officeEl.getAttribute("data-lat"));
-				const long = parseFloat(officeEl.getAttribute("data-long"));
+		// define marker group and add to map
+		var markerLayer = new L.featureGroup();
 
-				if (isNaN(lat) || isNaN(long)) {
-					console.error(
-						`Invalid lat/long for office: ${officeEl.textContent.trim()}`
-					);
-					return; // Skip this office if lat/long is not valid
-				}
-
-				office.lat = lat;
-				office.long = long;
-
-				mapData.offices.push(office);
-
-				// Add marker
-				var marker = L.marker([office.lat, office.long]).addTo(map);
-			});
+		// Collect destination elements
+		const destinations = document.querySelectorAll(".map-data");
+		if (destinations.length === 0) {
+			aethos.log("No destination data found.");
+			return;
 		}
 
-		// Initialize the map (without setting view yet)
-		var map = L.map(mapData.mapEl, {
-			attributionControl: false,
-			scrollWheelZoom: false,
+		// Add markers and tooltips
+		destinations.forEach((destEl) => {
+			const destination = {};
+			destination.lat = parseFloat(destEl.getAttribute("aethos-dest-lat"));
+			destination.long = parseFloat(destEl.getAttribute("aethos-dest-long"));
+			destination.name = destEl.getAttribute("aethos-dest-name");
+			destination.address = destEl.getAttribute("aethos-dest-address");
+			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
+			destination.theme = destEl.getAttribute("aethos-dest-theme");
+			destination.themeColor =
+				aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
+
+			// if (isNaN(destination.lat) || isNaN(destination.long)) {
+			// 	console.error(`Invalid lat/long for destination: ${destination.name}`);
+			// 	return;
+			// }
+			if (!destination.lat || !destination.long) {
+				return;
+			}
+
+			// Create and add custom circle marker
+			destination.marker = L.circleMarker([destination.lat, destination.long], {
+				radius: 8,
+				color: destination.themeColor,
+				fillColor: destination.themeColor,
+				fillOpacity: 1,
+			}).addTo(markerLayer);
+
+			// Use the createPopupContent function to generate the HTML for each pop-up
+			destination.popupContent = createPopupContent({
+				imageUrl: destination.imgSrc,
+				address: destination.address,
+				name: destination.name,
+				linkUrl: "/destinations/" + destination.name + "/contact",
+			});
+
+			// Bind the pop-up to the marker
+			destination.marker.bindPopup(destination.popupContent, { maxWidth: 300 });
+
+			// // Tooltip functionality on marker click
+			// marker.on("click", () => {
+			// 	const tooltip = document.querySelector(".dest-map_tooltip");
+			// 	if (tooltip) {
+			// 		tooltip.querySelector(".tooltip-name").textContent = destination.name;
+			// 		tooltip.querySelector(".tooltip-address").textContent =
+			// 			destination.address;
+			// 		tooltip.querySelector(".tooltip-img").src = destination.imgSrc;
+
+			// 		// Position the tooltip near the marker
+			// 		tooltip.style.left = `${marker._point.x}px`;
+			// 		tooltip.style.top = `${marker._point.y}px`;
+			// 		tooltip.style("display", "block"); // Show tooltip
+			// 	}
+			// });
+
+			aethos.map.destinations.push(destination);
+			console.log(destination);
 		});
 
-		// Add Mapbox tile layer to Leaflet
-		L.tileLayer(
+		// Define Mapbox tile layer
+		var tileLayer = new L.tileLayer(
 			"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
 			{
-				id: "spurwing-sp/cm0pfyq2r00je01pb5lf74zb3",
-				accessToken: mapData.accessToken,
+				id: "ameliaben/cm1kugjjw00h601qv2mm5fr47",
+				accessToken: aethos.map.accessToken,
 			}
-		).addTo(map);
+		);
 
-		// Call the function to add pins for offices and set default view
-		addMarkers();
-		map.setView([mapData.offices[0].lat, mapData.offices[0].long], 12);
-
-		// Add click event for each office in the list
-		document.querySelectorAll(".office").forEach(function (officeEl) {
-			officeEl.addEventListener("click", function () {
-				var lat = parseFloat(officeEl.getAttribute("data-lat"));
-				var long = parseFloat(officeEl.getAttribute("data-long"));
-
-				if (isNaN(lat) || isNaN(long)) {
-					console.error(
-						`Invalid lat/long for office: ${officeEl.textContent.trim()}`
-					);
-					return;
-				}
-
-				// Pan to the selected office with easing
-				map.flyTo([lat, long], 12, {
-					animate: true,
-					duration: 1.5, // seconds
-				});
-			});
+		// Initialize the map
+		aethos.map.map = L.map(aethos.map.mapElement, {
+			attributionControl: false,
+			scrollWheelZoom: false,
+			center: [0, 0],
+			zoom: 0,
+			layers: [tileLayer, markerLayer],
 		});
+
+		// // add markers to map
+		// map.addLayer(markers);
+		// fit map to markers
+		aethos.map.map.fitBounds(markerLayer.getBounds());
+
+		// Set initial view based on the first destination
+		// const firstDest = destinations[0];
+		// if (firstDest) {
+		// 	const initialLat = parseFloat(firstDest.getAttribute("aethos-dest-lat"));
+		// 	const initialLong = parseFloat(
+		// 		firstDest.getAttribute("aethos-dest-long")
+		// 	);
+		// 	aethos.map.data.map.setView([initialLat, initialLong], 12);
+		// } else {
+		// aethos.map.map.setView([0, 0], 2); // Default fallback view
+		// }
+
+		function createPopupContent({ imageUrl, address, name, linkUrl }) {
+			return `
+				<div class="popup">
+					<div class="popup_media">
+						<img src="${imageUrl}" alt="${name}" class="img-cover">
+					</div>
+					<div class="popup_content">
+						<div class="popup_header">
+							<div class="label-heading">${name}</div>
+						</div>
+						<div class="popup_body">
+							<div class="body-xxs">${address}</div>
+						</div>
+						<a class="popup_footer" href="${linkUrl}" aria-label="Contact Aethos ${name}">
+							<div class="button-text-xs">Contact</div>
+							<div class="popup_icon">
+								<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24" fill="none" class="icon"><path d="M20.9939 11.9938L13.5689 19.9876L13.0001 19.3752L19.8563 11.9938L13.0001 4.61234L13.5689 4L20.9939 11.9938Z" fill="currentColor"></path><path d="M20.547 11.5574L20.5471 11.5946V12.3879L3 12.3878L3.00001 11.5574L20.547 11.5574Z" fill="currentColor"></path></svg>
+							</div>
+						</a>
+					</div>
+				</div>
+			`;
+		}
 	};
 
 	aethos.functions.updateCopyrightYear = function () {
@@ -1813,7 +1932,6 @@ function main() {
 		}
 	};
 
-	// Define the buildDestinationNav function within the aethos.functions object
 	aethos.functions.buildDestinationNav = async function () {
 		// Helper function to fetch the destination-specific nav
 		async function fetchDestinationNav(destinationSlug) {
@@ -1844,7 +1962,6 @@ function main() {
 			}
 		}
 
-		// Main function to handle nav fetching, inserting, and processing
 		async function setupNavigation() {
 			return new Promise(async (resolve, reject) => {
 				try {
@@ -1854,7 +1971,7 @@ function main() {
 					);
 
 					if (navElement) {
-						console.log(
+						aethos.log(
 							"Navigation already exists on the page. Skipping fetch."
 						);
 					} else {
@@ -1862,11 +1979,11 @@ function main() {
 						const destinationSlug = aethos.settings.destinationSlug;
 
 						if (!destinationSlug) {
-							console.warn("Destination slug not found in aethos.settings");
+							aethos.log("Destination slug not found in aethos.settings");
 							return reject("Destination slug not found");
 						}
 
-						console.log(
+						aethos.log(
 							`Starting navigation setup for destination: ${destinationSlug}`
 						);
 
@@ -1914,7 +2031,6 @@ function main() {
 			});
 		}
 
-		// Function to process the navigation
 		function processNavigation(navElement) {
 			// Select all nav items within the fetched .dest-nav element
 			const navItems = Array.from(
@@ -2002,7 +2118,6 @@ function main() {
 			});
 		}
 
-		// Function to add animation to the navigation
 		function addNavigationAnimation() {
 			const menus = document.querySelectorAll(".dest-nav_list");
 
@@ -2062,7 +2177,7 @@ function main() {
 		const destinationName = urlParts[urlParts.indexOf("destinations") + 1]; // Assuming the URL has /destinations/<name>/
 
 		if (!destinationName) {
-			console.error("Destination name not found in URL.");
+			aethos.log("Destination name not found in URL.");
 			return;
 		}
 
@@ -2072,7 +2187,7 @@ function main() {
 		);
 
 		if (!destinationElement) {
-			console.error("Matching destination element not found.");
+			aethos.log("Matching destination element not found.");
 			return;
 		}
 
@@ -2080,7 +2195,7 @@ function main() {
 		const theme = destinationElement.getAttribute("aethos-theme");
 
 		if (!theme) {
-			console.error("Theme not found on the destination element.");
+			aethos.log("Theme not found on the destination element.");
 			return;
 		}
 
@@ -2088,7 +2203,7 @@ function main() {
 		const pageWrap = document.querySelector(".page-wrap");
 
 		if (!pageWrap) {
-			console.error(".page-wrap element not found.");
+			aethos.log(".page-wrap element not found.");
 			return;
 		}
 
@@ -2229,6 +2344,8 @@ function main() {
 
 	/* call functions */
 	aethos.functions.nav();
+	aethos.functions.buildDestinationNav();
+
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
@@ -2246,12 +2363,11 @@ function main() {
 	aethos.anim.values();
 	aethos.anim.articleSticky();
 	aethos.anim.journalSticky();
-	aethos.anim.map();
+	aethos.map.init();
 	aethos.anim.loadHero();
 	aethos.functions.loadVibes();
 	aethos.functions.addExperienceFilterLinks();
 	aethos.functions.formatDates();
-	aethos.functions.buildDestinationNav();
 	aethos.functions.updateThemeOnStaticPages();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
