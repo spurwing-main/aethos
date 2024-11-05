@@ -199,23 +199,36 @@ function main() {
 
 	/* nav hide/show */
 	aethos.anim.navReveal = function () {
-		const navReveal = gsap
-			.from(".header", {
-				yPercent: -100,
-				paused: true,
-				duration: 0.5,
-			})
-			.progress(1);
+		// if we are on a non-destination page...
+		if (!aethos.settings.destinationSlug) {
+			const navReveal = gsap
+				.from(".header", {
+					yPercent: -100,
+					paused: true,
+					duration: 0.5,
+				})
+				.progress(1);
 
-		ScrollTrigger.create({
-			start: "top -1px",
-			end: "max",
-			pin: ".header",
-			// markers: true,
-			onUpdate: (self) => {
-				self.direction === -1 ? navReveal.play() : navReveal.reverse();
-			},
-		});
+			ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: ".header",
+				// markers: true,
+				onUpdate: (self) => {
+					self.direction === -1 ? navReveal.play() : navReveal.reverse();
+				},
+			});
+		} else {
+			ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: ".dest-header",
+				// markers: true,
+				// onUpdate: (self) => {
+				// 	self.direction === -1 ? navReveal.play() : navReveal.reverse();
+				// },
+			});
+		}
 	};
 
 	/* nav logo height anim INCOMPLETE */
@@ -1540,10 +1553,6 @@ function main() {
 			destination.themeColor =
 				aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
 
-			// if (isNaN(destination.lat) || isNaN(destination.long)) {
-			// 	console.error(`Invalid lat/long for destination: ${destination.name}`);
-			// 	return;
-			// }
 			if (!destination.lat || !destination.long) {
 				return;
 			}
@@ -1567,24 +1576,7 @@ function main() {
 			// Bind the pop-up to the marker
 			destination.marker.bindPopup(destination.popupContent, { maxWidth: 300 });
 
-			// // Tooltip functionality on marker click
-			// marker.on("click", () => {
-			// 	const tooltip = document.querySelector(".dest-map_tooltip");
-			// 	if (tooltip) {
-			// 		tooltip.querySelector(".tooltip-name").textContent = destination.name;
-			// 		tooltip.querySelector(".tooltip-address").textContent =
-			// 			destination.address;
-			// 		tooltip.querySelector(".tooltip-img").src = destination.imgSrc;
-
-			// 		// Position the tooltip near the marker
-			// 		tooltip.style.left = `${marker._point.x}px`;
-			// 		tooltip.style.top = `${marker._point.y}px`;
-			// 		tooltip.style("display", "block"); // Show tooltip
-			// 	}
-			// });
-
 			aethos.map.destinations.push(destination);
-			console.log(destination);
 		});
 
 		// Define Mapbox tile layer
@@ -1605,21 +1597,9 @@ function main() {
 			layers: [tileLayer, markerLayer],
 		});
 
-		// // add markers to map
-		// map.addLayer(markers);
 		// fit map to markers
 		aethos.map.map.fitBounds(markerLayer.getBounds());
 
-		// Set initial view based on the first destination
-		// const firstDest = destinations[0];
-		// if (firstDest) {
-		// 	const initialLat = parseFloat(firstDest.getAttribute("aethos-dest-lat"));
-		// 	const initialLong = parseFloat(
-		// 		firstDest.getAttribute("aethos-dest-long")
-		// 	);
-		// 	aethos.map.data.map.setView([initialLat, initialLong], 12);
-		// } else {
-		// aethos.map.map.setView([0, 0], 2); // Default fallback view
 		// }
 
 		function createPopupContent({ imageUrl, address, name, linkUrl }) {
@@ -1759,7 +1739,7 @@ function main() {
 		// When all fetch requests have completed, refresh the Finsweet filter
 		Promise.all(fetchPromises)
 			.then(() => {
-				console.log("All vibes loaded. Initializing Finsweet filter...");
+				aethos.log("All vibes loaded. Initializing Finsweet filter...");
 				window.fsAttributes.cmsfilter.init(); // Initialize the Finsweet filter
 			})
 			.catch((error) => {
@@ -1924,7 +1904,7 @@ function main() {
 		// Helper function to fetch the destination-specific nav
 		async function fetchDestinationNav(destinationSlug) {
 			try {
-				console.log(`Fetching navigation for destination: ${destinationSlug}`);
+				aethos.log(`Fetching navigation for destination: ${destinationSlug}`);
 
 				// Fetch the destination-specific page
 				const response = await fetch(`/destinations/${destinationSlug}`);
@@ -1940,7 +1920,7 @@ function main() {
 				if (!fetchedNav)
 					throw new Error(".dest-nav element not found in the fetched page");
 
-				console.log(
+				aethos.log(
 					`Successfully fetched navigation for destination: ${destinationSlug}`
 				);
 				return fetchedNav;
@@ -1993,20 +1973,18 @@ function main() {
 						}
 
 						// Keep the nav hidden during processing
-						console.log(
-							"Inserting navigation into the .header element and keeping it hidden during processing"
-						);
+
 						navElement.style.display = "none";
 						headerElement.appendChild(navElement);
 					}
 
 					// Process the navigation
-					console.log("Processing the navigation structure");
+					aethos.log("Processing the navigation structure");
 					processNavigation(navElement);
 
 					// Show the navigation after processing
 					navElement.style.display = "";
-					console.log(
+					aethos.log(
 						"Navigation processing complete. Navigation is now visible."
 					);
 
@@ -2067,7 +2045,7 @@ function main() {
 				// Assign the primary ID to the child container
 				if (primary.id) {
 					childContainer.setAttribute("aethos-nav-id", primary.id);
-					console.log(
+					aethos.log(
 						`Creating child container for primary item with ID: ${primary.id}`
 					);
 				}
@@ -2075,7 +2053,7 @@ function main() {
 				// Append secondary items that belong to this primary
 				secondaryItems.forEach((secondary) => {
 					if (secondary.parentId === primary.id) {
-						console.log(
+						aethos.log(
 							`Appending secondary item to primary item with ID: ${primary.id}`
 						);
 						childContainer.appendChild(secondary.element);
@@ -2085,7 +2063,7 @@ function main() {
 				// Append the child container to the .dest-nav_bottom if it has children
 				if (childContainer.children.length > 0) {
 					bottomContainer.appendChild(childContainer);
-					console.log(
+					aethos.log(
 						`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
 					);
 				}
