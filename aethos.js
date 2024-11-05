@@ -1939,7 +1939,7 @@ function main() {
 				console.log(`Fetching navigation for destination: ${destinationSlug}`);
 
 				// Fetch the destination-specific page
-				const response = await fetch(`/destinations-data/${destinationSlug}`);
+				const response = await fetch(`/destinations/${destinationSlug}`);
 				if (!response.ok)
 					throw new Error("Failed to fetch the destination nav");
 
