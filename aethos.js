@@ -1,16 +1,6 @@
 function main() {
-	/* set up global aethos obj */
-	aethos.anim = {};
-	aethos.helpers = {};
-	aethos.splides = {};
-	aethos.functions = {};
-	aethos.settings = {};
-	aethos.map = aethos.map || {}; // Ensure aethos.map exists
-
 	// Get themes
 	(function () {
-		aethos.themes = aethos.themes || {};
-
 		// City Theme
 		aethos.themes.city = {
 			dark: getComputedStyle(document.documentElement)
@@ -1997,7 +1987,7 @@ function main() {
 
 						// Insert the fetched nav into the .header element
 						const headerElement = document.querySelector(
-							".header .dest-nav-wrap"
+							".dest-header .dest-nav-wrap"
 						);
 						if (!headerElement) {
 							console.warn(".header element not found on the page");
@@ -2342,9 +2332,180 @@ function main() {
 		});
 	};
 
-	/* call functions */
+	aethos.functions.hiddenFormFields = function () {
+		// Hidden form fields
+		const userLanguage = navigator.language || navigator.userLanguage;
+		const languageFields = document.querySelectorAll(
+			'input[name="USERLANGUAGE"]'
+		);
+
+		languageFields.forEach((field) => {
+			field.value = userLanguage.substring(0, 2); // Optionally, only use the language code (e.g., 'en')
+		});
+	};
+
+	aethos.functions.clearSelect = function () {
+		// Clear select dropdown when clicking 'All' or similar
+		function clearSelect(identifier, value = "all") {
+			const selectElement = document.querySelector(
+				`select[fs-cmsfilter-field='${identifier}']`
+			);
+			const clearElement = document.querySelector(
+				`[fs-cmsfilter-clear='${identifier}']`
+			);
+
+			if (selectElement && clearElement) {
+				// Check the initial value
+				if (selectElement.value.toLowerCase() === value.toLowerCase()) {
+					clearElement.click();
+					selectElement.value = value;
+				}
+
+				// Add event listener to handle changes
+				selectElement.addEventListener("change", (event) => {
+					if (event.target.value.toLowerCase() === value.toLowerCase()) {
+						clearElement.click();
+						selectElement.value = value;
+					}
+				});
+			}
+		}
+	};
+
+	/* update things when CMS load fires */
+	aethos.functions.handleCMSFilter = function () {
+		window.fsAttributes = window.fsAttributes || [];
+		window.fsAttributes.push([
+			"cmsfilter",
+			(filterInstances) => {
+				aethos.log("cmsfilter Successfully loaded!");
+
+				// The callback passes a `filterInstances` array with all the `CMSFilters` instances on the page.
+				const [filterInstance] = filterInstances;
+				if (filterInstances) {
+				}
+				// The `renderitems` event runs whenever the list renders items after filtering.
+				filterInstance.listInstance.on("renderitems", (renderedItems) => {
+					aethos.helpers.refreshSticky(true); // hard refresh
+				});
+
+				aethos.functions.clearSelect("destination", "all");
+			},
+		]);
+	};
+
+	/* update things when CMS load fires */
+	aethos.functions.handleCMSLoad = function () {
+		window.fsAttributes = window.fsAttributes || [];
+		window.fsAttributes.push([
+			"cmsload",
+			(listInstances) => {
+				aethos.log("cmsload Successfully loaded!");
+
+				// The callback passes a `listInstances` array with all the `CMSList` instances on the page.
+				const [listInstance] = listInstances;
+				if (listInstances) {
+				}
+
+				// The `renderitems` event runs whenever the list renders items after switching pages.
+				listInstance.on("renderitems", (renderedItems) => {
+					aethos.helpers.refreshSticky(); // soft refresh - only process new items
+				});
+			},
+		]);
+	};
+
+	/* handle date formatting */
+	aethos.functions.handleDates = function () {
+		/* dates */
+		// "suffixMe" function definition
+		function suffixMe(num) {
+			// remainder operations dealing with edge case
+			const j = num % 10,
+				k = num % 100;
+			// return respective suffix accordingly
+			if (j == 1 && k != 11) {
+				return `${num}st`;
+			} else if (j == 2 && k != 12) {
+				return `${num}nd`;
+			} else if (j == 3 && k != 13) {
+				return `${num}rd`;
+			} else {
+				return `${num}th`;
+			}
+		}
+
+		// create array of numbers
+		const numbers = Array.from(
+			document.querySelectorAll("[data-date-suffix='true']")
+		);
+		// apply function definition for each number
+		numbers.forEach((number) => {
+			const suffix = suffixMe(Number(number.textContent));
+			// override original number with its newly return suffixed number
+			number.textContent = suffix;
+		});
+	};
+
+	/* handle destination subscribe form names */
+	aethos.functions.updateSubscribeFormName = function () {
+		// Find all forms with a data-destination attribute
+		const forms = document.querySelectorAll("form[data-destination]");
+
+		// Helper function to capitalize the first letter of a word
+		function capitalizeFirstLetter(string) {
+			return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+		}
+
+		forms.forEach(function (form) {
+			let destinationName = form.getAttribute("data-destination");
+
+			// Capitalize the destination name
+			destinationName = capitalizeFirstLetter(destinationName);
+
+			// Update data-name attribute in the required format
+			form.setAttribute(
+				"data-name",
+				`Destination Subscribe - ${destinationName}`
+			);
+		});
+	};
+
+	aethos.functions.hideEmptySections = function () {
+		$(".u-empty-section").has(".w-dyn-empty").css("display", "none");
+	};
+
+	/* assorted small patches */
+	aethos.functions.patches = function () {
+		/* patch for nav to allow back button to close Destinations dd correctly */
+		/* Based on https://www.sygnal.com/lessons/close-dropdown-menu-on-anchor-link-click */
+		$(".nav-dests_back").click(function () {
+			aethos.log("dest back btn click");
+			$(this).closest(".nav-link_dd-content").removeClass("w--open");
+			$(this).closest(".nav-link_dd .w-dropdown-toggle").removeClass("w--open");
+		});
+
+		/* patch for date input fields to show date when one is selected instead of placeholder */
+		$("input[type='date']").on("input", function () {
+			if ($(this).val().length > 0) {
+				$(this).removeClass("is-date-placeholder");
+			} else {
+				$(this).addClass("is-date-placeholder");
+			}
+		});
+	};
+
+	/* CALL FUNCTIONS */
 	aethos.functions.nav();
 	aethos.functions.buildDestinationNav();
+
+	aethos.functions.hiddenFormFields();
+	aethos.functions.clearSelect();
+
+	aethos.functions.handleCMSLoad();
+	aethos.functions.handleCMSFilter();
+	aethos.functions.handleDates();
+	aethos.functions.hideEmptySections();
 
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
@@ -2368,7 +2529,9 @@ function main() {
 	aethos.functions.loadVibes();
 	aethos.functions.addExperienceFilterLinks();
 	aethos.functions.formatDates();
-	aethos.functions.updateThemeOnStaticPages();
+	// aethos.functions.updateThemeOnStaticPages(); // not currently in use as no need yet
+
+	aethos.functions.updateSubscribeFormName();
 
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
@@ -2376,4 +2539,6 @@ function main() {
 	// aethos.functions.loadVideos();
 
 	aethos.functions.loadCMSCarousels();
+
+	aethos.functions.patches();
 }
