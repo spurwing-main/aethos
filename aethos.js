@@ -91,7 +91,7 @@ function main() {
 			);
 
 			if (relativeLinks.length === 0) {
-				console.warn(
+				aethos.log(
 					"No links with aethos-relative-link attribute and './' or 'http://./' href found."
 				);
 			}
@@ -119,9 +119,7 @@ function main() {
 					link.setAttribute("href", newHref);
 
 					// Log success message for each updated link
-					console.log(
-						`Link updated successfully: ${originalHref} ➔ ${newHref}`
-					);
+					aethos.log(`Link updated successfully: ${originalHref} ➔ ${newHref}`);
 				} catch (error) {
 					console.error("Error processing link:", link, error.message);
 				}
@@ -2382,14 +2380,18 @@ function main() {
 
 				// The callback passes a `filterInstances` array with all the `CMSFilters` instances on the page.
 				const [filterInstance] = filterInstances;
-				if (filterInstances) {
-				}
-				// The `renderitems` event runs whenever the list renders items after filtering.
-				filterInstance.listInstance.on("renderitems", (renderedItems) => {
-					aethos.helpers.refreshSticky(true); // hard refresh
-				});
 
-				aethos.functions.clearSelect("destination", "all");
+				// Check if filterInstance exists before proceeding
+				if (filterInstance) {
+					// The `renderitems` event runs whenever the list renders items after filtering.
+					filterInstance.listInstance.on("renderitems", (renderedItems) => {
+						aethos.helpers.refreshSticky(true); // hard refresh
+					});
+
+					aethos.functions.clearSelect("destination", "all");
+				} else {
+					aethos.log("No CMSFilters instances found on the page.");
+				}
 			},
 		]);
 	};
@@ -2404,13 +2406,16 @@ function main() {
 
 				// The callback passes a `listInstances` array with all the `CMSList` instances on the page.
 				const [listInstance] = listInstances;
-				if (listInstances) {
-				}
 
-				// The `renderitems` event runs whenever the list renders items after switching pages.
-				listInstance.on("renderitems", (renderedItems) => {
-					aethos.helpers.refreshSticky(); // soft refresh - only process new items
-				});
+				// Check if listInstance exists before proceeding
+				if (listInstance) {
+					// The `renderitems` event runs whenever the list renders items after switching pages.
+					listInstance.on("renderitems", (renderedItems) => {
+						aethos.helpers.refreshSticky(); // soft refresh - only process new items
+					});
+				} else {
+					aethos.log("No CMSList instances found on the page.");
+				}
 			},
 		]);
 	};
