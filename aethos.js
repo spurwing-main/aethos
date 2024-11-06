@@ -168,27 +168,29 @@ function main() {
 
 	/* add class to <body> when .nav is open. Used for animating nav burger icon, potentially for handling other elements down the line */
 	aethos.functions.nav = function () {
-		const mobileBreakpoint = 768; // Define the mobile breakpoint width (adjust as needed)
-
-		function toggleNavClass() {
-			if (document.body.classList.contains("nav-open")) {
-				document.body.classList.remove("nav-open");
-			} else {
-				document.body.classList.add("nav-open");
-			}
-		}
+		aethos.helpers.globalNavClass = "nav-open";
+		aethos.helpers.destNavClass = "dest-nav-open";
 
 		function handleResize() {
-			// Close the menu if the window width drops below the mobile breakpoint
-			if (window.innerWidth < mobileBreakpoint) {
-				document.body.classList.remove("nav-open");
+			// Close the menu if the window width drops below the breakpoint
+			if (window.innerWidth <= aethos.breakpoints.mbl) {
+				document.body.classList.remove(aethos.helpers.globalNavClass);
+			}
+			if (window.innerWidth <= aethos.breakpoints.tab) {
+				document.body.classList.remove(aethos.helpers.destNavClass);
 			}
 		}
 
-		// Add click event listener to the nav button
-		document
-			.querySelector(".nav-btn")
-			.addEventListener("click", toggleNavClass);
+		// Check for nav buttons before adding event listeners
+		const navBtn = document.querySelector(".nav-btn");
+		// const destNavBtn = document.querySelector(".dest-nav-btn");
+
+		if (navBtn)
+			navBtn.addEventListener("click", () =>
+				document.body.classList.toggle(aethos.helpers.globalNavClass)
+			);
+		// if (destNavBtn)
+		// 	destNavBtn.addEventListener("click", () => toggleNavClass(destNavClass)); // we move this later since the dest nav is added dynamically
 
 		// Add resize event listener to handle window resizing
 		window.addEventListener("resize", handleResize);
@@ -1401,7 +1403,7 @@ function main() {
 			// check component has some values
 			if (values.length == 0) return;
 
-			mm.add("(min-width: 768px)", () => {
+			mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
 				// gsap selector fn
 				let gsap_section = gsap.utils.selector(section);
 
@@ -1459,7 +1461,7 @@ function main() {
 	/* sticky images and quotes in articles */
 	aethos.anim.articleSticky = function () {
 		let mm = gsap.matchMedia();
-		mm.add("(min-width: 768px)", () => {
+		mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
 			// only make sticky on large screens
 			let parents = document.querySelectorAll(
 				".article-grid:not(.w-condition-invisible)" // exclude any sections that are unused/hidden
@@ -1485,7 +1487,7 @@ function main() {
 	/* sticky cards in journal */
 	aethos.anim.journalSticky = function () {
 		let mm = gsap.matchMedia();
-		mm.add("(min-width: 768px)", () => {
+		mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
 			// only make sticky on large screens
 
 			// get sticky cards. We have already done the logic in CSS to identify the ones to be restyled as large, so we hook off a CSS variable rather than doing all this logic again
@@ -2040,7 +2042,7 @@ function main() {
 			primaryItems.forEach((primary) => {
 				// Create a container for the secondary links related to this primary
 				const childContainer = document.createElement("div");
-				childContainer.classList.add("dest-nav_list");
+				childContainer.classList.add("dest-nav_child-list");
 
 				// Assign the primary ID to the child container
 				if (primary.id) {
@@ -2050,6 +2052,18 @@ function main() {
 					);
 				}
 
+				// Function to create a clone of the primary item, but without appending it
+				function clonePrimary(primary) {
+					const clone = primary.element.cloneNode(true);
+					const cloneTextEl = clone.querySelector(
+						".dest-nav_link-text:not(.w-condition-invisible)"
+					);
+					cloneTextEl.innerHTML = "All " + cloneTextEl.innerHTML; // append 'All' to clone link text
+					clone.classList.add("is-clone");
+					primary.clonedElement = clone; // store reference to use later
+					primary.cloned = true;
+				}
+
 				// Append secondary items that belong to this primary
 				secondaryItems.forEach((secondary) => {
 					if (secondary.parentId === primary.id) {
@@ -2057,8 +2071,19 @@ function main() {
 							`Appending secondary item to primary item with ID: ${primary.id}`
 						);
 						childContainer.appendChild(secondary.element);
+						primary.element.setAttribute("aethos-nav-children", "true");
+
+						// Create clone if it hasn't been done yet
+						if (!primary.cloned) {
+							clonePrimary(primary);
+						}
 					}
 				});
+
+				// Append the clone to the end of the child container, if it exists
+				if (primary.cloned && primary.clonedElement) {
+					childContainer.appendChild(primary.clonedElement);
+				}
 
 				// Append the child container to the .dest-nav_bottom if it has children
 				if (childContainer.children.length > 0) {
@@ -2082,41 +2107,163 @@ function main() {
 					);
 				}
 			});
+
+			// open Global Nav from Dest Nav
+			const globalNavLink = navElement.querySelector(
+				".dest-nav_link.is-global"
+			);
+			const globalMenuButton = document.querySelector(".header .nav-btn");
+			const destMenuButton = document.querySelector(".header .dest-nav-btn");
+			if (globalNavLink && globalMenuButton && destMenuButton) {
+				globalNavLink.addEventListener("click", (event) => {
+					destMenuButton.click();
+					globalMenuButton.click();
+				});
+			} else {
+			}
+
+			// when dest menu button is clicked, toggle a class on the <body> so we can keep track
+			if (destMenuButton) {
+				destMenuButton.addEventListener("click", () =>
+					document.body.classList.toggle(aethos.helpers.destNavClass)
+				);
+			}
 		}
 
-		function addNavigationAnimation() {
+		function addNavigationHover() {
 			const menus = document.querySelectorAll(".dest-nav_list");
 
 			menus.forEach((menu) => {
 				menu.addEventListener("mouseover", (event) => {
-					if (event.target.classList.contains("link-cover")) {
-						console.log("offset: " + event.target.offsetLeft);
+					// Check if screen width is 992px or above
+					if (
+						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
+							.matches
+					) {
+						if (event.target.classList.contains("link-cover")) {
+							const menuRect = menu.getBoundingClientRect();
+							const menuOffsetX = menuRect.left;
 
-						const menuRect = menu.getBoundingClientRect();
-						const menuOffsetX = menuRect.left;
+							const rect = event.target.getBoundingClientRect();
+							const offsetX = rect.left;
 
-						const rect = event.target.getBoundingClientRect();
-						const offsetX = rect.left; // Position relative to the viewport
+							menu.style.setProperty(
+								"--dest-nav-underline-width",
+								`${event.target.offsetWidth}px`
+							);
 
-						menu.style.setProperty(
-							"--dest-nav-underline-width",
-							`${event.target.offsetWidth}px`
-						);
-						// menu.style.setProperty(
-						// 	"--dest-nav-underline-offset-x",
-						// 	`${event.target.offsetLeft}px`
-						// );
-
-						menu.style.setProperty(
-							"--dest-nav-underline-offset-x",
-							`${offsetX - menuOffsetX}px`
-						);
+							menu.style.setProperty(
+								"--dest-nav-underline-offset-x",
+								`${offsetX - menuOffsetX}px`
+							);
+						}
 					}
 				});
 
-				menu.addEventListener("mouseleave", () =>
-					menu.style.setProperty("--dest-nav-underline-width", "0")
+				menu.addEventListener("mouseleave", () => {
+					// Only reset underline if screen width is 992px or above
+					if (
+						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
+							.matches
+					) {
+						menu.style.setProperty("--dest-nav-underline-width", "0");
+					}
+				});
+			});
+		}
+
+		function showSubnavOnHover() {
+			const primaryItems = document.querySelectorAll(
+				".dest-nav_item[aethos-nav-children='true']" // get primary items with children
+			);
+
+			primaryItems.forEach((primaryItem) => {
+				const primaryId = primaryItem.getAttribute("aethos-nav-id");
+
+				// Find the corresponding sub-navigation container
+				const subnav = document.querySelector(
+					`.dest-nav_bottom .dest-nav_child-list[aethos-nav-id="${primaryId}"]`
 				);
+
+				const subnav_wrapper = document.querySelector(".dest-nav_bottom");
+
+				if (subnav) {
+					gsap
+						.matchMedia()
+						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+							const tl = setupSubnavTimeline();
+
+							// Desktop: toggle timeline on hover
+							let isHovered = false;
+
+							function toggleTimeline() {
+								isHovered ? tl.play() : tl.reverse();
+							}
+
+							primaryItem.addEventListener("mouseenter", () => {
+								isHovered = true;
+								toggleTimeline();
+							});
+
+							primaryItem.addEventListener("mouseleave", () => {
+								isHovered = false;
+								toggleTimeline();
+							});
+
+							subnav.addEventListener("mouseenter", () => {
+								isHovered = true;
+								toggleTimeline();
+							});
+
+							subnav.addEventListener("mouseleave", () => {
+								isHovered = false;
+								toggleTimeline();
+							});
+						})
+						.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
+							const tl = setupSubnavTimeline();
+
+							// Mobile: toggle timeline on click
+							let isOpen = false;
+
+							primaryItem.addEventListener("click", () => {
+								isOpen = !isOpen;
+								isOpen ? tl.play() : tl.reverse();
+							});
+
+							// back button closes subnav
+							const back_btn = document.querySelector(".dest-nav_back");
+							back_btn.addEventListener("click", () => {
+								gsap.set(subnav_wrapper, { display: "none" });
+								isOpen = false;
+								tl.reverse();
+							});
+						});
+
+					// Shared function to set up the subnav timeline
+					function setupSubnavTimeline() {
+						// Ensure subnav starts hidden
+						gsap.set(subnav, { autoAlpha: 0, height: 0, overflow: "hidden" });
+						gsap.set(subnav_wrapper, { display: "none" });
+						gsap.set(subnav.querySelectorAll(".dest-nav_link"), {
+							autoAlpha: 0,
+						});
+
+						return gsap
+							.timeline({ paused: true })
+							.set(subnav_wrapper, { display: "grid" })
+							.to(subnav, {
+								autoAlpha: 1,
+								height: "auto",
+								duration: 0.2,
+							})
+							.to(subnav.querySelectorAll(".dest-nav_link"), {
+								autoAlpha: 1,
+								duration: 0.15,
+								stagger: 0.075,
+							});
+					}
+				}
 			});
 		}
 
@@ -2129,7 +2276,8 @@ function main() {
 			ScrollTrigger.refresh();
 
 			// Now add the animations
-			addNavigationAnimation();
+			addNavigationHover();
+			showSubnavOnHover();
 		} catch (error) {
 			console.error("Error setting up the destination navigation:", error);
 		}
