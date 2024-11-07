@@ -66,8 +66,10 @@ function main() {
 				pageWrap.getAttribute("aethos-destination-slug") || "";
 			aethos.settings.destinationStatus =
 				pageWrap.getAttribute("aethos-destination-status") || "";
-			aethos.settings.theme =
-				pageWrap.getAttribute("aethos-theme").toLowerCase() || "";
+			const themeAttribute = pageWrap.getAttribute("aethos-theme");
+			aethos.settings.theme = themeAttribute
+				? themeAttribute.toLowerCase()
+				: "";
 
 			// Log the settings if debug mode is on
 			aethos.log(`Page settings loaded: ${JSON.stringify(aethos.settings)}`);
@@ -1815,19 +1817,19 @@ function main() {
 	};
 
 	aethos.functions.loadVideos = function (
-		mediaSelector = '[aethos-has-video="true"]', // parent media element that contains the video
+		mediaSelector = '[aethos-video="enabled"]', // parent media element that contains the video
 		vimeoSelector = ".video-cover", // div we are loading vimeo into
 		idAttr = "aethos-vimeo-id", // attr with the vimeo id. attr must be on media element
 		imgSelector = ".img-cover" // fallback / thumbnail imgs
 	) {
-		const mediaEls = document.querySelectorAll(mediaSelector);
-		mediaEls.forEach((mediaEl) => {
-			const vimeoContainer = mediaEl.querySelector(vimeoSelector);
+		const videoSections = document.querySelectorAll(mediaSelector);
+		videoSections.forEach((section) => {
+			const vimeoContainer = section.querySelector(vimeoSelector);
 			if (!vimeoContainer) {
 				return;
 			} // if no video, stop here
-			const vimeoId = mediaEl.getAttribute(idAttr);
-			const imgs = mediaEl.querySelectorAll(imgSelector);
+			const vimeoId = section.getAttribute(idAttr);
+			const imgs = section.querySelectorAll(imgSelector);
 			const player = initVimeo(vimeoContainer, vimeoId);
 			// if (player) {
 			// 	// if video loads successfully
@@ -2358,136 +2360,145 @@ function main() {
 	};
 
 	aethos.functions.loadCMSCarousels = function () {
-		document.querySelectorAll(".has-cms-carousel").forEach((carousel) => {
-			const slug = carousel.getAttribute("aethos-cms-carousel-slug");
-			const path = carousel.getAttribute("aethos-cms-carousel-path");
-			const maxSlides =
-				parseInt(carousel.getAttribute("aethos-cms-carousel-max")) || 8;
+		document
+			.querySelectorAll("[aethos-cms-carousel='enabled']") // get sections that support carousels
+			.forEach((carouselSection) => {
+				const slug = carouselSection.getAttribute("aethos-cms-carousel-slug");
+				const path = carouselSection.getAttribute("aethos-cms-carousel-path");
+				const maxSlides =
+					parseInt(carouselSection.getAttribute("aethos-cms-carousel-max")) ||
+					8;
 
-			if (slug && path) {
-				const carouselWrap = carousel.querySelector(".cms-carousel_wrap");
+				const carousel = carouselSection.querySelector(".cms-carousel");
 
-				if (carouselWrap) {
-					ScrollTrigger.create({
-						trigger: carousel,
-						start: "top 10%",
-						onEnter: () => {
-							const fetchUrl = `${path}/${slug}`;
+				if (carousel) {
+					if (slug && path) {
+						// Load carousel content from another page if slug and path are provided
+						ScrollTrigger.create({
+							trigger: carouselSection,
+							start: "top 10%",
+							onEnter: () => {
+								const fetchUrl = `${path}/${slug}`;
 
-							fetch(fetchUrl)
-								.then((response) => {
-									if (response.ok) return response.text();
-									throw new Error("Network response was not ok.");
-								})
-								.then((html) => {
-									const parser = new DOMParser();
-									const doc = parser.parseFromString(html, "text/html");
+								fetch(fetchUrl)
+									.then((response) => {
+										if (response.ok) return response.text();
+										throw new Error("Network response was not ok.");
+									})
+									.then((html) => {
+										const parser = new DOMParser();
+										const doc = parser.parseFromString(html, "text/html");
 
-									let carouselInner = doc.querySelector(
-										".page-resources .cms-carousel_inner"
-									);
-
-									console.log(carouselInner);
-
-									if (carouselInner) {
-										carouselInner = carouselWrap.appendChild(carouselInner);
-										carouselInner
-											.querySelectorAll("script[type='x-wf-template']")
-											.forEach((script) => script.remove());
-
-										// Select slides and filter based on maxSlides
-										const slides = Array.from(
-											carouselInner.querySelectorAll(".cms-carousel_list-item")
+										let carouselInner = doc.querySelector(
+											".page-resources .cms-carousel_inner"
 										);
-										slides.slice(maxSlides).forEach((slide) => slide.remove()); // Remove unwanted slides
 
-										const slideCount = Math.min(slides.length, maxSlides);
+										console.log(carouselInner);
 
-										//  retrieve pagination and counters
-										const pagination = carousel.querySelector(
-											".room-card_pagination"
-										);
-										const counters = carousel.querySelector(
-											".room-card_counters"
-										);
-										let dots, activeCounter;
+										if (carouselInner) {
+											carousel.innerHTML = ""; // remove any existing content
+											carouselInner = carousel.appendChild(carouselInner);
+											carouselInner
+												.querySelectorAll("script[type='x-wf-template']")
+												.forEach((script) => script.remove());
 
-										// Skip Splide initialization for single-slide carousels
-										if (slideCount < 2) {
-											hidePagination(pagination, counters);
-											return;
+											setupCarousel(carouselInner);
 										}
-
-										// Initialize pagination and counters if they exist
-										if (pagination)
-											dots = setUpPagination(pagination, slideCount);
-										if (counters)
-											activeCounter = setUpCounters(counters, slideCount);
-
-										const splideEl = carouselInner.classList.contains("splide")
-											? carouselInner
-											: carouselInner.querySelector(".splide");
-
-										if (splideEl) {
-											const splideInstance = new Splide(splideEl, {
-												type: "loop",
-												perPage: 1,
-												perMove: 1,
-												autoplay: false,
-												pagination: false,
-												arrows: false,
-												drag: true,
-											}).mount();
-
-											splideInstance.on("move", (newIndex) => {
-												if (activeCounter)
-													activeCounter.innerHTML = newIndex + 1;
-												dots.forEach((dot, index) => {
-													dot.classList.toggle("is-active", index === newIndex);
-												});
-											});
-
-											aethos.log("Carousel loaded");
-										}
-									}
-								})
-								.catch((error) => {
-									console.error("Error fetching the carousel:", error);
-								});
-						},
-						once: true,
-					});
+									})
+									.catch((error) => {
+										console.error("Error fetching the carousel:", error);
+									});
+							},
+							once: true,
+						});
+					} else {
+						// If slug is empty, use the existing carousel content
+						const carouselInner = carousel.querySelector(".cms-carousel_inner");
+						if (carouselInner) {
+							setupCarousel(carouselInner);
+						}
+					}
 				}
-			}
 
-			function setUpPagination(pagination, slideCount) {
-				pagination.innerHTML = "";
-				const dots = [];
-				for (let i = 0; i < slideCount; i++) {
-					const dot = document.createElement("div");
-					dot.classList.add("room-card_pagination-dot");
-					pagination.appendChild(dot);
-					dots.push(dot);
+				function setupCarousel(carouselInner) {
+					const slides = Array.from(
+						carouselInner.querySelectorAll(".cms-carousel_list-item")
+					);
+					slides.slice(maxSlides).forEach((slide) => slide.remove());
+
+					const slideCount = Math.min(slides.length, maxSlides);
+
+					// Retrieve pagination and counters
+					const pagination = carouselSection.querySelector(
+						".room-card_pagination"
+					);
+					const counters = carouselSection.querySelector(".room-card_counters");
+					let dots, activeCounter;
+
+					// Skip Splide initialization for single-slide carousels
+					if (slideCount < 2) {
+						hidePagination(pagination, counters);
+						return;
+					}
+
+					// Initialize pagination and counters if they exist
+					if (pagination) dots = setUpPagination(pagination, slideCount);
+					if (counters) activeCounter = setUpCounters(counters, slideCount);
+
+					const splideEl = carouselInner.classList.contains("splide")
+						? carouselInner
+						: carouselInner.querySelector(".splide");
+
+					if (splideEl) {
+						const splideInstance = new Splide(splideEl, {
+							type: "loop",
+							perPage: 1,
+							perMove: 1,
+							autoplay: false,
+							pagination: false,
+							arrows: false,
+							drag: true,
+						}).mount();
+
+						splideInstance.on("move", (newIndex) => {
+							if (activeCounter) activeCounter.innerHTML = newIndex + 1;
+							dots.forEach((dot, index) => {
+								dot.classList.toggle("is-active", index === newIndex);
+							});
+						});
+
+						aethos.log("Carousel loaded");
+					}
 				}
-				return dots;
-			}
 
-			function setUpCounters(counters, slideCount) {
-				const totalCounter = counters.querySelector(
-					".room-card_counter-item.is-total"
-				);
-				const activeCounter = counters.querySelector(
-					".room-card_counter-item.is-active"
-				);
-				if (totalCounter) totalCounter.innerHTML = slideCount;
-				return activeCounter;
-			}
+				function setUpPagination(pagination, slideCount) {
+					pagination.innerHTML = "";
+					const dots = [];
+					for (let i = 0; i < slideCount; i++) {
+						const dot = document.createElement("div");
+						dot.classList.add("room-card_pagination-dot");
+						pagination.appendChild(dot);
+						dots.push(dot);
+					}
+					return dots;
+				}
 
-			function hidePagination(pagination, counters) {
-				if (pagination) pagination.style.display = "none";
-				if (counters) counters.style.display = "none";
-			}
-		});
+				function setUpCounters(counters, slideCount) {
+					const totalCounter = counters.querySelector(
+						".room-card_counter-item.is-total"
+					);
+					const activeCounter = counters.querySelector(
+						".room-card_counter-item.is-active"
+					);
+					if (totalCounter) totalCounter.innerHTML = slideCount;
+					return activeCounter;
+				}
+
+				function hidePagination(pagination, counters) {
+					if (pagination) pagination.style.display = "none";
+					if (counters) counters.style.display = "none";
+				}
+			});
 	};
 
 	aethos.functions.hiddenFormFields = function () {
@@ -2701,7 +2712,7 @@ function main() {
 	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
 
-	// aethos.functions.loadVideos();
+	aethos.functions.loadVideos();
 
 	aethos.functions.loadCMSCarousels();
 
