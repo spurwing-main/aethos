@@ -66,6 +66,8 @@ function main() {
 				pageWrap.getAttribute("aethos-destination-slug") || null;
 			aethos.settings.destinationStatus =
 				pageWrap.getAttribute("aethos-destination-status") || null;
+			aethos.settings.theme =
+				pageWrap.getAttribute("aethos-theme").toLowerCase() || null;
 
 			// Log the settings if debug mode is on
 			aethos.log(`Page settings loaded: ${JSON.stringify(aethos.settings)}`);
@@ -1520,9 +1522,6 @@ function main() {
 	};
 
 	aethos.map.init = function () {
-		// Store map data within aethos.map.data
-		aethos.map.accessToken =
-			"pk.eyJ1Ijoic3B1cndpbmctc3AiLCJhIjoiY20wcGFkaDN5MDNkMTJpcXhldHVlZG9mZyJ9.ZcEDjMqfRf412QgW9OiSCw";
 		aethos.map.mapElement = document.querySelector(".map");
 		aethos.map.destinations = [];
 
@@ -1568,24 +1567,38 @@ function main() {
 			}).addTo(markerLayer);
 
 			// Use the createPopupContent function to generate the HTML for each pop-up
-			destination.popupContent = createPopupContent({
-				imageUrl: destination.imgSrc,
-				address: destination.address,
-				name: destination.name,
-				linkUrl: "/destinations/" + destination.name + "/contact",
-			});
+			if (!aethos.settings.destinationSlug) {
+				// only if we're not on a destination page
+				destination.popupContent = createPopupContent({
+					imageUrl: destination.imgSrc,
+					address: destination.address,
+					name: destination.name,
+					linkUrl: "/destinations/" + destination.name + "/contact",
+				});
 
-			// Bind the pop-up to the marker
-			destination.marker.bindPopup(destination.popupContent, { maxWidth: 300 });
+				// Bind the pop-up to the marker
+				destination.marker.bindPopup(destination.popupContent, {
+					maxWidth: 300,
+				});
+			}
 
 			aethos.map.destinations.push(destination);
 		});
+
+		// choose tile theme
+		if (aethos.settings.theme) {
+			aethos.map.tileId = aethos.map.tileIds[aethos.settings.theme]; // if we are on a destination page with a specified theme, set map tile accordingly
+			aethos.log("using custom map theme");
+		} else {
+			aethos.map.tileId = aethos.map.tileIds.default; // otherwise set default theme
+			aethos.log("using default map theme");
+		}
 
 		// Define Mapbox tile layer
 		var tileLayer = new L.tileLayer(
 			"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
 			{
-				id: "ameliaben/cm1kugjjw00h601qv2mm5fr47",
+				id: aethos.map.tileId,
 				accessToken: aethos.map.accessToken,
 			}
 		);
@@ -1599,8 +1612,17 @@ function main() {
 			layers: [tileLayer, markerLayer],
 		});
 
+		aethos.map.map.on("zoomend", function (e) {
+			console.log(e.target._zoom);
+		});
+
 		// fit map to markers
 		aethos.map.map.fitBounds(markerLayer.getBounds());
+
+		// if a destination page, zoom out a lot
+		if (aethos.settings.destinationSlug) {
+			aethos.map.map.setZoom(10);
+		}
 
 		// }
 
