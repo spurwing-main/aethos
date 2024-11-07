@@ -51,31 +51,46 @@ function main() {
 	})();
 
 	/* load aethos settings */
-	aethos.functions.getPageSettings = function () {
+	(function () {
 		const pageWrap = document.querySelector(".page-wrap");
 
 		if (pageWrap) {
 			// Retrieve and store the aethos-page-bg, aethos-page, and aethos-page-loader attributes
 			aethos.settings.pageWrap = pageWrap;
-			aethos.settings.pageBg = pageWrap.getAttribute("aethos-page-bg") || null;
+			aethos.settings.pageBg = pageWrap.getAttribute("aethos-page-bg") || "";
 			aethos.settings.pageName =
-				pageWrap.getAttribute("aethos-page-name") || null;
+				pageWrap.getAttribute("aethos-page-name") || "";
 			aethos.settings.pageLoader =
-				pageWrap.getAttribute("aethos-page-loader") || null;
+				pageWrap.getAttribute("aethos-page-loader") || "";
 			aethos.settings.destinationSlug =
-				pageWrap.getAttribute("aethos-destination-slug") || null;
+				pageWrap.getAttribute("aethos-destination-slug") || "";
 			aethos.settings.destinationStatus =
-				pageWrap.getAttribute("aethos-destination-status") || null;
+				pageWrap.getAttribute("aethos-destination-status") || "";
 			aethos.settings.theme =
-				pageWrap.getAttribute("aethos-theme").toLowerCase() || null;
+				pageWrap.getAttribute("aethos-theme").toLowerCase() || "";
 
 			// Log the settings if debug mode is on
 			aethos.log(`Page settings loaded: ${JSON.stringify(aethos.settings)}`);
 		} else {
 			aethos.log("No .page-wrap element found.");
 		}
-	};
-	aethos.functions.getPageSettings();
+	})();
+
+	/* redirect if destination is coming soon */
+	(function () {
+		// Construct the destination homepage URL
+		const destinationHomepageUrl = `/destinations/${aethos.settings.destinationSlug}`;
+
+		// Check if we need to redirect
+		if (
+			aethos.settings.destinationStatus == "coming soon" &&
+			aethos.settings.destinationSlug &&
+			window.location.pathname !== destinationHomepageUrl
+		) {
+			// Redirect to the destination homepage
+			window.location.href = destinationHomepageUrl;
+		}
+	})();
 
 	/* update any relative destination links */
 	aethos.functions.updateRelativeLinks = function () {
@@ -1612,10 +1627,6 @@ function main() {
 			layers: [tileLayer, markerLayer],
 		});
 
-		aethos.map.map.on("zoomend", function (e) {
-			console.log(e.target._zoom);
-		});
-
 		// fit map to markers
 		aethos.map.map.fitBounds(markerLayer.getBounds());
 
@@ -2347,7 +2358,7 @@ function main() {
 	};
 
 	aethos.functions.loadCMSCarousels = function () {
-		document.querySelectorAll(".cms-carousel").forEach((carousel) => {
+		document.querySelectorAll(".has-cms-carousel").forEach((carousel) => {
 			const slug = carousel.getAttribute("aethos-cms-carousel-slug");
 			const path = carousel.getAttribute("aethos-cms-carousel-path");
 			const maxSlides =
@@ -2376,6 +2387,8 @@ function main() {
 										".page-resources .cms-carousel_inner"
 									);
 
+									console.log(carouselInner);
+
 									if (carouselInner) {
 										carouselInner = carouselWrap.appendChild(carouselInner);
 										carouselInner
@@ -2390,14 +2403,13 @@ function main() {
 
 										const slideCount = Math.min(slides.length, maxSlides);
 
-										// Traverse up to find the room-card and retrieve pagination and counters within it
-										const roomCard = carousel.closest(".room-card");
-										const pagination = roomCard
-											? roomCard.querySelector(".room-card_pagination")
-											: null;
-										const counters = roomCard
-											? roomCard.querySelector(".room-card_counters")
-											: null;
+										//  retrieve pagination and counters
+										const pagination = carousel.querySelector(
+											".room-card_pagination"
+										);
+										const counters = carousel.querySelector(
+											".room-card_counters"
+										);
 										let dots, activeCounter;
 
 										// Skip Splide initialization for single-slide carousels
