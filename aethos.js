@@ -779,24 +779,39 @@ function main() {
 		/* we use a wrapper section to help us associate trigger to items easily, ie where the trigger is not necessarily a parent of the animated items */
 		let stagger_sections = document.querySelectorAll(".anim-stagger-in_sect");
 		stagger_sections.forEach((section) => {
-			let trigger = section.querySelector(".anim-stagger-in_trigger"); // trigger
+			// get trigger - either current section, or a descendent
+			let trigger;
+			if (section.classList.contains("anim-stagger-in_trigger")) {
+				trigger = section;
+			} else {
+				trigger = section.querySelector(".anim-stagger-in_trigger");
+			}
 			let items = gsap.utils.toArray(".anim-stagger-in_item", section); // elements to animate
+
+			// Check if the trigger element has the `aethos-trigger-start` attribute
+
+			if (!trigger) {
+				return;
+			}
+			console.log(trigger);
+			let startValue =
+				trigger.getAttribute("aethos-trigger-start") || "20% 80%";
 
 			let tl = gsap.timeline({
 				scrollTrigger: {
 					trigger: trigger,
-					start: "20% 80%",
+					start: startValue, // Use the attribute value if present, otherwise default to "20% 80%"
 					markers: false,
 				},
 			});
 
 			gsap.set(items, {
 				y: 20,
-				opacity: 0,
+				// autoAlpha: 0, // set with critical CSS
 			});
 
 			tl.to(items, { y: 0, duration: 0.5, stagger: 0.25 });
-			tl.to(items, { opacity: 1, duration: 2, stagger: 0.25 }, "<"); // opacity anim is slightly longer
+			tl.to(items, { autoAlpha: 1, duration: 2, stagger: 0.25 }, "<"); // opacity anim is slightly longer
 		});
 	};
 
