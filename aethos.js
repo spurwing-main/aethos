@@ -1498,6 +1498,7 @@ function main() {
 					pin: child,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
+					markers: true,
 				});
 			});
 		});
@@ -1816,66 +1817,106 @@ function main() {
 		});
 	};
 
-	aethos.functions.loadVideos = function (
-		mediaSelector = '[aethos-video="enabled"]', // parent media element that contains the video
-		vimeoSelector = ".video-cover", // div we are loading vimeo into
-		idAttr = "aethos-vimeo-id", // attr with the vimeo id. attr must be on media element
-		imgSelector = ".img-cover" // fallback / thumbnail imgs
-	) {
-		const videoSections = document.querySelectorAll(mediaSelector);
+	aethos.functions.loadVideos = function () {
+		const videoSections = document.querySelectorAll('[aethos-video="enabled"]');
+
 		videoSections.forEach((section) => {
-			const vimeoContainer = section.querySelector(vimeoSelector);
-			if (!vimeoContainer) {
-				return;
-			} // if no video, stop here
-			const vimeoId = section.getAttribute(idAttr);
-			const imgs = section.querySelectorAll(imgSelector);
-			const player = initVimeo(vimeoContainer, vimeoId);
-			// if (player) {
-			// 	// if video loads successfully
-			// 	// toggleVideoElements(vimeoContainer, imgs);
-			// }
+			const vimeoContainer = section.querySelector(".video-cover");
+			gsap.set(vimeoContainer, { opacity: 0 }); // hide container at first
+			if (!vimeoContainer) return;
+
+			const vimeoId = section.getAttribute("aethos-vimeo-id");
+			if (!vimeoId) return;
+
+			const imgs = section.querySelectorAll(".img-cover"); // Fallback/thumbnail images
+
+			let player; // Declare the player variable here to access it across different ScrollTrigger events
+
+			// Use ScrollTrigger to initialize the video loading
+			ScrollTrigger.create({
+				trigger: section,
+				start: "top 90%", // Trigger when the section is 80% in the viewport
+				end: "bottom 10%", // Trigger ends when the bottom of the section reaches 20% of the viewport
+				onEnter: () => {
+					player = initVimeo(vimeoContainer, vimeoId, imgs);
+				},
+				onLeave: () => {
+					if (player) {
+						player.pause().catch(function (error) {
+							aethos.error(`Error pausing video ${vimeoId}:`, error);
+						});
+					}
+				},
+				onEnterBack: () => {
+					if (player) {
+						player.play().catch(function (error) {
+							aethos.error(`Error resuming video ${vimeoId}:`, error);
+						});
+					}
+				},
+				onLeaveBack: () => {
+					if (player) {
+						player.pause().catch(function (error) {
+							aethos.error(`Error pausing video ${vimeoId}:`, error);
+						});
+					}
+				},
+			});
 		});
 
-		function initVimeo(vimeoContainer, vimeoId) {
+		function initVimeo(vimeoContainer, vimeoId, imgs) {
 			const options = {
 				id: vimeoId,
 				byline: false,
 				title: false,
 				muted: true,
 				controls: false,
-				vimeo_logo: false,
 				autoplay: true,
-				speed: false,
+				loop: true,
+				background: true,
+				responsive: true,
 			};
 
 			const player = new Vimeo.Player(vimeoContainer, options);
 
-			player.loadVideo(vimeoId).then(function (id) {
-				aethos.log(`video ${id} loaded`);
-				player.play();
+			player.on("loaded", function () {
+				// Attempt to play the video
+				player.play().catch(function (error) {
+					aethos.error(`Error playing video ${vimeoId}:`, error);
+				});
+
+				// Transition from image to video
+				gsap.to(imgs, { opacity: 0, duration: 0.5 });
+				gsap.to(vimeoContainer, { opacity: 1, duration: 1.5 });
 			});
 
-			player.on("play", (event) => {
-				aethos.log(`video ${id} playing`);
+			player.on("play", function () {
+				aethos.log(`Video ${vimeoId} is playing.`);
 			});
 
-			return player;
+			player.on("pause", function () {
+				aethos.log(`Video ${vimeoId} is paused.`);
+			});
+
+			player.on("error", function (error) {
+				switch (error.name) {
+					case "TypeError":
+						console.error("Type error:", error);
+						break;
+					case "PasswordError":
+						console.error("Password error:", error);
+						break;
+					case "PrivacyError":
+						console.error("Privacy error:", error);
+						break;
+					default:
+						console.error("An unknown error occurred:", error);
+						break;
+				}
+			});
+
+			return player; // Return the player object for later use
 		}
-
-		// function toggleVideoElements(vimeoContainer, imgs) {
-		// 	// Hide elements if they exist
-		// 	imgs.forEach((img) => {
-		// 		gsap.to(img, { opacity: 0 });
-		// 	});
-
-		// 	// Show Vimeo player if it exists
-		// 	if (vimeoContainer) {
-		// 		gsap.from(vimeoContainer, { opacity: 0 });
-		// 	} else {
-		// 		console.error("Vimeo player element not found.");
-		// 	}
-		// }
 	};
 
 	aethos.functions.formatDates = function () {
