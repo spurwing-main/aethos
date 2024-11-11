@@ -1842,9 +1842,9 @@ function main() {
 	/* load in standard hero sections */
 	aethos.anim.loadHero = function () {
 		/* get all the animated sections */
-		let parents = document.querySelectorAll(".anim-load-hero_parent");
-		parents.forEach((parent) => {
-			let gsap_section = gsap.utils.selector(parent); // gsap selector
+		let sections = document.querySelectorAll(".anim-load-hero_parent");
+		sections.forEach((section) => {
+			let gsap_section = gsap.utils.selector(section); // gsap selector
 			let content = gsap_section(".anim-load-hero_content"); // content element
 			let media = gsap_section(".anim-load-hero_media"); // media element
 			let content_bg = gsap_section(".anim-load-hero_content-bg"); // bg element behind content - already exists on page
@@ -1852,39 +1852,52 @@ function main() {
 				document.documentElement
 			).getPropertyValue("--color--sand--light");
 
+			/* decide if we are doing full animation or not */
+			/* if we have a content element AND the layout IS inverted (ie we only do it if text is above image), then we do full anim. Otherwise we just do an img fade in */
+			let doFullAnimation = false;
+			if (section.querySelector('[aethos-hero-layout="inverted"]') && content) {
+				console.log("do full animation");
+				doFullAnimation = true;
+			}
+
 			let tl = gsap.timeline({
 				scrollTrigger: {
-					trigger: parent,
+					trigger: section,
 					start: "top bottom",
 					scrub: false,
 				},
 			});
 
-			if (content.length) {
-				// if this hero has a content element - ie we are animating the content too, we do the bg colour anim as well. Otherwise, the only thing that animates is the img fade
+			// if this hero has a content element - ie we are animating the content too, we do the bg colour anim as well. Otherwise, the only thing that animates is the img fade
+			if (doFullAnimation) {
 				tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
-			}
-			if (content.length) {
+
 				tl.from(
 					content,
 					{ autoAlpha: 0, duration: 0.6, ease: "power2.inOut" },
 					">"
 				);
-			}
-			tl.from(
-				media,
-				{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
-				">"
-			);
-			if (content.length) {
+
 				tl.from(
-					parent,
+					media,
+					{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
+					">"
+				);
+				tl.from(
+					section,
 					{
 						backgroundColor: section_bg_color,
 						duration: 0.6,
 						ease: "power2.inOut",
 					},
 					"<"
+				);
+			} else {
+				gsap.set(content, { autoAlpha: 1 });
+				tl.from(
+					media,
+					{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
+					">"
 				);
 			}
 		});
