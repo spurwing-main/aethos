@@ -2434,80 +2434,128 @@ function main() {
 				const subnav_wrapper = document.querySelector(".dest-nav_bottom");
 
 				if (subnav) {
+					return;
+					let isHovered = false;
 					gsap
 						.matchMedia()
 						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
 							const tl = setupSubnavTimeline();
 
 							// Desktop: toggle timeline on hover
-							let isHovered = false;
+							function openSubmenu() {
+								console.log("open submenu");
 
-							function toggleTimeline() {
-								isHovered ? tl.play() : tl.reverse();
+								tl.play();
+							}
+
+							function closeSubmenu() {
+								console.log("close submenu");
+
+								tl.reverse();
 							}
 
 							primaryItem.addEventListener("mouseenter", () => {
+								console.log("Enter primary");
 								isHovered = true;
-								toggleTimeline();
+								openSubmenu();
 							});
 
 							primaryItem.addEventListener("mouseleave", () => {
+								console.log("Leave primary");
+
 								isHovered = false;
-								toggleTimeline();
+								closeSubmenu();
 							});
 
 							subnav.addEventListener("mouseenter", () => {
+								console.log("Enter subnav");
+
 								isHovered = true;
-								toggleTimeline();
+								openSubmenu();
 							});
 
 							subnav.addEventListener("mouseleave", () => {
+								console.log("Leave subnav");
+
 								isHovered = false;
-								toggleTimeline();
+								closeSubmenu();
 							});
-						})
+
+							// Return cleanup function
+							return () => {
+								primaryItem.removeEventListener("mouseenter", onEnter);
+								primaryItem.removeEventListener("mouseleave", onLeave);
+								subnav.removeEventListener("mouseenter", onEnter);
+								subnav.removeEventListener("mouseleave", onLeave);
+							};
+						});
+
+					gsap
+						.matchMedia()
 						.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
 							const tl = setupSubnavTimeline();
 
 							// Mobile: toggle timeline on click
-							let isOpen = false;
+							function onClick() {
+								if (tl.reversed()) {
+									tl.play();
+								} else {
+									tl.reverse();
+								}
+							}
 
-							primaryItem.addEventListener("click", () => {
-								isOpen = !isOpen;
-								isOpen ? tl.play() : tl.reverse();
-							});
+							primaryItem.addEventListener("click", onClick);
 
-							// back button closes subnav
+							// Back button closes subnav
 							const back_btn = document.querySelector(".dest-nav_back");
-							back_btn.addEventListener("click", () => {
-								gsap.set(subnav_wrapper, { display: "none" });
-								isOpen = false;
-								tl.reverse();
-							});
+							if (back_btn) {
+								back_btn.addEventListener("click", () => {
+									gsap.set(subnav_wrapper, { display: "none" });
+									if (!tl.reversed()) tl.reverse();
+								});
+							}
+
+							// Return cleanup function
+							return () => {
+								primaryItem.removeEventListener("click", onClick);
+								if (back_btn) {
+									back_btn.removeEventListener("click", onClick);
+								}
+							};
 						});
 
 					// Shared function to set up the subnav timeline
 					function setupSubnavTimeline() {
 						// Ensure subnav starts hidden
-						gsap.set(subnav, { autoAlpha: 0, height: 0, overflow: "hidden" });
-						gsap.set(subnav_wrapper, { display: "none" });
+						gsap.set(subnav_wrapper, {
+							// display: "none",
+							// autoAlpha: 0,
+							// height: 0,
+						});
+						// gsap.set(subnav_wrapper, {
+						// 	height: 0,
+						// 	overflow: "hidden",
+						// 	display: "none",
+						// });
 						gsap.set(subnav.querySelectorAll(".dest-nav_link"), {
 							autoAlpha: 0,
 						});
 
-						return gsap
-							.timeline({ paused: true })
-							.set(subnav_wrapper, { display: "grid" })
-							.to(subnav, {
-								autoAlpha: 1,
-								height: "auto",
-								duration: 0.2,
-							})
-							.to(subnav.querySelectorAll(".dest-nav_link"), {
-								autoAlpha: 1,
-								duration: 0.15,
-								stagger: 0.075,
-							});
+						return (
+							gsap
+								.timeline({ paused: true })
+								// .set(subnav_wrapper, { display: "grid" })
+								.from(subnav_wrapper, {
+									autoAlpha: 0,
+									height: 0,
+									duration: 0.2,
+								})
+								.to(subnav.querySelectorAll(".dest-nav_link"), {
+									autoAlpha: 1,
+									duration: 0.15,
+									stagger: 0.075,
+								})
+						);
 					}
 				}
 			});
@@ -2724,33 +2772,33 @@ function main() {
 		});
 	};
 
-	// Clear select dropdown when clicking 'All' or similar
-	aethos.functions.clearSelect = function () {
-		function clearSelect(identifier, value = "all") {
-			const selectElement = document.querySelector(
-				`select[fs-cmsfilter-field='${identifier}']`
-			);
-			const clearElement = document.querySelector(
-				`[fs-cmsfilter-clear='${identifier}']`
-			);
+	// // Clear select dropdown when clicking 'All' or similar
+	// aethos.functions.clearSelect = function () {
+	// 	function clearSelect(identifier, value = "all") {
+	// 		const selectElement = document.querySelector(
+	// 			`select[fs-cmsfilter-field='${identifier}']`
+	// 		);
+	// 		const clearElement = document.querySelector(
+	// 			`[fs-cmsfilter-clear='${identifier}']`
+	// 		);
 
-			if (selectElement && clearElement) {
-				// Check the initial value
-				if (selectElement.value.toLowerCase() === value.toLowerCase()) {
-					clearElement.click();
-					selectElement.value = value;
-				}
+	// 		if (selectElement && clearElement) {
+	// 			// Check the initial value
+	// 			if (selectElement.value.toLowerCase() === value.toLowerCase()) {
+	// 				clearElement.click();
+	// 				selectElement.value = value;
+	// 			}
 
-				// Add event listener to handle changes
-				selectElement.addEventListener("change", (event) => {
-					if (event.target.value.toLowerCase() === value.toLowerCase()) {
-						clearElement.click();
-						selectElement.value = value;
-					}
-				});
-			}
-		}
-	};
+	// 			// Add event listener to handle changes
+	// 			selectElement.addEventListener("change", (event) => {
+	// 				if (event.target.value.toLowerCase() === value.toLowerCase()) {
+	// 					clearElement.click();
+	// 					selectElement.value = value;
+	// 				}
+	// 			});
+	// 		}
+	// 	}
+	// };
 
 	/* update things when CMS load fires */
 	aethos.functions.handleCMSFilter = function () {
@@ -2770,7 +2818,7 @@ function main() {
 						aethos.helpers.refreshSticky(true); // hard refresh
 					});
 
-					aethos.functions.clearSelect("destination", "all");
+					// aethos.functions.clearSelect("destination", "all");
 				} else {
 					aethos.log("No CMSFilters instances found on the page.");
 				}
@@ -2890,7 +2938,7 @@ function main() {
 	aethos.functions.buildDestinationNav();
 
 	aethos.functions.hiddenFormFields();
-	aethos.functions.clearSelect();
+	// aethos.functions.clearSelect();
 
 	aethos.functions.handleCMSLoad();
 	aethos.functions.handleCMSFilter();
