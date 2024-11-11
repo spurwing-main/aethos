@@ -78,6 +78,27 @@ function main() {
 		}
 	})();
 
+	/* load destination themes */
+	(function () {
+		const destinations = document.querySelectorAll(".dest-data_item");
+
+		destinations.forEach((item) => {
+			const slug = item.getAttribute("aethos-destination-slug");
+			const theme = item.getAttribute("aethos-theme");
+			const name = item.getAttribute("aethos-destination-name") || slug;
+			const status = item.getAttribute("aethos-status") || "active";
+
+			aethos.destinations[slug] = {
+				name: name,
+				slug: slug,
+				theme: theme,
+				status: status,
+			};
+		});
+
+		aethos.log("Destination data loaded");
+	})();
+
 	/* redirect if destination is coming soon */
 	(function () {
 		// Construct the destination homepage URL
@@ -96,57 +117,70 @@ function main() {
 
 	/* update any relative destination links */
 	aethos.functions.updateRelativeLinks = function () {
-		try {
-			// Ensure destinationSlug is available in settings
-			if (!aethos || !aethos.settings || !aethos.settings.destinationSlug) {
-				throw new Error("Destination slug not found in aethos settings.");
-			}
-
-			const destinationSlug = aethos.settings.destinationSlug;
-
-			// Select all links with the attribute `aethos-relative-link` and href starting with "./" or "http://./"
-			const relativeLinks = document.querySelectorAll(
-				'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"]'
+		// Step 1: Ensure `aethos` and `aethos.settings` are available
+		if (!aethos || !aethos.settings) {
+			console.warn(
+				"Aethos settings not found. Skipping relative links update."
 			);
+			return;
+		}
 
-			if (relativeLinks.length === 0) {
-				aethos.log(
-					"No links with aethos-relative-link attribute and './' or 'http://./' href found."
+		// Step 2: Retrieve `destinationSlug` from settings
+		const destinationSlug = aethos.settings.destinationSlug;
+
+		// Step 3: If `destinationSlug` is not available, exit gracefully
+		if (!destinationSlug) {
+			aethos.log(
+				"Destination slug not found. Assuming this is not a destination page. Skipping relative links update."
+			);
+			return;
+		}
+
+		// Step 4: Select all links with the `aethos-relative-link` attribute
+		const relativeLinks = document.querySelectorAll(
+			'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"]'
+		);
+
+		// Step 5: If no links found, log and exit
+		if (relativeLinks.length === 0) {
+			aethos.log(
+				"No links with aethos-relative-link attribute and './' or 'http://./' href found."
+			);
+			return;
+		}
+
+		// Step 6: Iterate over each link and update it
+		relativeLinks.forEach((link) => {
+			// Ensure the href attribute is available
+			const originalHref = link.getAttribute("href");
+			if (!originalHref) {
+				console.warn(
+					"Href attribute is missing on one of the links. Skipping this link.",
+					link
 				);
+				return;
 			}
 
-			relativeLinks.forEach((link) => {
-				try {
-					// Ensure the href attribute is available
-					const originalHref = link.getAttribute("href");
-					if (!originalHref) {
-						throw new Error("Href attribute is missing on one of the links.");
-					}
+			// Determine the relative path by handling both "./" and "http://./" cases
+			const relativePath = originalHref.startsWith("http://./")
+				? originalHref.substring(8) // Removes "http://./"
+				: originalHref.substring(2); // Removes "./"
 
-					// Determine relative path by handling both "./" and "http://./" cases
-					const relativePath = originalHref.startsWith("http://./")
-						? originalHref.substring(8) // Removes "http://./"
-						: originalHref.substring(2); // Removes "./"
+			// Construct the new href with the destination slug
+			const newHref = `/destinations/${destinationSlug}/${relativePath.replace(
+				/^\/+/,
+				""
+			)}`;
 
-					// Construct the new href with the destination slug
-					const newHref = `/destinations/${destinationSlug}/${relativePath.replace(
-						/^\/+/,
-						""
-					)}`;
+			// Update the href of the link
+			link.setAttribute("href", newHref);
 
-					// Update the href of the link
-					link.setAttribute("href", newHref);
-
-					// Log success message for each updated link
-					aethos.log(`Link updated successfully: ${originalHref} ➔ ${newHref}`);
-				} catch (error) {
-					console.error("Error processing link:", link, error.message);
-				}
-			});
-		} catch (error) {
-			console.error("Failed to update destination links:", error.message);
-		}
+			// Log success message for each updated link
+			aethos.log(`Link updated successfully: ${originalHref} ➔ ${newHref}`);
+		});
 	};
+
+	// Execute the function
 	aethos.functions.updateRelativeLinks();
 
 	/* helper to get a custom prop value */
@@ -165,6 +199,118 @@ function main() {
 
 	/* register GSAP plugins */
 	gsap.registerPlugin(SplitText, ScrollSmoother);
+
+	/* GSAP page transitions NOT COMPLETE */
+	aethos.anim.pageTransition = function () {
+		return;
+		aethos.log("Running page transition setup");
+		const links = document.querySelectorAll("a");
+
+		links.forEach((link) => {
+			link.addEventListener("click", function (e) {
+				const destinationUrl = new URL(link.href);
+
+				// Only trigger transition for internal links without hash targets or new tab links
+				if (
+					destinationUrl.hostname === window.location.hostname &&
+					!link.hash &&
+					link.target !== "_blank"
+				) {
+					e.preventDefault();
+
+					// Determine current theme
+					const currentTheme = getThemeFromUrl(window.location.pathname);
+					// Determine target theme
+					const targetTheme = getThemeFromUrl(destinationUrl.pathname);
+
+					// Only play transition if themes are different
+					if (currentTheme !== targetTheme) {
+						playPageTransition(targetTheme, () => {
+							console.log("Navigating to:", destinationUrl.href);
+							window.location.assign(destinationUrl.href);
+						});
+					} else {
+						window.location.assign(destinationUrl.href);
+					}
+
+					aethos.log("Link update: " + destinationUrl);
+				}
+			});
+		});
+
+		function getThemeFromUrl(pathname) {
+			// Match destinations, club, or default/global
+			const destinationMatch = pathname.match(/^\/destinations\/([^\/]+)/);
+			if (destinationMatch) {
+				const slug = destinationMatch[1];
+				return aethos.destinations[slug] || "default";
+			}
+
+			if (pathname.startsWith("/club")) {
+				return "club";
+			}
+
+			return "default";
+		}
+
+		function playPageTransition(theme, onComplete) {
+			// Customize Lottie animation and overlay color per theme
+			const transitionEl = document.querySelector(".page-transition");
+			const overlay = transitionEl.querySelector(".page-transition_overlay");
+
+			let transition_lottie = lottie.loadAnimation({
+				container: transitionEl.querySelector(".page-transition_lottie"),
+				renderer: "svg",
+				loop: false,
+				autoplay: false,
+				path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/66d03670c7268e6c895d7847_Aethos%20Logo%20Lottie%20v2.json",
+			});
+
+			gsap.set(transitionEl, { display: "flex" });
+
+			// Create timeline
+			let tl = gsap.timeline({ paused: true });
+
+			tl.to(overlay, {
+				opacity: 1,
+				duration: 0.5,
+			});
+
+			// Play Lottie animation [5s]
+			tl.to(playhead, {
+				frame: transition_lottie.totalFrames - 1,
+				duration: 5,
+				ease: "none",
+				onUpdate: () => transition_lottie.goToAndStop(playhead.frame, true),
+			});
+
+			// // overlay.style.backgroundColor = overlayColor;
+			// gsap.to(overlay, {
+			// 	opacity: 1,
+			// 	duration: 0.5,
+			// 	onComplete: () => {
+			// 		// Play Lottie animation
+			// 		const lottieInstance = lottie.loadAnimation({
+			// 			container: lottieAnimation,
+			// 			renderer: "svg",
+			// 			loop: false,
+			// 			autoplay: true,
+			// 			path: lottiePath,
+			// 		});
+
+			// 		lottieInstance.addEventListener("complete", () => {
+			// 			onComplete;
+			// 			// // Fade out overlay after Lottie animation completes
+			// 			// gsap.to(overlay, {
+			// 			// 	opacity: 0,
+			// 			// 	duration: 0.5,
+			// 			// 	onComplete: onComplete,
+			// 			// });
+			// 		});
+			// 	},
+			// });
+		}
+	};
 
 	/* set up GSAP smooth scroll */
 	aethos.anim.smoothScroll = function () {
@@ -1522,38 +1668,43 @@ function main() {
 	/* sticky cards in journal */
 	aethos.anim.journalSticky = function () {
 		let mm = gsap.matchMedia();
-		mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
-			// only make sticky on large screens
+		mm.add(
+			`(min-width: ${aethos.breakpoints.mbl + 1}px) and (min-height: 651px)`,
+			() => {
+				// only make sticky on large screens
 
-			// get sticky cards. We have already done the logic in CSS to identify the ones to be restyled as large, so we hook off a CSS variable rather than doing all this logic again
-			let cards = document.querySelectorAll(".journal-card");
-			let sticky_cards = []; // cards to make sticky
-			cards.forEach((card) => {
-				if (
-					getComputedStyle(card).getPropertyValue("--c--journal-card--type") ==
-						"large" &&
-					!card.getAttribute("data-scrollTrigger-processed")
-				) {
-					sticky_cards.push(card);
-					card.setAttribute("data-scrollTrigger-processed", "true"); // tracking if we've already processed this card
-				} else {
-				}
-			});
-
-			sticky_cards.forEach((card) => {
-				let card_wrapper = card.closest(".journal-grid_item");
-				ScrollTrigger.create({
-					trigger: card_wrapper,
-					start: "top 32px", // annoyingly doesn't seem possible to set this in rem
-					end: () => `${card_wrapper.offsetHeight - card.offsetHeight}px 0px`,
-					pin: card,
-					invalidateOnRefresh: true,
-					pinSpacing: false,
+				// get sticky cards. We have already done the logic in CSS to identify the ones to be restyled as large, so we hook off a CSS variable rather than doing all this logic again
+				let cards = document.querySelectorAll(".journal-card");
+				let sticky_cards = []; // cards to make sticky
+				cards.forEach((card) => {
+					if (
+						getComputedStyle(card).getPropertyValue(
+							"--c--journal-card--type"
+						) == "large" &&
+						!card.getAttribute("data-scrollTrigger-processed")
+					) {
+						sticky_cards.push(card);
+						card.setAttribute("data-scrollTrigger-processed", "true"); // tracking if we've already processed this card
+					} else {
+					}
 				});
-			});
-		});
+
+				sticky_cards.forEach((card) => {
+					let card_wrapper = card.closest(".journal-grid_item");
+					ScrollTrigger.create({
+						trigger: card_wrapper,
+						start: "top 32px", // annoyingly doesn't seem possible to set this in rem
+						end: () => `${card_wrapper.offsetHeight - card.offsetHeight}px 0px`,
+						pin: card,
+						invalidateOnRefresh: true,
+						pinSpacing: false,
+					});
+				});
+			}
+		);
 	};
 
+	/* map */
 	aethos.map.init = function () {
 		aethos.map.mapElement = document.querySelector(".map");
 		aethos.map.destinations = [];
@@ -1680,6 +1831,7 @@ function main() {
 		}
 	};
 
+	/* update copyright */
 	aethos.functions.updateCopyrightYear = function () {
 		const year = new Date().getFullYear().toString();
 		document
@@ -1800,6 +1952,7 @@ function main() {
 			});
 	};
 
+	/* add direct links to experiene filters */
 	aethos.functions.addExperienceFilterLinks = function () {
 		const blocks = document.querySelectorAll("[aethos-experience-category]");
 
@@ -1832,6 +1985,7 @@ function main() {
 		});
 	};
 
+	/* load Vimeo videos */
 	aethos.functions.loadVideos = function () {
 		const videoSections = document.querySelectorAll('[aethos-video="enabled"]');
 
@@ -1934,6 +2088,7 @@ function main() {
 		}
 	};
 
+	/* format dates */
 	aethos.functions.formatDates = function () {
 		let dateEls = document.querySelectorAll(
 			".date:not([aethos-date-formatted='true']"
@@ -1993,8 +2148,8 @@ function main() {
 		}
 	};
 
+	// Helper function to fetch the destination-specific nav
 	aethos.functions.buildDestinationNav = async function () {
-		// Helper function to fetch the destination-specific nav
 		async function fetchDestinationNav(destinationSlug) {
 			try {
 				aethos.log(`Fetching navigation for destination: ${destinationSlug}`);
@@ -2374,9 +2529,8 @@ function main() {
 		}
 	};
 
+	// Function to apply theme based on destination slug in URL
 	aethos.functions.updateThemeOnStaticPages = function () {
-		// Function to apply theme based on destination slug in URL
-
 		// 1. Get the destination name from the URL
 		const urlParts = window.location.pathname.split("/");
 		const destinationName = urlParts[urlParts.indexOf("destinations") + 1]; // Assuming the URL has /destinations/<name>/
@@ -2415,6 +2569,7 @@ function main() {
 		pageWrap.setAttribute("aethos-theme", theme);
 	};
 
+	/* load CMS carousels */
 	aethos.functions.loadCMSCarousels = function () {
 		document
 			.querySelectorAll("[aethos-cms-carousel='enabled']") // get sections that support carousels
@@ -2557,8 +2712,8 @@ function main() {
 			});
 	};
 
+	// Hidden form fields
 	aethos.functions.hiddenFormFields = function () {
-		// Hidden form fields
 		const userLanguage = navigator.language || navigator.userLanguage;
 		const languageFields = document.querySelectorAll(
 			'input[name="USERLANGUAGE"]'
@@ -2569,8 +2724,8 @@ function main() {
 		});
 	};
 
+	// Clear select dropdown when clicking 'All' or similar
 	aethos.functions.clearSelect = function () {
-		// Clear select dropdown when clicking 'All' or similar
 		function clearSelect(identifier, value = "all") {
 			const selectElement = document.querySelector(
 				`select[fs-cmsfilter-field='${identifier}']`
@@ -2648,7 +2803,7 @@ function main() {
 	};
 
 	/* handle date formatting */
-	aethos.functions.handleDates = function () {
+	aethos.functions.dateSuffixes = function () {
 		/* dates */
 		// "suffixMe" function definition
 		function suffixMe(num) {
@@ -2703,6 +2858,7 @@ function main() {
 		});
 	};
 
+	/* hide empty sections */
 	aethos.functions.hideEmptySections = function () {
 		$(".u-empty-section").has(".w-dyn-empty").css("display", "none");
 	};
@@ -2728,6 +2884,8 @@ function main() {
 	};
 
 	/* CALL FUNCTIONS */
+	// aethos.anim.pageTransition();
+
 	aethos.functions.nav();
 	aethos.functions.buildDestinationNav();
 
@@ -2736,7 +2894,6 @@ function main() {
 
 	aethos.functions.handleCMSLoad();
 	aethos.functions.handleCMSFilter();
-	aethos.functions.handleDates();
 	aethos.functions.hideEmptySections();
 
 	aethos.anim.splitText();
@@ -2761,7 +2918,7 @@ function main() {
 	aethos.functions.loadVibes();
 	aethos.functions.addExperienceFilterLinks();
 	aethos.functions.formatDates();
-	// aethos.functions.updateThemeOnStaticPages(); // not currently in use as no need yet
+	aethos.functions.dateSuffixes();
 
 	aethos.functions.updateSubscribeFormName();
 
