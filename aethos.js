@@ -198,7 +198,14 @@ function main() {
 	};
 
 	/* register GSAP plugins */
-	gsap.registerPlugin(SplitText, ScrollSmoother);
+	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother);
+
+	/* GSAP config */
+	ScrollTrigger.config({
+		ignoreMobileResize: true,
+		autoRefreshEvents:
+			"DOMContentLoaded,load" /* we remove 'resize' and 'visibilitychange' to avoid unwanted re-animations https://gsap.com/docs/v3/Plugins/ScrollTrigger/static.config()/ */,
+	});
 
 	/* GSAP page transitions NOT COMPLETE */
 	aethos.anim.pageTransition = function () {
@@ -2775,6 +2782,7 @@ function main() {
 
 	// Hidden form fields
 	aethos.functions.hiddenFormFields = function () {
+		/* user language */
 		const userLanguage = navigator.language || navigator.userLanguage;
 		const languageFields = document.querySelectorAll(
 			'input[name="USERLANGUAGE"]'
@@ -2783,6 +2791,32 @@ function main() {
 		languageFields.forEach((field) => {
 			field.value = userLanguage.substring(0, 2); // Optionally, only use the language code (e.g., 'en')
 		});
+
+		/* page title */
+		const titleFields = document.querySelectorAll('input[name="PAGETITLE"]');
+
+		titleFields.forEach((field) => {
+			field.value = document.title;
+		});
+
+		/* page url */
+		const urlFields = document.querySelectorAll('input[name="PAGEURL"]');
+
+		urlFields.forEach((field) => {
+			field.value = location.href;
+		});
+
+		/* current destination */
+		const destinationFields = document.querySelectorAll(
+			'input[name="PAGEDESTINATION"]'
+		);
+
+		// if we know the current destination
+		if (aethos.settings.destinationSlug) {
+			destinationFields.forEach((field) => {
+				field.value = aethos.settings.destinationSlug;
+			});
+		}
 	};
 
 	// // Clear select dropdown when clicking 'All' or similar
