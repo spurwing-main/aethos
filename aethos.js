@@ -2828,6 +2828,7 @@ function main() {
 				if (filterInstance) {
 					// The `renderitems` event runs whenever the list renders items after filtering.
 					filterInstance.listInstance.on("renderitems", (renderedItems) => {
+						aethos.log("CMS filter - render items");
 						aethos.helpers.refreshSticky(true); // hard refresh
 					});
 
@@ -2854,6 +2855,7 @@ function main() {
 				if (listInstance) {
 					// The `renderitems` event runs whenever the list renders items after switching pages.
 					listInstance.on("renderitems", (renderedItems) => {
+						aethos.log("CMS load - render items");
 						aethos.helpers.refreshSticky(); // soft refresh - only process new items
 					});
 				} else {
