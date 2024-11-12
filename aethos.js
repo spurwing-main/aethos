@@ -200,12 +200,12 @@ function main() {
 	/* register GSAP plugins */
 	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother);
 
-	/* GSAP config */
-	ScrollTrigger.config({
-		ignoreMobileResize: true,
-		autoRefreshEvents:
-			"DOMContentLoaded,load" /* we remove 'resize' and 'visibilitychange' to avoid unwanted re-animations https://gsap.com/docs/v3/Plugins/ScrollTrigger/static.config()/ */,
-	});
+	// /* GSAP config */
+	// ScrollTrigger.config({
+	// 	ignoreMobileResize: true,
+	// 	autoRefreshEvents:
+	// 		"DOMContentLoaded,load" /* we remove 'resize' and 'visibilitychange' to avoid unwanted re-animations https://gsap.com/docs/v3/Plugins/ScrollTrigger/static.config()/ */,
+	// });
 
 	/* GSAP page transitions NOT COMPLETE */
 	aethos.anim.pageTransition = function () {
