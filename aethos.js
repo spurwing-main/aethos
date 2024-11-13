@@ -2471,7 +2471,6 @@ function main() {
 				const subnav_wrapper = document.querySelector(".dest-nav_bottom");
 
 				if (subnav) {
-					return;
 					let isHovered = false;
 					gsap
 						.matchMedia()
@@ -2797,6 +2796,40 @@ function main() {
 			});
 	};
 
+	/* Retreat outline/itinerary component */
+	aethos.functions.retreatOutline = function () {
+		// Get all .c-outline components on the page
+		const outlines = document.querySelectorAll(".c-outline");
+
+		// Loop through each .c-outline component
+		outlines.forEach((outline) => {
+			// Get all .outline_day elements, .outline_media-item elements, and .outline_body-item elements in the current outline component
+			const days = outline.querySelectorAll(".outline_day");
+			const mediaItems = outline.querySelectorAll(".outline_media-item");
+			const bodyItems = outline.querySelectorAll(".outline_body-item");
+
+			// Loop through each .outline_day element
+			days.forEach((day, index) => {
+				// Add hover event listener to each .outline_day element
+				day.addEventListener("mouseenter", () => {
+					// Remove .is-active class from all days, media items, and body items
+					days.forEach((el) => el.classList.remove("is-active"));
+					mediaItems.forEach((el) => el.classList.remove("is-active"));
+					bodyItems.forEach((el) => el.classList.remove("is-active"));
+
+					// Add .is-active class to the hovered day, matching media item, and matching body item
+					day.classList.add("is-active");
+					if (mediaItems[index]) {
+						mediaItems[index].classList.add("is-active");
+					}
+					if (bodyItems[index]) {
+						bodyItems[index].classList.add("is-active");
+					}
+				});
+			});
+		});
+	};
+
 	// Hidden form fields
 	aethos.functions.hiddenFormFields = function () {
 		/* user language */
@@ -3044,4 +3077,6 @@ function main() {
 	aethos.functions.loadCMSCarousels();
 
 	aethos.functions.patches();
+
+	aethos.functions.retreatOutline();
 }
