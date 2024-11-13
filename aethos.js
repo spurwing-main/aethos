@@ -1512,7 +1512,7 @@ function main() {
 				useProgressBar: true,
 			},
 			{
-				selector: ".c-more-rooms",
+				selector: ".carousel-square_inner",
 				options: {
 					type: "slide",
 					autoWidth: true,
