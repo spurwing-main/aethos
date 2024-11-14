@@ -2295,12 +2295,15 @@ function main() {
 			navItems.forEach((item) => {
 				const level = item.getAttribute("aethos-nav-level");
 				const parentId = item.getAttribute("aethos-nav-parent-id");
+				const bottomContainer = item.querySelector(".dest-nav_bottom");
+				console.log(bottomContainer);
 
 				if (!level) {
 					// If `aethos-nav-level` is blank, it's a primary item
 					primaryItems.push({
 						element: item,
 						id: item.getAttribute("aethos-nav-id"),
+						bottomContainer: bottomContainer,
 					});
 				} else if (level === "secondary") {
 					// If `aethos-nav-level` is 'secondary', it's a secondary item
@@ -2312,9 +2315,10 @@ function main() {
 			});
 
 			// Reference to the .dest-nav_bottom container within the fetched nav
-			const bottomContainer = navElement.querySelector(".dest-nav_bottom");
+			const bottomContainer_global =
+				navElement.querySelector(".dest-nav_bottom");
 
-			if (!bottomContainer) {
+			if (!bottomContainer_global) {
 				console.warn(
 					".dest-nav_bottom element not found within the fetched nav"
 				);
@@ -2370,7 +2374,7 @@ function main() {
 
 				// Append the child container to the .dest-nav_bottom if it has children
 				if (childContainer.children.length > 0) {
-					bottomContainer.appendChild(childContainer);
+					primary.bottomContainer.appendChild(childContainer);
 					aethos.log(
 						`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
 					);
@@ -2414,7 +2418,7 @@ function main() {
 		}
 
 		function addNavigationHover() {
-			const menus = document.querySelectorAll(".dest-nav_list");
+			const menus = document.querySelectorAll(".dest-nav_top");
 
 			menus.forEach((menu) => {
 				menu.addEventListener("mouseover", (event) => {
@@ -2425,11 +2429,18 @@ function main() {
 					) {
 						if (event.target.classList.contains("link-cover")) {
 							const menuRect = menu.getBoundingClientRect();
-							const menuOffsetX = menuRect.left;
+							const targetRect = event.target.getBoundingClientRect();
 
-							const rect = event.target.getBoundingClientRect();
-							const offsetX = rect.left;
+							// Calculate the offset relative to the menu
+							const offsetX = targetRect.left - menuRect.left;
 
+							console.log(event.target);
+							console.log(menu);
+							console.log(menuRect);
+							console.log(targetRect);
+							console.log(offsetX);
+
+							// Set underline width and position properties
 							menu.style.setProperty(
 								"--dest-nav-underline-width",
 								`${event.target.offsetWidth}px`
@@ -2437,7 +2448,7 @@ function main() {
 
 							menu.style.setProperty(
 								"--dest-nav-underline-offset-x",
-								`${offsetX - menuOffsetX}px`
+								`${offsetX}px`
 							);
 						}
 					}
@@ -2455,6 +2466,153 @@ function main() {
 			});
 		}
 
+		function showSubnavOnHover_legacy() {
+			const primaryEls = document.querySelectorAll(".dest-nav_item");
+			const subnavWrapper = document.querySelector(".dest-nav_bottom");
+
+			let primaryItems = [];
+
+			primaryEls.forEach((primaryEl) => {
+				let item = {};
+				item.el = primaryEl;
+				item.hasChildren = primaryEl.hasAttribute("aethos-nav-children");
+				item.primaryId = primaryEl.getAttribute("aethos-nav-id");
+
+				// Find the corresponding sub-navigation container if it exists
+				item.subnav = subnavWrapper.querySelector(
+					`.dest-nav_child-list[aethos-nav-id="${item.primaryId}"]`
+				);
+
+				// gsap
+				// .matchMedia()
+				// .add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+
+				function toggleTimeline(item) {
+					item.isHovered ? item.tl.play() : item.tl.reverse();
+				}
+
+				function openSubmenu(item) {
+					item.isHovered = true;
+					item.el.setAttribute("aethos-subnav-status", "open");
+					toggleTimeline(item);
+				}
+
+				function closeSubmenu(item) {
+					item.isHovered = false;
+					item.el.setAttribute("aethos-subnav-status", "closed");
+					toggleTimeline(item);
+				}
+
+				if (item.subnav) {
+					item.tl = setupSubnavTimeline(item);
+					item.isHovered = false;
+					item.el.setAttribute("aethos-subnav-status", "closed");
+
+					item.el.addEventListener("mouseenter", () => openSubmenu(item));
+					item.el.addEventListener("mouseleave", () => closeSubmenu(item));
+					item.subnav.addEventListener("mouseenter", () => openSubmenu(item));
+					item.subnav.addEventListener("mouseleave", () => closeSubmenu(item));
+
+					// // Cleanup function for when the media query condition changes
+					// return () => {
+					// 	primaryItem.removeEventListener("mouseenter", openSubmenu);
+					// 	primaryItem.removeEventListener("mouseleave", closeSubmenu);
+					// 	subnav.removeEventListener("mouseenter", openSubmenu);
+					// 	subnav.removeEventListener("mouseleave", closeSubmenu);
+					// };
+				} else {
+					// If the primary item has no children, close any open subnavs on hover
+					item.el.addEventListener("mouseenter", () => {
+						const openPrimaries = primaryItems.filter((item) => item.isHovered);
+
+						openPrimaries.forEach((item) => {
+							closeSubmenu(item);
+						});
+
+						// if (openSubnav) {
+						// 	gsap.to(openSubnav, {
+						// 		autoAlpha: 0,
+						// 		duration: 0.2,
+						// 	});
+						// }
+					});
+				}
+				// });
+
+				// gsap
+				// 	.matchMedia()
+				// 	.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
+				// 		if (hasChildren && subnav) {
+				// 			const tl = setupSubnavTimeline();
+
+				// 			let isOpen = false;
+
+				// 			primaryItem.addEventListener("click", () => {
+				// 				isOpen = !isOpen;
+				// 				isOpen ? tl.play() : tl.reverse();
+				// 			});
+
+				// 			// Back button closes subnav
+				// 			const backBtn = document.querySelector(".dest-nav_back");
+				// 			if (backBtn) {
+				// 				backBtn.addEventListener("click", () => {
+				// 					gsap.set(subnavWrapper, { display: "none" });
+				// 					isOpen = false;
+				// 					tl.reverse();
+				// 				});
+				// 			}
+
+				// 			// Cleanup function for when the media query condition changes
+				// 			return () => {
+				// 				primaryItem.removeEventListener("click", onClick);
+				// 				if (backBtn) {
+				// 					backBtn.removeEventListener("click", onClick);
+				// 				}
+				// 			};
+				// 		}
+				// 	});
+
+				function setupSubnavTimeline(item) {
+					// Ensure subnav starts hidden
+					gsap.set(subnavWrapper, {
+						autoAlpha: 0,
+						height: 0,
+					});
+					gsap.set(item.subnav.querySelectorAll(".dest-nav_link"), {
+						autoAlpha: 0,
+					});
+					gsap.set(item.subnav, {
+						autoAlpha: 0,
+					});
+
+					return gsap
+						.timeline({ paused: true })
+						.to(subnavWrapper, {
+							autoAlpha: 1,
+							height: "auto",
+							duration: 0.2,
+						})
+						.to(
+							item.subnav,
+							{
+								autoAlpha: 1,
+								duration: 0.15,
+							},
+							"-=0.1"
+						)
+						.to(
+							item.subnav.querySelectorAll(".dest-nav_link"),
+							{
+								autoAlpha: 1,
+								duration: 0.15,
+								stagger: 0.075,
+							},
+							"-=0.1"
+						);
+				}
+			});
+		}
+
 		function showSubnavOnHover() {
 			const primaryItems = document.querySelectorAll(
 				".dest-nav_item[aethos-nav-children='true']" // get primary items with children
@@ -2464,65 +2622,89 @@ function main() {
 				const primaryId = primaryItem.getAttribute("aethos-nav-id");
 
 				// Find the corresponding sub-navigation container
-				const subnav = document.querySelector(
-					`.dest-nav_bottom .dest-nav_child-list[aethos-nav-id="${primaryId}"]`
+				const subnav = primaryItem.querySelector(
+					`.dest-nav_child-list[aethos-nav-id="${primaryId}"]`
 				);
 
-				const subnav_wrapper = document.querySelector(".dest-nav_bottom");
+				const subnav_wrapper = primaryItem.querySelector(".dest-nav_bottom");
+
+				function setupSubnavTimeline() {
+					gsap.set(subnav, { overflow: "hidden" });
+
+					var tl = gsap
+						.timeline({
+							paused: true,
+							// reversed: true,
+							onReverseComplete: function () {
+								gsap.set(subnav_wrapper, { display: "none" });
+							},
+						})
+						.set(subnav_wrapper, { display: "grid" })
+						.fromTo(
+							subnav,
+							{ autoAlpha: 0, height: 0 },
+							{
+								autoAlpha: 1,
+								height: "auto",
+								duration: 0.2,
+							}
+						)
+						.fromTo(
+							subnav.querySelectorAll(".dest-nav_link"),
+							{ autoAlpha: 0 },
+							{
+								autoAlpha: 1,
+								duration: 0.15,
+								stagger: 0.075,
+							},
+							0
+						);
+
+					return tl;
+				}
 
 				if (subnav) {
-					let isHovered = false;
 					gsap
 						.matchMedia()
 						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
 							const tl = setupSubnavTimeline();
 
 							// Desktop: toggle timeline on hover
-							function openSubmenu() {
-								console.log("open submenu");
+							let isHovered = false;
 
-								tl.play();
-							}
-
-							function closeSubmenu() {
-								console.log("close submenu");
-
-								tl.reverse();
+							function toggleTimeline() {
+								isHovered ? tl.play() : tl.reverse();
 							}
 
 							primaryItem.addEventListener("mouseenter", () => {
-								console.log("Enter primary");
 								isHovered = true;
-								openSubmenu();
+								toggleTimeline();
 							});
 
 							primaryItem.addEventListener("mouseleave", () => {
-								console.log("Leave primary");
-
 								isHovered = false;
-								closeSubmenu();
+
+								toggleTimeline();
 							});
 
 							subnav.addEventListener("mouseenter", () => {
-								console.log("Enter subnav");
-
 								isHovered = true;
-								openSubmenu();
+
+								toggleTimeline();
 							});
 
 							subnav.addEventListener("mouseleave", () => {
-								console.log("Leave subnav");
-
 								isHovered = false;
-								closeSubmenu();
+
+								toggleTimeline();
 							});
 
-							// Return cleanup function
+							// Cleanup function for when the media query condition changes
 							return () => {
-								primaryItem.removeEventListener("mouseenter", onEnter);
-								primaryItem.removeEventListener("mouseleave", onLeave);
-								subnav.removeEventListener("mouseenter", onEnter);
-								subnav.removeEventListener("mouseleave", onLeave);
+								primaryItem.removeEventListener("mouseenter", openSubmenu);
+								primaryItem.removeEventListener("mouseleave", closeSubmenu);
+								subnav.removeEventListener("mouseenter", openSubmenu);
+								subnav.removeEventListener("mouseleave", closeSubmenu);
 							};
 						});
 
@@ -2531,68 +2713,31 @@ function main() {
 						.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
 							const tl = setupSubnavTimeline();
 
-							// Mobile: toggle timeline on click
-							function onClick() {
-								if (tl.reversed()) {
-									tl.play();
-								} else {
-									tl.reverse();
-								}
-							}
+							let isOpen = false;
 
-							primaryItem.addEventListener("click", onClick);
+							primaryItem.addEventListener("click", () => {
+								isOpen = !isOpen;
+								isOpen ? tl.play() : tl.reverse();
+							});
 
 							// Back button closes subnav
-							const back_btn = document.querySelector(".dest-nav_back");
-							if (back_btn) {
-								back_btn.addEventListener("click", () => {
-									gsap.set(subnav_wrapper, { display: "none" });
-									if (!tl.reversed()) tl.reverse();
+							const backBtn = document.querySelector(".dest-nav_back");
+							if (backBtn) {
+								backBtn.addEventListener("click", () => {
+									gsap.set(subnavWrapper, { display: "none" });
+									isOpen = false;
+									tl.reverse();
 								});
 							}
 
-							// Return cleanup function
+							// Cleanup function for when the media query condition changes
 							return () => {
 								primaryItem.removeEventListener("click", onClick);
-								if (back_btn) {
-									back_btn.removeEventListener("click", onClick);
+								if (backBtn) {
+									backBtn.removeEventListener("click", onClick);
 								}
 							};
 						});
-
-					// Shared function to set up the subnav timeline
-					function setupSubnavTimeline() {
-						// Ensure subnav starts hidden
-						gsap.set(subnav_wrapper, {
-							// display: "none",
-							// autoAlpha: 0,
-							// height: 0,
-						});
-						// gsap.set(subnav_wrapper, {
-						// 	height: 0,
-						// 	overflow: "hidden",
-						// 	display: "none",
-						// });
-						gsap.set(subnav.querySelectorAll(".dest-nav_link"), {
-							autoAlpha: 0,
-						});
-
-						return (
-							gsap
-								.timeline({ paused: true })
-								// .set(subnav_wrapper, { display: "grid" })
-								.from(subnav_wrapper, {
-									autoAlpha: 0,
-									height: 0,
-									duration: 0.2,
-								})
-								.to(subnav.querySelectorAll(".dest-nav_link"), {
-									autoAlpha: 1,
-									duration: 0.15,
-									stagger: 0.075,
-								})
-						);
-					}
 				}
 			});
 		}
@@ -2608,6 +2753,7 @@ function main() {
 			// Now add the animations
 			addNavigationHover();
 			showSubnavOnHover();
+			document.querySelector(".dest-nav").classList.add(".is-ready");
 		} catch (error) {
 			console.error("Error setting up the destination navigation:", error);
 		}
@@ -2688,7 +2834,7 @@ function main() {
 											".page-resources .cms-carousel_inner"
 										);
 
-										console.log(carouselInner);
+										// console.log(carouselInner);
 
 										if (carouselInner) {
 											carousel.innerHTML = ""; // remove any existing content
