@@ -963,7 +963,6 @@ function main() {
 			if (!trigger) {
 				return;
 			}
-			console.log(trigger);
 			let startValue =
 				trigger.getAttribute("aethos-trigger-start") || "20% 80%";
 
@@ -1880,7 +1879,7 @@ function main() {
 			/* if we have a content element AND the layout IS inverted (ie we only do it if text is above image), then we do full anim. Otherwise we just do an img fade in */
 			let doFullAnimation = false;
 			if (section.querySelector('[aethos-hero-layout="inverted"]') && content) {
-				console.log("do full animation");
+				aethos.log("Doing full hero animation");
 				doFullAnimation = true;
 			}
 
@@ -2296,7 +2295,6 @@ function main() {
 				const level = item.getAttribute("aethos-nav-level");
 				const parentId = item.getAttribute("aethos-nav-parent-id");
 				const bottomContainer = item.querySelector(".dest-nav_bottom");
-				console.log(bottomContainer);
 
 				if (!level) {
 					// If `aethos-nav-level` is blank, it's a primary item
@@ -2334,9 +2332,9 @@ function main() {
 				// Assign the primary ID to the child container
 				if (primary.id) {
 					childContainer.setAttribute("aethos-nav-id", primary.id);
-					aethos.log(
-						`Creating child container for primary item with ID: ${primary.id}`
-					);
+					// aethos.log(
+					// 	`Creating child container for primary item with ID: ${primary.id}`
+					// );
 				}
 
 				// Function to create a clone of the primary item, but without appending it
@@ -2354,9 +2352,10 @@ function main() {
 				// Append secondary items that belong to this primary
 				secondaryItems.forEach((secondary) => {
 					if (secondary.parentId === primary.id) {
-						aethos.log(
-							`Appending secondary item to primary item with ID: ${primary.id}`
-						);
+						// aethos.log(
+						// 	`Appending secondary item to primary item with ID: ${primary.id}`
+						// );
+
 						childContainer.appendChild(secondary.element);
 						primary.element.setAttribute("aethos-nav-children", "true");
 
@@ -2375,9 +2374,9 @@ function main() {
 				// Append the child container to the .dest-nav_bottom if it has children
 				if (childContainer.children.length > 0) {
 					primary.bottomContainer.appendChild(childContainer);
-					aethos.log(
-						`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
-					);
+					// aethos.log(
+					// 	`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
+					// );
 				}
 			});
 
@@ -2417,8 +2416,11 @@ function main() {
 			}
 		}
 
-		function addNavigationHover() {
-			const menus = document.querySelectorAll(".dest-nav_top");
+		function addNavigationHoverTop() {
+			/* patch to let us distinguish between top and bottom items */
+			$(".dest-nav_bottom .link-cover").addClass("is-child");
+
+			const menus = document.querySelectorAll(".dest-nav_top"); // do hover effect on both primary and subnavs
 
 			menus.forEach((menu) => {
 				menu.addEventListener("mouseover", (event) => {
@@ -2427,18 +2429,21 @@ function main() {
 						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
 							.matches
 					) {
-						if (event.target.classList.contains("link-cover")) {
+						if (
+							event.target.classList.contains("link-cover") &&
+							!event.target.classList.contains("is-child")
+						) {
 							const menuRect = menu.getBoundingClientRect();
 							const targetRect = event.target.getBoundingClientRect();
 
 							// Calculate the offset relative to the menu
 							const offsetX = targetRect.left - menuRect.left;
 
-							console.log(event.target);
-							console.log(menu);
-							console.log(menuRect);
-							console.log(targetRect);
-							console.log(offsetX);
+							// console.log(event.target);
+							// console.log(menu);
+							// console.log(menuRect);
+							// console.log(targetRect);
+							// console.log(offsetX);
 
 							// Set underline width and position properties
 							menu.style.setProperty(
@@ -2450,6 +2455,8 @@ function main() {
 								"--dest-nav-underline-offset-x",
 								`${offsetX}px`
 							);
+
+							// console.log(menu);
 						}
 					}
 				});
@@ -2466,152 +2473,205 @@ function main() {
 			});
 		}
 
-		function showSubnavOnHover_legacy() {
-			const primaryEls = document.querySelectorAll(".dest-nav_item");
-			const subnavWrapper = document.querySelector(".dest-nav_bottom");
+		function addNavigationHoverBottom() {
+			const menus = document.querySelectorAll(".dest-nav_bottom");
 
-			let primaryItems = [];
+			menus.forEach((menu) => {
+				menu.addEventListener("mouseover", (event) => {
+					// Check if screen width is 992px or above
+					if (
+						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
+							.matches
+					) {
+						if (event.target.classList.contains("link-cover")) {
+							const menuRect = menu.getBoundingClientRect();
+							const targetRect = event.target.getBoundingClientRect();
 
-			primaryEls.forEach((primaryEl) => {
-				let item = {};
-				item.el = primaryEl;
-				item.hasChildren = primaryEl.hasAttribute("aethos-nav-children");
-				item.primaryId = primaryEl.getAttribute("aethos-nav-id");
+							console.log(targetRect);
 
-				// Find the corresponding sub-navigation container if it exists
-				item.subnav = subnavWrapper.querySelector(
-					`.dest-nav_child-list[aethos-nav-id="${item.primaryId}"]`
-				);
+							// Calculate the offset relative to the menu
+							const offsetX = targetRect.left - menuRect.left;
 
-				// gsap
-				// .matchMedia()
-				// .add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+							// console.log(event.target);
+							// console.log(menu);
+							// console.log(menuRect);
+							// console.log(targetRect);
+							// console.log(offsetX);
 
-				function toggleTimeline(item) {
-					item.isHovered ? item.tl.play() : item.tl.reverse();
-				}
+							// Set underline width and position properties
+							menu.style.setProperty(
+								"--dest-nav-underline-width-bot",
+								`${event.target.offsetWidth}px`
+							);
 
-				function openSubmenu(item) {
-					item.isHovered = true;
-					item.el.setAttribute("aethos-subnav-status", "open");
-					toggleTimeline(item);
-				}
+							menu.style.setProperty(
+								"--dest-nav-underline-offset-x-bot",
+								`${offsetX}px`
+							);
 
-				function closeSubmenu(item) {
-					item.isHovered = false;
-					item.el.setAttribute("aethos-subnav-status", "closed");
-					toggleTimeline(item);
-				}
+							// console.log(menu);
+						}
+					}
+				});
 
-				if (item.subnav) {
-					item.tl = setupSubnavTimeline(item);
-					item.isHovered = false;
-					item.el.setAttribute("aethos-subnav-status", "closed");
-
-					item.el.addEventListener("mouseenter", () => openSubmenu(item));
-					item.el.addEventListener("mouseleave", () => closeSubmenu(item));
-					item.subnav.addEventListener("mouseenter", () => openSubmenu(item));
-					item.subnav.addEventListener("mouseleave", () => closeSubmenu(item));
-
-					// // Cleanup function for when the media query condition changes
-					// return () => {
-					// 	primaryItem.removeEventListener("mouseenter", openSubmenu);
-					// 	primaryItem.removeEventListener("mouseleave", closeSubmenu);
-					// 	subnav.removeEventListener("mouseenter", openSubmenu);
-					// 	subnav.removeEventListener("mouseleave", closeSubmenu);
-					// };
-				} else {
-					// If the primary item has no children, close any open subnavs on hover
-					item.el.addEventListener("mouseenter", () => {
-						const openPrimaries = primaryItems.filter((item) => item.isHovered);
-
-						openPrimaries.forEach((item) => {
-							closeSubmenu(item);
-						});
-
-						// if (openSubnav) {
-						// 	gsap.to(openSubnav, {
-						// 		autoAlpha: 0,
-						// 		duration: 0.2,
-						// 	});
-						// }
-					});
-				}
-				// });
-
-				// gsap
-				// 	.matchMedia()
-				// 	.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
-				// 		if (hasChildren && subnav) {
-				// 			const tl = setupSubnavTimeline();
-
-				// 			let isOpen = false;
-
-				// 			primaryItem.addEventListener("click", () => {
-				// 				isOpen = !isOpen;
-				// 				isOpen ? tl.play() : tl.reverse();
-				// 			});
-
-				// 			// Back button closes subnav
-				// 			const backBtn = document.querySelector(".dest-nav_back");
-				// 			if (backBtn) {
-				// 				backBtn.addEventListener("click", () => {
-				// 					gsap.set(subnavWrapper, { display: "none" });
-				// 					isOpen = false;
-				// 					tl.reverse();
-				// 				});
-				// 			}
-
-				// 			// Cleanup function for when the media query condition changes
-				// 			return () => {
-				// 				primaryItem.removeEventListener("click", onClick);
-				// 				if (backBtn) {
-				// 					backBtn.removeEventListener("click", onClick);
-				// 				}
-				// 			};
-				// 		}
-				// 	});
-
-				function setupSubnavTimeline(item) {
-					// Ensure subnav starts hidden
-					gsap.set(subnavWrapper, {
-						autoAlpha: 0,
-						height: 0,
-					});
-					gsap.set(item.subnav.querySelectorAll(".dest-nav_link"), {
-						autoAlpha: 0,
-					});
-					gsap.set(item.subnav, {
-						autoAlpha: 0,
-					});
-
-					return gsap
-						.timeline({ paused: true })
-						.to(subnavWrapper, {
-							autoAlpha: 1,
-							height: "auto",
-							duration: 0.2,
-						})
-						.to(
-							item.subnav,
-							{
-								autoAlpha: 1,
-								duration: 0.15,
-							},
-							"-=0.1"
-						)
-						.to(
-							item.subnav.querySelectorAll(".dest-nav_link"),
-							{
-								autoAlpha: 1,
-								duration: 0.15,
-								stagger: 0.075,
-							},
-							"-=0.1"
-						);
-				}
+				menu.addEventListener("mouseleave", () => {
+					// Only reset underline if screen width is 992px or above
+					if (
+						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
+							.matches
+					) {
+						menu.style.setProperty("--dest-nav-underline-width-bot", "0");
+					}
+				});
 			});
 		}
+
+		// function showSubnavOnHover_legacy() {
+		// 	const primaryEls = document.querySelectorAll(".dest-nav_item");
+		// 	const subnavWrapper = document.querySelector(".dest-nav_bottom");
+
+		// 	let primaryItems = [];
+
+		// 	primaryEls.forEach((primaryEl) => {
+		// 		let item = {};
+		// 		item.el = primaryEl;
+		// 		item.hasChildren = primaryEl.hasAttribute("aethos-nav-children");
+		// 		item.primaryId = primaryEl.getAttribute("aethos-nav-id");
+
+		// 		// Find the corresponding sub-navigation container if it exists
+		// 		item.subnav = subnavWrapper.querySelector(
+		// 			`.dest-nav_child-list[aethos-nav-id="${item.primaryId}"]`
+		// 		);
+
+		// 		// gsap
+		// 		// .matchMedia()
+		// 		// .add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+
+		// 		function toggleTimeline(item) {
+		// 			item.isHovered ? item.tl.play() : item.tl.reverse();
+		// 		}
+
+		// 		function openSubmenu(item) {
+		// 			item.isHovered = true;
+		// 			item.el.setAttribute("aethos-subnav-status", "open");
+		// 			toggleTimeline(item);
+		// 		}
+
+		// 		function closeSubmenu(item) {
+		// 			item.isHovered = false;
+		// 			item.el.setAttribute("aethos-subnav-status", "closed");
+		// 			toggleTimeline(item);
+		// 		}
+
+		// 		if (item.subnav) {
+		// 			item.tl = setupSubnavTimeline(item);
+		// 			item.isHovered = false;
+		// 			item.el.setAttribute("aethos-subnav-status", "closed");
+
+		// 			item.el.addEventListener("mouseenter", () => openSubmenu(item));
+		// 			item.el.addEventListener("mouseleave", () => closeSubmenu(item));
+		// 			item.subnav.addEventListener("mouseenter", () => openSubmenu(item));
+		// 			item.subnav.addEventListener("mouseleave", () => closeSubmenu(item));
+
+		// 			// // Cleanup function for when the media query condition changes
+		// 			// return () => {
+		// 			// 	primaryItem.removeEventListener("mouseenter", openSubmenu);
+		// 			// 	primaryItem.removeEventListener("mouseleave", closeSubmenu);
+		// 			// 	subnav.removeEventListener("mouseenter", openSubmenu);
+		// 			// 	subnav.removeEventListener("mouseleave", closeSubmenu);
+		// 			// };
+		// 		} else {
+		// 			// If the primary item has no children, close any open subnavs on hover
+		// 			item.el.addEventListener("mouseenter", () => {
+		// 				const openPrimaries = primaryItems.filter((item) => item.isHovered);
+
+		// 				openPrimaries.forEach((item) => {
+		// 					closeSubmenu(item);
+		// 				});
+
+		// 				// if (openSubnav) {
+		// 				// 	gsap.to(openSubnav, {
+		// 				// 		autoAlpha: 0,
+		// 				// 		duration: 0.2,
+		// 				// 	});
+		// 				// }
+		// 			});
+		// 		}
+		// 		// });
+
+		// 		// gsap
+		// 		// 	.matchMedia()
+		// 		// 	.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
+		// 		// 		if (hasChildren && subnav) {
+		// 		// 			const tl = setupSubnavTimeline();
+
+		// 		// 			let isOpen = false;
+
+		// 		// 			primaryItem.addEventListener("click", () => {
+		// 		// 				isOpen = !isOpen;
+		// 		// 				isOpen ? tl.play() : tl.reverse();
+		// 		// 			});
+
+		// 		// 			// Back button closes subnav
+		// 		// 			const backBtn = document.querySelector(".dest-nav_back");
+		// 		// 			if (backBtn) {
+		// 		// 				backBtn.addEventListener("click", () => {
+		// 		// 					gsap.set(subnavWrapper, { display: "none" });
+		// 		// 					isOpen = false;
+		// 		// 					tl.reverse();
+		// 		// 				});
+		// 		// 			}
+
+		// 		// 			// Cleanup function for when the media query condition changes
+		// 		// 			return () => {
+		// 		// 				primaryItem.removeEventListener("click", onClick);
+		// 		// 				if (backBtn) {
+		// 		// 					backBtn.removeEventListener("click", onClick);
+		// 		// 				}
+		// 		// 			};
+		// 		// 		}
+		// 		// 	});
+
+		// 		function setupSubnavTimeline(item) {
+		// 			// Ensure subnav starts hidden
+		// 			gsap.set(subnavWrapper, {
+		// 				autoAlpha: 0,
+		// 				height: 0,
+		// 			});
+		// 			gsap.set(item.subnav.querySelectorAll(".dest-nav_link"), {
+		// 				autoAlpha: 0,
+		// 			});
+		// 			gsap.set(item.subnav, {
+		// 				autoAlpha: 0,
+		// 			});
+
+		// 			return gsap
+		// 				.timeline({ paused: true })
+		// 				.to(subnavWrapper, {
+		// 					autoAlpha: 1,
+		// 					height: "auto",
+		// 					duration: 0.2,
+		// 				})
+		// 				.to(
+		// 					item.subnav,
+		// 					{
+		// 						autoAlpha: 1,
+		// 						duration: 0.15,
+		// 					},
+		// 					"-=0.1"
+		// 				)
+		// 				.to(
+		// 					item.subnav.querySelectorAll(".dest-nav_link"),
+		// 					{
+		// 						autoAlpha: 1,
+		// 						duration: 0.15,
+		// 						stagger: 0.075,
+		// 					},
+		// 					"-=0.1"
+		// 				);
+		// 		}
+		// 	});
+		// }
 
 		function showSubnavOnHover() {
 			const primaryItems = document.querySelectorAll(
@@ -2751,7 +2811,9 @@ function main() {
 			ScrollTrigger.refresh();
 
 			// Now add the animations
-			addNavigationHover();
+			addNavigationHoverTop();
+			addNavigationHoverBottom();
+
 			showSubnavOnHover();
 			document.querySelector(".dest-nav").classList.add(".is-ready");
 		} catch (error) {
@@ -2833,8 +2895,6 @@ function main() {
 										let carouselInner = doc.querySelector(
 											".page-resources .cms-carousel_inner"
 										);
-
-										// console.log(carouselInner);
 
 										if (carouselInner) {
 											carousel.innerHTML = ""; // remove any existing content
