@@ -1682,7 +1682,7 @@ function main() {
 					pin: child,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
-					markers: true,
+					// markers: true,
 				});
 			});
 		});
@@ -3236,6 +3236,65 @@ function main() {
 		});
 	};
 
+	/* club - memberships */
+	aethos.anim.clubMemberships = function () {
+		//only animate on tablet and above
+		let mm = gsap.matchMedia();
+		// get all sections on page
+		let sections = document.querySelectorAll(".c-memberships");
+
+		sections.forEach((section) => {
+			// get sticky image container
+			const imgContainer = section.querySelector(".memberships_img-sticky");
+
+			// get all items
+			let items = section.querySelectorAll(".memberships-item");
+			items.forEach((item, index) => {
+				const img = item.querySelector(".memberships-item_img-wrap");
+				// move img into sticky container
+				imgContainer.append(img);
+
+				// hide all but first image
+				if (index == 0) {
+					img.style.display = "block";
+					img.style.opacity = 1;
+				} else {
+					img.style.display = "none";
+					img.style.opacity = 0;
+				}
+
+				mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
+					// change image on scroll
+					gsap.to(img, {
+						display: "block",
+						opacity: 1,
+						scrollTrigger: {
+							trigger: item,
+							start: "top center",
+							end: "top 30%", // End animation when the section is 25% from the bottom of the viewport
+							scrub: true, // Smooth animation as you scroll
+							toggleActions: "play none none reverse", // Play when entering, reverse when leaving
+							// markers: true,
+						},
+					});
+				});
+			});
+			mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
+				// make image wrap sticky
+				ScrollTrigger.create({
+					trigger: section,
+					start: "top 32px",
+					end: () =>
+						`${section.offsetHeight - imgContainer.offsetHeight}px 0px`,
+					pin: imgContainer,
+					invalidateOnRefresh: true,
+					pinSpacing: false,
+					// markers: true,
+				});
+			});
+		});
+	};
+
 	/* CALL FUNCTIONS */
 	// aethos.anim.pageTransition();
 
@@ -3272,6 +3331,7 @@ function main() {
 	aethos.functions.addExperienceFilterLinks();
 	aethos.functions.formatDates();
 	aethos.functions.dateSuffixes();
+	aethos.anim.clubMemberships();
 
 	aethos.functions.updateSubscribeFormName();
 
