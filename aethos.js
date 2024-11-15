@@ -3295,6 +3295,77 @@ function main() {
 		});
 	};
 
+	aethos.anim.faq = function () {
+		// get all sections on page
+		let sections = document.querySelectorAll(".c-faq");
+
+		sections.forEach((section) => {
+			// Initialize all FAQ content elements with height: 0 on page load
+			section.querySelectorAll(".faq_content").forEach((content) => {
+				content.style.height = "0px";
+			});
+
+			// FAQ toggle functionality
+			section.querySelectorAll(".faq-item").forEach((faq) => {
+				const toggle = faq.querySelector(".faq-item_header");
+				const content = faq.querySelector(".faq_content");
+
+				faq.addEventListener("click", function () {
+					// Close other open items
+					section.querySelectorAll(".faq-item").forEach((other_faq) => {
+						if (other_faq !== faq && other_faq.classList.contains("is-open")) {
+							other_faq.classList.remove("is-active", "is-open");
+							const otherContent = other_faq.querySelector(".faq_content");
+							gsap.to(otherContent, {
+								height: 0,
+								duration: 0.6,
+								// onComplete: () => other_faq.classList.remove("is-active"),
+							});
+						}
+					});
+
+					// Toggle open/close functionality for clicked item
+					if (faq.classList.contains("is-open")) {
+						// Close content using GSAP and remove active classes
+						gsap.to(content, {
+							height: 0,
+							duration: 0.6,
+							// onComplete: () => faq.classList.remove("is-active"),
+						});
+						faq.classList.remove("is-active", "is-open");
+					} else {
+						// Add active classes
+						faq.classList.add("is-open");
+
+						// Open content using GSAP
+						// gsap.set(content, { height: "auto" });
+						// const autoHeight = content.clientHeight;
+						gsap.fromTo(
+							content,
+							{ height: 0 },
+							{ height: "auto", duration: 0.6 }
+						);
+					}
+				});
+
+				// // Add hover functionality
+				// faq.addEventListener("mouseenter", function () {
+				// 	section.querySelectorAll(".faq-item").forEach((other_faq) => {
+				// 		if (other_faq !== faq && !other_faq.classList.contains("is-open")) {
+				// 			// other_faq.classList.add("is-inactive");
+				// 		}
+				// 	});
+				// });
+
+				// faq.addEventListener("mouseleave", function () {
+				// 	section.querySelectorAll(".faq-item").forEach((other_faq) => {
+				// 		// other_faq.classList.remove("is-inactive");
+				// 	});
+				// });
+			});
+		});
+	};
+
 	/* CALL FUNCTIONS */
 	// aethos.anim.pageTransition();
 
@@ -3332,6 +3403,7 @@ function main() {
 	aethos.functions.formatDates();
 	aethos.functions.dateSuffixes();
 	aethos.anim.clubMemberships();
+	aethos.anim.faq();
 
 	aethos.functions.updateSubscribeFormName();
 
