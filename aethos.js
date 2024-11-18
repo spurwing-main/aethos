@@ -1765,6 +1765,11 @@ function main() {
 				return;
 			}
 
+			// for club, make pin colors dark
+			if (aethos.settings.theme == "club") {
+				destination.themeColor = "#000";
+			}
+
 			// Create and add custom circle marker
 			destination.marker = L.circleMarker([destination.lat, destination.long], {
 				radius: 8,
@@ -3347,23 +3352,210 @@ function main() {
 						);
 					}
 				});
-
-				// // Add hover functionality
-				// faq.addEventListener("mouseenter", function () {
-				// 	section.querySelectorAll(".faq-item").forEach((other_faq) => {
-				// 		if (other_faq !== faq && !other_faq.classList.contains("is-open")) {
-				// 			// other_faq.classList.add("is-inactive");
-				// 		}
-				// 	});
-				// });
-
-				// faq.addEventListener("mouseleave", function () {
-				// 	section.querySelectorAll(".faq-item").forEach((other_faq) => {
-				// 		// other_faq.classList.remove("is-inactive");
-				// 	});
-				// });
 			});
 		});
+	};
+
+	aethos.anim.benefits = function () {
+		// Set height: 0 on page load
+		gsap.set(".mem-benefits_list-wrap", { height: 0 });
+
+		// Toggle functionality
+		const items = document.querySelectorAll(".mem-benefits");
+
+		items.forEach((item) => {
+			const content = item.querySelector(".mem-benefits_list-wrap");
+
+			// Prevent rapid clicks from causing animation glitches
+			let isAnimating = false;
+
+			item.addEventListener("click", function () {
+				if (isAnimating) return; // Ignore if already animating
+				isAnimating = true;
+
+				if (item.classList.contains("is-open")) {
+					// Close content using GSAP and remove active classes
+					gsap.to(content, {
+						height: 0,
+						duration: 0.6,
+						onComplete: () => {
+							isAnimating = false;
+						},
+					});
+					item.classList.remove("is-open");
+					item.setAttribute("aria-expanded", "false");
+				} else {
+					// Add active classes
+					item.classList.add("is-open");
+					item.setAttribute("aria-expanded", "true");
+
+					// Calculate natural height and animate
+					const contentHeight = content.scrollHeight; // Get natural height
+					gsap.fromTo(
+						content,
+						{ height: 0 },
+						{
+							height: contentHeight,
+							duration: 0.6,
+							onComplete: () => {
+								isAnimating = false;
+								content.style.height = "auto"; // Reset height to auto after animation
+							},
+						}
+					);
+				}
+			});
+		});
+
+		// Handle window resize to recalculate heights
+		window.addEventListener("resize", () => {
+			items.forEach((item) => {
+				const content = item.querySelector(".mem-benefits_list-wrap");
+				if (item.classList.contains("is-open")) {
+					content.style.height = `auto`;
+				}
+			});
+		});
+	};
+
+	aethos.functions.calc = function () {
+		const form = document.querySelector(".calc");
+		const result = document.querySelector(".calc-result");
+		const backButton = document.querySelector(".calc-result_back");
+		const clubSelect = document.querySelector('select[name="Club"]');
+		const otherClubsRadio = document.querySelectorAll(
+			'input[name="other-clubs"]'
+		);
+		const partnerClubsRadioFieldset = document.querySelector(
+			".calc_partner-clubs"
+		);
+		const partnerClubsRadio = document.querySelectorAll(
+			'input[name="partner-clubs"]'
+		);
+		const submitButton = document.querySelector(".calc_submit .button");
+		const calcDataElements = document.querySelectorAll(".calc-data");
+
+		let selectedClub = null;
+		let selectedPlan = null;
+		let price = null;
+		let fee = null;
+		let bodyText = null;
+
+		// Function to enable/disable the button
+		function buttonEnabled() {
+			const clubSelected = !!selectedClub;
+			const otherClubsSelected = Array.from(otherClubsRadio).some(
+				(radio) => radio.checked
+			);
+			const otherClubsYes = Array.from(otherClubsRadio).find(
+				(radio) => radio.value === "yes" && radio.checked
+			);
+			const partnerClubsSelected = Array.from(partnerClubsRadio).some(
+				(radio) => radio.checked
+			);
+
+			if (
+				clubSelected &&
+				otherClubsSelected &&
+				(otherClubsYes || partnerClubsSelected)
+			) {
+				submitButton.removeAttribute("disabled");
+			} else {
+				submitButton.setAttribute("disabled", true);
+			}
+		}
+
+		// Function to get calc data based on the selected club
+		const getCalcData = (club) => {
+			return Array.from(calcDataElements).find(
+				(el) => el.getAttribute("aethos-calc-name") === club
+			);
+		};
+
+		// Function to reset visibility and values
+		const resetForm = () => {
+			partnerClubsRadioFieldset.style.display = "none";
+			buttonEnabled();
+		};
+
+		// Function to display the result
+		const showResult = () => {
+			const resultTitle = result.querySelector('[aethos-calc-result="title"]');
+			const resultBody = result.querySelector('[aethos-calc-result="body"]');
+			const resultPrice = result.querySelector('[aethos-calc-result="price"]');
+			const resultFee = result.querySelector('[aethos-calc-result="fee"]');
+
+			resultTitle.textContent = `Aethos ${selectedPlan} ${selectedClub}`;
+			resultBody.textContent = bodyText;
+			resultPrice.textContent = price;
+			resultFee.textContent = fee;
+
+			form.style.display = "none";
+			result.style.display = "flex";
+		};
+
+		// Event listener for club selection
+		clubSelect.addEventListener("change", (e) => {
+			selectedClub = e.target.value;
+			buttonEnabled();
+		});
+
+		// Event listener for other clubs radio
+		otherClubsRadio.forEach((radio) => {
+			radio.addEventListener("change", (e) => {
+				if (e.target.value === "yes") {
+					partnerClubsRadioFieldset.style.display = "none";
+					selectedPlan = "Pioneer";
+				} else {
+					partnerClubsRadioFieldset.style.display = "block";
+				}
+				buttonEnabled();
+			});
+		});
+
+		// Event listener for partner clubs radio
+		partnerClubsRadio.forEach((radio) => {
+			radio.addEventListener("change", (e) => {
+				selectedPlan = e.target.value === "yes" ? "Adventurer" : "Explorer";
+				buttonEnabled();
+			});
+		});
+
+		// Event listener for form submission
+		submitButton.addEventListener("click", (e) => {
+			e.preventDefault();
+
+			if (!selectedClub || !selectedPlan) {
+				alert("Please complete all required fields.");
+				return;
+			}
+
+			const calcData = getCalcData(selectedClub);
+			if (!calcData) {
+				alert("Data for the selected club is unavailable.");
+				return;
+			}
+
+			price = calcData.getAttribute(
+				`aethos-calc-${selectedPlan.toLowerCase()}-price`
+			);
+			fee = calcData.getAttribute(
+				`aethos-calc-${selectedPlan.toLowerCase()}-fee`
+			);
+			bodyText = calcData.getAttribute("aethos-calc-body");
+
+			showResult();
+		});
+
+		// Event listener for back button
+		backButton.addEventListener("click", () => {
+			result.style.display = "none";
+			form.style.display = "block";
+			resetForm();
+		});
+
+		// Initial reset
+		resetForm();
 	};
 
 	/* CALL FUNCTIONS */
@@ -3404,6 +3596,7 @@ function main() {
 	aethos.functions.dateSuffixes();
 	aethos.anim.clubMemberships();
 	aethos.anim.faq();
+	aethos.anim.benefits();
 
 	aethos.functions.updateSubscribeFormName();
 
@@ -3417,4 +3610,6 @@ function main() {
 	aethos.functions.patches();
 
 	aethos.functions.retreatOutline();
+
+	aethos.functions.calc();
 }
