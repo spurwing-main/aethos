@@ -3335,6 +3335,7 @@ function main() {
 						gsap.to(content, {
 							height: 0,
 							duration: 0.6,
+							ease: "power4.inOut",
 							// onComplete: () => faq.classList.remove("is-active"),
 						});
 						faq.classList.remove("is-active", "is-open");
@@ -3348,7 +3349,7 @@ function main() {
 						gsap.fromTo(
 							content,
 							{ height: 0 },
-							{ height: "auto", duration: 0.6 }
+							{ height: "auto", duration: 0.6, ease: "power4.inOut" }
 						);
 					}
 				});
@@ -3378,6 +3379,7 @@ function main() {
 					gsap.to(content, {
 						height: 0,
 						duration: 0.6,
+						ease: "power4.inOut",
 						onComplete: () => {
 							isAnimating = false;
 						},
@@ -3397,6 +3399,7 @@ function main() {
 						{
 							height: contentHeight,
 							duration: 0.6,
+							ease: "power4.inOut",
 							onComplete: () => {
 								isAnimating = false;
 								content.style.height = "auto"; // Reset height to auto after animation
