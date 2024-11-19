@@ -2531,153 +2531,6 @@ function main() {
 			});
 		}
 
-		// function showSubnavOnHover_legacy() {
-		// 	const primaryEls = document.querySelectorAll(".dest-nav_item");
-		// 	const subnavWrapper = document.querySelector(".dest-nav_bottom");
-
-		// 	let primaryItems = [];
-
-		// 	primaryEls.forEach((primaryEl) => {
-		// 		let item = {};
-		// 		item.el = primaryEl;
-		// 		item.hasChildren = primaryEl.hasAttribute("aethos-nav-children");
-		// 		item.primaryId = primaryEl.getAttribute("aethos-nav-id");
-
-		// 		// Find the corresponding sub-navigation container if it exists
-		// 		item.subnav = subnavWrapper.querySelector(
-		// 			`.dest-nav_child-list[aethos-nav-id="${item.primaryId}"]`
-		// 		);
-
-		// 		// gsap
-		// 		// .matchMedia()
-		// 		// .add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
-
-		// 		function toggleTimeline(item) {
-		// 			item.isHovered ? item.tl.play() : item.tl.reverse();
-		// 		}
-
-		// 		function openSubmenu(item) {
-		// 			item.isHovered = true;
-		// 			item.el.setAttribute("aethos-subnav-status", "open");
-		// 			toggleTimeline(item);
-		// 		}
-
-		// 		function closeSubmenu(item) {
-		// 			item.isHovered = false;
-		// 			item.el.setAttribute("aethos-subnav-status", "closed");
-		// 			toggleTimeline(item);
-		// 		}
-
-		// 		if (item.subnav) {
-		// 			item.tl = setupSubnavTimeline(item);
-		// 			item.isHovered = false;
-		// 			item.el.setAttribute("aethos-subnav-status", "closed");
-
-		// 			item.el.addEventListener("mouseenter", () => openSubmenu(item));
-		// 			item.el.addEventListener("mouseleave", () => closeSubmenu(item));
-		// 			item.subnav.addEventListener("mouseenter", () => openSubmenu(item));
-		// 			item.subnav.addEventListener("mouseleave", () => closeSubmenu(item));
-
-		// 			// // Cleanup function for when the media query condition changes
-		// 			// return () => {
-		// 			// 	primaryItem.removeEventListener("mouseenter", openSubmenu);
-		// 			// 	primaryItem.removeEventListener("mouseleave", closeSubmenu);
-		// 			// 	subnav.removeEventListener("mouseenter", openSubmenu);
-		// 			// 	subnav.removeEventListener("mouseleave", closeSubmenu);
-		// 			// };
-		// 		} else {
-		// 			// If the primary item has no children, close any open subnavs on hover
-		// 			item.el.addEventListener("mouseenter", () => {
-		// 				const openPrimaries = primaryItems.filter((item) => item.isHovered);
-
-		// 				openPrimaries.forEach((item) => {
-		// 					closeSubmenu(item);
-		// 				});
-
-		// 				// if (openSubnav) {
-		// 				// 	gsap.to(openSubnav, {
-		// 				// 		autoAlpha: 0,
-		// 				// 		duration: 0.2,
-		// 				// 	});
-		// 				// }
-		// 			});
-		// 		}
-		// 		// });
-
-		// 		// gsap
-		// 		// 	.matchMedia()
-		// 		// 	.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
-		// 		// 		if (hasChildren && subnav) {
-		// 		// 			const tl = setupSubnavTimeline();
-
-		// 		// 			let isOpen = false;
-
-		// 		// 			primaryItem.addEventListener("click", () => {
-		// 		// 				isOpen = !isOpen;
-		// 		// 				isOpen ? tl.play() : tl.reverse();
-		// 		// 			});
-
-		// 		// 			// Back button closes subnav
-		// 		// 			const backBtn = document.querySelector(".dest-nav_back");
-		// 		// 			if (backBtn) {
-		// 		// 				backBtn.addEventListener("click", () => {
-		// 		// 					gsap.set(subnavWrapper, { display: "none" });
-		// 		// 					isOpen = false;
-		// 		// 					tl.reverse();
-		// 		// 				});
-		// 		// 			}
-
-		// 		// 			// Cleanup function for when the media query condition changes
-		// 		// 			return () => {
-		// 		// 				primaryItem.removeEventListener("click", onClick);
-		// 		// 				if (backBtn) {
-		// 		// 					backBtn.removeEventListener("click", onClick);
-		// 		// 				}
-		// 		// 			};
-		// 		// 		}
-		// 		// 	});
-
-		// 		function setupSubnavTimeline(item) {
-		// 			// Ensure subnav starts hidden
-		// 			gsap.set(subnavWrapper, {
-		// 				autoAlpha: 0,
-		// 				height: 0,
-		// 			});
-		// 			gsap.set(item.subnav.querySelectorAll(".dest-nav_link"), {
-		// 				autoAlpha: 0,
-		// 			});
-		// 			gsap.set(item.subnav, {
-		// 				autoAlpha: 0,
-		// 			});
-
-		// 			return gsap
-		// 				.timeline({ paused: true })
-		// 				.to(subnavWrapper, {
-		// 					autoAlpha: 1,
-		// 					height: "auto",
-		// 					duration: 0.2,
-		// 				})
-		// 				.to(
-		// 					item.subnav,
-		// 					{
-		// 						autoAlpha: 1,
-		// 						duration: 0.15,
-		// 					},
-		// 					"-=0.1"
-		// 				)
-		// 				.to(
-		// 					item.subnav.querySelectorAll(".dest-nav_link"),
-		// 					{
-		// 						autoAlpha: 1,
-		// 						duration: 0.15,
-		// 						stagger: 0.075,
-		// 					},
-		// 					"-=0.1"
-		// 				);
-		// 		}
-		// 	});
-		// }
-
 		function showSubnavOnHover() {
 			const primaryItems = document.querySelectorAll(
 				".dest-nav_item[aethos-nav-children='true']" // get primary items with children
@@ -3423,6 +3276,9 @@ function main() {
 
 	aethos.functions.calc = function () {
 		const form = document.querySelector(".calc");
+		if (!form) {
+			return;
+		}
 		const result = document.querySelector(".calc-result");
 		const backButton = document.querySelector(".calc-result_back");
 		const clubSelect = document.querySelector('select[name="Club"]');
@@ -3599,6 +3455,59 @@ function main() {
 		resetForm();
 	};
 
+	aethos.anim.addClubNavHover = function () {
+		const menus = document.querySelectorAll(".club-nav");
+
+		menus.forEach((menu) => {
+			menu.addEventListener("mouseover", (event) => {
+				// Check if screen width is 992px or above
+				if (
+					window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
+						.matches
+				) {
+					if (event.target.classList.contains("club-nav_link-text")) {
+						const menuRect = menu.getBoundingClientRect();
+						const targetRect = event.target.getBoundingClientRect();
+
+						console.log(targetRect);
+
+						// Calculate the offset relative to the menu
+						const offsetX = targetRect.left - menuRect.left;
+
+						// console.log(event.target);
+						// console.log(menu);
+						// console.log(menuRect);
+						// console.log(targetRect);
+						console.log(offsetX);
+
+						// Set underline width and position properties
+						menu.style.setProperty(
+							"--club-nav-underline-width",
+							`${event.target.offsetWidth}px`
+						);
+
+						menu.style.setProperty(
+							"--club-nav-underline-offset-x",
+							`${offsetX}px`
+						);
+
+						// console.log(menu);
+					}
+				}
+			});
+
+			menu.addEventListener("mouseleave", () => {
+				// Only reset underline if screen width is 992px or above
+				if (
+					window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
+						.matches
+				) {
+					menu.style.setProperty("--club-nav-underline-width", "0");
+				}
+			});
+		});
+	};
+
 	/* CALL FUNCTIONS */
 	// aethos.anim.pageTransition();
 
@@ -3653,4 +3562,6 @@ function main() {
 	aethos.functions.retreatOutline();
 
 	aethos.functions.calc();
+
+	aethos.anim.addClubNavHover();
 }
