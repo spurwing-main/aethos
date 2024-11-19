@@ -3434,6 +3434,7 @@ function main() {
 		);
 		const submitButton = document.querySelector(".calc_submit .button");
 		const calcDataElements = document.querySelectorAll(".calc-data");
+		const benefitsContainer = document.querySelector(".calc-result_benefits");
 
 		let selectedClub = null;
 		let selectedPlan = null;
@@ -3478,8 +3479,37 @@ function main() {
 			buttonEnabled();
 		};
 
+		// Function to populate benefits
+		const loadBenefits = async () => {
+			// Remove any existing benefits
+			benefitsContainer.innerHTML = "";
+
+			try {
+				const response = await fetch(
+					`/memberships/${selectedPlan.toLowerCase()}`
+				);
+				if (!response.ok) throw new Error("Failed to load benefits");
+
+				const pageHtml = await response.text();
+				const parser = new DOMParser();
+				const doc = parser.parseFromString(pageHtml, "text/html");
+				const benefits = doc.querySelectorAll(".calc-result_benefit");
+
+				if (benefits.length) {
+					benefits.forEach((benefit) => {
+						benefitsContainer.appendChild(benefit.cloneNode(true));
+					});
+				} else {
+					benefitsContainer.textContent = "";
+				}
+			} catch (error) {
+				console.error("Error loading benefits:", error);
+				benefitsContainer.textContent = "";
+			}
+		};
+
 		// Function to display the result
-		const showResult = () => {
+		const showResult = async () => {
 			const resultTitle = result.querySelector('[aethos-calc-result="title"]');
 			const resultBody = result.querySelector('[aethos-calc-result="body"]');
 			const resultPrice = result.querySelector('[aethos-calc-result="price"]');
@@ -3489,6 +3519,12 @@ function main() {
 			resultBody.textContent = bodyText;
 			resultPrice.textContent = price;
 			resultFee.textContent = fee;
+
+			await loadBenefits();
+			/* if no price, hide footer */
+			if (!price) {
+				document.querySelector(".calc-result_footer").style.display = "none";
+			}
 
 			form.style.display = "none";
 			result.style.display = "flex";
@@ -3522,7 +3558,7 @@ function main() {
 		});
 
 		// Event listener for form submission
-		submitButton.addEventListener("click", (e) => {
+		submitButton.addEventListener("click", async (e) => {
 			e.preventDefault();
 
 			if (!selectedClub || !selectedPlan) {
@@ -3542,9 +3578,11 @@ function main() {
 			fee = calcData.getAttribute(
 				`aethos-calc-${selectedPlan.toLowerCase()}-fee`
 			);
-			bodyText = calcData.getAttribute("aethos-calc-body");
+			bodyText = calcData.getAttribute(
+				`aethos-calc-${selectedPlan.toLowerCase()}-body`
+			);
 
-			showResult();
+			await showResult();
 		});
 
 		// Event listener for back button
