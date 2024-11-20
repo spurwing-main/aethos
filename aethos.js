@@ -2894,6 +2894,23 @@ function main() {
 		});
 	};
 
+	// Replace listing links
+	aethos.functions.listingLinks = function () {
+		document
+			.querySelectorAll(
+				'a[href^="/experiences/"], a[href^="/events/"], a[href^="/wellness/"]'
+			)
+			.forEach((link) => {
+				const destinationSlug = link.getAttribute("aethos-destination-slug");
+				if (destinationSlug) {
+					const currentHref = link.getAttribute("href");
+					const slug = currentHref.split("/").pop(); // Extract the `x` part from `/experiences/x`, `/events/x`, etc.
+					const updatedHref = `/listing?slug=${slug}&dest=${destinationSlug}`;
+					link.setAttribute("href", updatedHref);
+				}
+			});
+	};
+
 	// Hidden form fields
 	aethos.functions.hiddenFormFields = function () {
 		/* user language */
@@ -3547,6 +3564,8 @@ function main() {
 	aethos.anim.clubMemberships();
 	aethos.anim.faq();
 	aethos.anim.benefits();
+
+	aethos.functions.listingLinks();
 
 	aethos.functions.updateSubscribeFormName();
 
