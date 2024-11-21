@@ -2950,6 +2950,26 @@ function main() {
 		}
 	};
 
+	// lang selector close button
+	aethos.functions.langSwitcherClose = function () {
+		document
+			.querySelector(".lang-switcher_close")
+			.addEventListener("click", function () {
+				const langSwitcherDD = document.querySelector(
+					".lang-switcher_dd-toggle"
+				);
+				if (langSwitcherDD) {
+					// langSwitcherDD.click(); // Simulates a click on the .lang-switcher_dd element
+					console.log("click");
+
+					langSwitcherDD.dispatchEvent(new Event("mousedown"));
+					setTimeout(() => {
+						langSwitcherDD.dispatchEvent(new Event("mouseup"));
+					}, 10); // A short delay ensures that events are distinguished
+				}
+			});
+	};
+
 	// // Clear select dropdown when clicking 'All' or similar
 	// aethos.functions.clearSelect = function () {
 	// 	function clearSelect(identifier, value = "all") {
@@ -3223,6 +3243,65 @@ function main() {
 						);
 					}
 				});
+			});
+		});
+	};
+
+	/* mobile lang slider */
+	aethos.anim.mblLangSlider = function () {
+		const drawerWrap = document.querySelector(".lang-switcher-mob_drawer-wrap");
+		const overlay = document.querySelector(".lang-switcher-mob_overlay"); // currently not using
+		const closeBtn = document.querySelector(".lang-switcher-mob_close");
+		const toggleButton = document.querySelector(".lang-switcher-mob_bar"); // Add your toggle button selector
+
+		// GSAP animation timeline for opening
+		const openAnimation = gsap
+			.timeline({ paused: true })
+			.set([drawerWrap], { display: "block" }) // Ensure elements are visible
+			.fromTo(
+				drawerWrap,
+				{ height: 0, opacity: 0 },
+				{ height: "10rem", opacity: 1, duration: 0.4, ease: "quart.inOut" }
+			)
+			.fromTo(
+				closeBtn,
+				{ opacity: 0 },
+				{ opacity: 1, duration: 0.4, ease: "quart.inOut" },
+				"<" // Align with previous animation
+			);
+
+		// Event listeners
+		toggleButton.addEventListener("click", () => {
+			if (toggleButton.classList.contains("is-open")) {
+				toggleButton.classList.remove("is-open");
+				aethos.log("reverse");
+				openAnimation.reverse();
+			} else {
+				toggleButton.classList.add("is-open");
+
+				aethos.log("play");
+
+				openAnimation.play();
+			}
+		});
+	};
+
+	/* when a proposal form is submitted, we want to preserve the height of the section to avoid it becoming very short. */
+	/* CSS will override WF's default display: none so form height doesn't change */
+	aethos.functions.preserveProposalFormHeight = function () {
+		const proposalForms = document.querySelectorAll(".proposal-form");
+
+		proposalForms.forEach((form) => {
+			form.addEventListener("submit", () => {
+				// Add the '.is-submitted' class to the form
+				form.classList.add("is-submitted");
+			});
+		});
+
+		// on resize
+		window.addEventListener("resize", () => {
+			proposalForms.forEach((form) => {
+				form.classList.remove("is-submitted");
 			});
 		});
 	};
@@ -3569,7 +3648,6 @@ function main() {
 
 	aethos.functions.updateSubscribeFormName();
 
-	// Call loader function at an appropriate point (e.g., inside main or Swup transition)
 	aethos.anim.loader();
 
 	aethos.functions.loadVideos();
@@ -3583,4 +3661,10 @@ function main() {
 	aethos.functions.calc();
 
 	aethos.anim.addClubNavHover();
+
+	aethos.functions.langSwitcherClose();
+
+	aethos.anim.mblLangSlider();
+
+	aethos.functions.preserveProposalFormHeight();
 }
