@@ -508,6 +508,7 @@ function main() {
 	};
 
 	aethos.anim.loader = function () {
+		return;
 		// Only run this function if the pageLoader setting is true and the loader hasn't run before
 		if (
 			!aethos.settings.pageLoader ||
@@ -2898,7 +2899,7 @@ function main() {
 	aethos.functions.listingLinks = function () {
 		document
 			.querySelectorAll(
-				'a[href^="/experiences/"], a[href^="/events/"], a[href^="/wellness/"]'
+				'a[href^="/experiences/"], a[href^="/happenings/"], a[href^="/wellness/"]'
 			)
 			.forEach((link) => {
 				const destinationSlug = link.getAttribute("aethos-destination-slug");
