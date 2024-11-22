@@ -764,48 +764,79 @@ function main() {
 	// 	*/
 	// };
 
-	/* basic slide and fade anim */
+	/* Basic slide and fade animation */
 	aethos.anim.fadeUp = function () {
-		// for elements that are their own trigger
+		const getAnimAttr = (el, attr, defaultValue) => {
+			const value = el.getAttribute(attr);
+			return value !== null ? parseFloat(value) : defaultValue;
+		};
+
+		// For elements that are their own trigger
 		const self_targets = gsap.utils.toArray(".anim_fade-up_self");
 		self_targets.forEach((target) => {
-			gsap.set(target, {
-				y: 20,
-				opacity: 0,
-			});
-			let tl = gsap.timeline({
-				paused: true,
-				scrollTrigger: {
-					trigger: target,
-					start: "top 80%", // start 30% from bottom
-					scrub: false,
-				},
-			});
-			tl.to(target, { y: 0, duration: 0.5 });
-			tl.to(target, { opacity: 1, duration: 0.8 }, "<"); // opacity anim is slightly longer
+			// Fetch animation attributes with defaults
+			const opacity_duration = getAnimAttr(
+				target,
+				"aethos-anim-duration-opacity",
+				1
+			);
+			const y_duration = getAnimAttr(target, "aethos-anim-duration-y", 0.8);
+			const y = getAnimAttr(target, "aethos-anim-y", 20);
+			const start =
+				target.getAttribute("aethos-anim-scroll-start") ?? "top 80%";
+
+			console.log(target, y);
+
+			// Initial setup
+			gsap.set(target, { y: y, opacity: 0 });
+
+			// Create animation timeline
+			gsap
+				.timeline({
+					scrollTrigger: {
+						trigger: target,
+						start: start,
+						scrub: false,
+					},
+				})
+				.to(target, { y: 0, duration: y_duration })
+				.to(target, { opacity: 1, duration: opacity_duration }, "<");
 		});
 
-		// for elements that have a different trigger
+		// For elements that have a different trigger
 		const triggers = gsap.utils.toArray(".anim_fade-up_trigger");
-		// const stagger = 0.2; // optional stagger
-		const stagger = 0; // removing stagger for now
-		gsap.set(".anim_fade-up_target", {
-			y: 20,
-			opacity: 0,
-		});
 		triggers.forEach((trigger) => {
-			const targets = gsap.utils.toArray(".anim_fade-up_target", trigger); // targets within this trigger
-			let tl = gsap.timeline({
-				paused: true,
-				scrollTrigger: {
-					trigger: trigger,
-					start: "top 70%", // start 30% from bottom
-					scrub: false,
-				},
-			});
-			// Stagger animation for targets
-			tl.to(targets, { y: 0, duration: 0.5, stagger: stagger }); // Adjust stagger duration as needed
-			tl.to(targets, { opacity: 1, duration: 0.8, stagger: stagger }, "<"); // opacity anim is slightly longer but starts at same time
+			// Fetch animation attributes with defaults
+			const stagger = getAnimAttr(trigger, "aethos-anim-stagger", 0);
+			const y = getAnimAttr(trigger, "aethos-anim-y", 20);
+			const opacity_duration = getAnimAttr(
+				trigger,
+				"aethos-anim-duration-opacity",
+				1
+			);
+			const y_duration = getAnimAttr(trigger, "aethos-anim-duration-y", 0.8);
+			const start =
+				trigger.getAttribute("aethos-anim-scroll-start") ?? "top 70%";
+
+			// Initial setup for target elements within the trigger
+			const targets = trigger.querySelectorAll(".anim_fade-up_target");
+			gsap.set(targets, { y: y, opacity: 0 });
+
+			// Create animation timeline with stagger
+			gsap
+				.timeline({
+					scrollTrigger: {
+						trigger: trigger,
+						start: start,
+						scrub: false,
+					},
+				})
+				.to(targets, { y: 0, duration: y_duration, stagger: stagger })
+				.to(
+					targets,
+					{ opacity: 1, duration: opacity_duration, stagger: stagger },
+					"<"
+				);
 		});
 	};
 
@@ -1015,41 +1046,41 @@ function main() {
 		});
 	};
 
-	/* show nav images on nav link hover */
+	/* Show nav images on nav link hover */
 	aethos.anim.NavImage = function () {
-		const nav_link_triggers = document.querySelectorAll(
+		const navLinkTriggers = document.querySelectorAll(
 			".anim-nav-img_trigger[data-link-id]"
 		);
-		const nav_link_imgs = document.querySelectorAll(
+		const navLinkImgs = document.querySelectorAll(
 			".anim-nav-img_target[data-link-id]"
 		);
+		const navLinkImgDefault = document.querySelector(
+			".nav_img-wrap.is-default"
+		);
 
-		nav_link_triggers.forEach((link) => {
+		navLinkImgDefault.classList.add("is-active");
+
+		navLinkTriggers.forEach((link) => {
 			link.addEventListener("mouseenter", () => {
-				//NB - we use mousenter and leave instead of over and out, because this stops event bubbling, which would fire the Destinations dropdown img when hoving over a single child destination
 				const linkId = link.getAttribute("data-link-id");
-				aethos.log("nav link trigger: " + linkId);
+				let imageFound = false;
 
-				nav_link_imgs.forEach((img) => {
+				navLinkImgs.forEach((img) => {
 					if (img.getAttribute("data-link-id") === linkId) {
 						img.classList.add("is-active");
-						img.style.opacity = 1;
+						imageFound = true;
 					} else {
-						img.style.opacity = 0;
 						img.classList.remove("is-active");
 					}
 				});
+
+				// Toggle default image visibility
+				navLinkImgDefault.classList.toggle("is-active", !imageFound);
 			});
 
 			link.addEventListener("mouseleave", () => {
-				const linkId = link.getAttribute("data-link-id");
-
-				nav_link_imgs.forEach((img) => {
-					if (img.getAttribute("data-link-id") === linkId) {
-						img.style.opacity = 0;
-						img.classList.remove("is-active");
-					}
-				});
+				navLinkImgs.forEach((img) => img.classList.remove("is-active"));
+				navLinkImgDefault.classList.add("is-active");
 			});
 		});
 	};
