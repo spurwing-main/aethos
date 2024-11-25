@@ -1669,7 +1669,7 @@ function main() {
 						end: "bottom bottom",
 						pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
 						pinSpacing: false,
-						//markers: true,
+						// markers: true,
 					},
 				});
 
@@ -1679,15 +1679,43 @@ function main() {
 					let body = bodies[index];
 					let image = images[index];
 
+					console.log(index);
+
+					let start = "top 70%";
+					let end = "bottom 70%";
+					let markers = false;
+					if (index == 0) {
+						start = "top 150%";
+					}
+					if (index == values.length - 1) {
+						end = "bottom top";
+					}
+
 					// add a scrolltrigger for each image that toggles an active class on/off the corresponding title and body elements
 					ScrollTrigger.create({
 						trigger: image,
-						start: "top 70%",
-						end: "bottom 70%",
+						start: start,
+						end: end,
 						toggleClass: { targets: [title, body], className: "is-active" },
 						scrub: true,
+						markers: markers,
+						// onEnter: () => {
+						// 	title.classList.add("is-active");
+						// 	body.classList.add("is-active");
+						// },
+						// onLeave: () => {
+						// 	title.classList.remove("is-active");
+						// 	body.classList.remove("is-active");
+						// },
+						// onEnterBack: () => {
+						// 	title.classList.add("is-active");
+						// 	body.classList.add("is-active");
+						// },
+						// onLeaveBack: () => {
+						// 	title.classList.remove("is-active");
+						// 	body.classList.remove("is-active");
+						// },
 					});
-					// }
 				});
 			});
 		});
