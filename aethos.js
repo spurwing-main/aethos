@@ -1809,6 +1809,11 @@ function main() {
 			return;
 		}
 
+		// check which destination is the primary one (ie if we are on a specific destination Contact page)
+		const primarySlug = aethos.map.mapElement.getAttribute(
+			"aethos-map-primary-dest"
+		);
+
 		// Add markers and tooltips
 		destinations.forEach((destEl) => {
 			const destination = {};
@@ -1818,11 +1823,18 @@ function main() {
 			destination.address = destEl.getAttribute("aethos-dest-address");
 			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
 			destination.theme = destEl.getAttribute("aethos-dest-theme");
+			destination.slug = destEl.getAttribute("aethos-dest-slug");
 			destination.themeColor =
 				aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
 
 			if (!destination.lat || !destination.long) {
 				return;
+			}
+
+			// choose the primary destination
+			if (primarySlug && primarySlug == destination.slug) {
+				destination.isPrimary = true;
+				aethos.map.primaryLatLong = [destination.lat, destination.long]; // so we know to focus map
 			}
 
 			// for club, make pin colors dark
@@ -1839,20 +1851,18 @@ function main() {
 			}).addTo(markerLayer);
 
 			// Use the createPopupContent function to generate the HTML for each pop-up
-			if (!aethos.settings.destinationSlug) {
-				// only if we're not on a destination page
-				destination.popupContent = createPopupContent({
-					imageUrl: destination.imgSrc,
-					address: destination.address,
-					name: destination.name,
-					linkUrl: "/destinations/" + destination.name + "/contact",
-				});
+			destination.popupContent = createPopupContent({
+				imageUrl: destination.imgSrc,
+				address: destination.address,
+				name: destination.name,
+				slug: destination.slug,
+				linkUrl: "/destinations/" + destination.slug + "/contact",
+			});
 
-				// Bind the pop-up to the marker
-				destination.marker.bindPopup(destination.popupContent, {
-					maxWidth: 300,
-				});
-			}
+			// Bind the pop-up to the marker
+			destination.marker.bindPopup(destination.popupContent, {
+				maxWidth: 300,
+			});
 
 			aethos.map.destinations.push(destination);
 		});
@@ -1885,12 +1895,17 @@ function main() {
 		});
 
 		// fit map to markers
-		aethos.map.map.fitBounds(markerLayer.getBounds());
-
-		// if a destination page, zoom out a lot
-		if (aethos.settings.destinationSlug) {
-			aethos.map.map.setZoom(10);
+		if (aethos.map.primaryLatLong) {
+			console.log(aethos.map.primaryLatLong);
+			aethos.map.map.setView(aethos.map.primaryLatLong, 11);
+		} else {
+			aethos.map.map.fitBounds(markerLayer.getBounds());
 		}
+
+		// // if a destination page, zoom out a lot
+		// if (aethos.settings.destinationSlug) {
+		// 	aethos.map.map.setZoom(11);
+		// }
 
 		// }
 
