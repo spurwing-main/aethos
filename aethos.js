@@ -346,9 +346,7 @@ function main() {
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
 			normalizeScroll: true,
-			onUpdate: () => {
-				// Add logic here if needed to update when smooth scroll occurs
-			},
+			onUpdate: () => {},
 			onRefresh: () => {
 				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
 				ScrollTrigger.refresh();
@@ -392,7 +390,7 @@ function main() {
 	/* nav hide/show */
 	aethos.anim.navReveal = function () {
 		// if we are on a non-destination page...
-		if (!aethos.settings.destinationSlug) {
+		if (!aethos.settings.theme || aethos.settings.theme == "default") {
 			const navReveal = gsap
 				.from(".header", {
 					yPercent: -100,
@@ -405,21 +403,21 @@ function main() {
 				start: "top -1px",
 				end: "max",
 				pin: ".header",
-				// pinType: "fixed",
-				// markers: true,
 				onUpdate: (self) => {
 					self.direction === -1 ? navReveal.play() : navReveal.reverse();
 				},
+			});
+		} else if (aethos.settings.theme == "club") {
+			ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: ".club-header",
 			});
 		} else {
 			ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".dest-header",
-				// markers: true,
-				// onUpdate: (self) => {
-				// 	self.direction === -1 ? navReveal.play() : navReveal.reverse();
-				// },
 			});
 		}
 	};
