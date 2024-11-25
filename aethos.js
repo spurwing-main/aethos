@@ -2094,7 +2094,7 @@ function main() {
 
 			// Set the button href with the correct link
 			try {
-				button.href = `/destination-subpages/all-experiences/${destinationSlug}?category=${experienceCategory}`;
+				button.href = `/destination-all-experiences/${destinationSlug}?category=${experienceCategory}`;
 			} catch (error) {
 				console.error("Error setting href for button:", error);
 			}
