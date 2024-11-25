@@ -345,6 +345,7 @@ function main() {
 			effects: true,
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
+			normalizeScroll: true,
 			onUpdate: () => {
 				// Add logic here if needed to update when smooth scroll occurs
 			},
@@ -404,6 +405,7 @@ function main() {
 				start: "top -1px",
 				end: "max",
 				pin: ".header",
+				pinType: "fixed",
 				// markers: true,
 				onUpdate: (self) => {
 					self.direction === -1 ? navReveal.play() : navReveal.reverse();
