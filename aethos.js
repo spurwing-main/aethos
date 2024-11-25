@@ -405,7 +405,7 @@ function main() {
 				start: "top -1px",
 				end: "max",
 				pin: ".header",
-				pinType: "fixed",
+				// pinType: "fixed",
 				// markers: true,
 				onUpdate: (self) => {
 					self.direction === -1 ? navReveal.play() : navReveal.reverse();
