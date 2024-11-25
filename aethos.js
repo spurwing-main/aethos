@@ -1022,9 +1022,9 @@ function main() {
 			trigger.addEventListener("click", function () {
 				this.x = ((this.x || 0) + 1) % 2;
 				if (this.x) {
-					this.closest(".grid-header").classList.add("is-open");
+					this.closest(".card-grid-header").classList.add("is-open");
 				} else {
-					this.closest(".grid-header").classList.remove("is-open");
+					this.closest(".card-grid-header").classList.remove("is-open");
 				}
 			});
 		});
@@ -2769,7 +2769,7 @@ function main() {
 						// Load carousel content from another page if slug and path are provided
 						ScrollTrigger.create({
 							trigger: carouselSection,
-							start: "top 10%",
+							start: "top 150%",
 							onEnter: () => {
 								const fetchUrl = `${path}/${slug}`;
 
@@ -2870,6 +2870,9 @@ function main() {
 						dot.classList.add("room-card_pagination-dot");
 						pagination.appendChild(dot);
 						dots.push(dot);
+						if (i == 0) {
+							dot.classList.toggle("is-active"); // make first dot active
+						}
 					}
 					return dots;
 				}
@@ -3320,17 +3323,26 @@ function main() {
 
 	/* when a proposal form is submitted, we want to preserve the height of the section to avoid it becoming very short. */
 	/* CSS will override WF's default display: none so form height doesn't change */
-	aethos.functions.preserveProposalFormHeight = function () {
+	aethos.functions.formSubmissionStyling = function () {
 		const proposalForms = document.querySelectorAll(".proposal-form");
+		const forms = document.querySelectorAll("form");
 
-		proposalForms.forEach((form) => {
+		// fade in success message on footer forms - TODO, not working
+		gsap.set(".footer-form_success", { opacity: 0 });
+
+		forms.forEach((form) => {
 			form.addEventListener("submit", () => {
 				// Add the '.is-submitted' class to the form
 				form.classList.add("is-submitted");
+
+				if (form.classList.contains("footer-form")) {
+					gsap.set(".footer-form_success", { display: "block" });
+					gsap.to(".footer-form_success", { opacity: 1, duration: 0.3 });
+				}
 			});
 		});
 
-		// on resize
+		// for proposal forms, on resize, remove this class to allow flexible heights
 		window.addEventListener("resize", () => {
 			proposalForms.forEach((form) => {
 				form.classList.remove("is-submitted");
@@ -3698,5 +3710,5 @@ function main() {
 
 	aethos.anim.mblLangSlider();
 
-	aethos.functions.preserveProposalFormHeight();
+	aethos.functions.formSubmissionStyling();
 }
