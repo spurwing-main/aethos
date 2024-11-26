@@ -358,6 +358,7 @@ function main() {
 	aethos.functions.nav = function () {
 		aethos.helpers.globalNavClass = "nav-open";
 		aethos.helpers.destNavClass = "dest-nav-open";
+		aethos.helpers.clubNavClass = "club-nav-open";
 
 		function handleResize() {
 			// Close the menu if the window width drops below the breakpoint
@@ -366,6 +367,9 @@ function main() {
 			}
 			if (window.innerWidth <= aethos.breakpoints.tab) {
 				document.body.classList.remove(aethos.helpers.destNavClass);
+			}
+			if (window.innerWidth <= aethos.breakpoints.tab) {
+				document.body.classList.remove(aethos.helpers.clubNavClass);
 			}
 		}
 
@@ -2730,7 +2734,7 @@ function main() {
 			addNavigationHoverBottom();
 
 			showSubnavOnHover();
-			document.querySelector(".dest-nav").classList.add(".is-ready");
+			document.querySelector(".dest-nav").classList.add("is-ready");
 		} catch (error) {
 			console.error("Error setting up the destination navigation:", error);
 		}
@@ -3564,6 +3568,27 @@ function main() {
 		window.addEventListener("resize", updateUnderline);
 	};
 
+	aethos.functions.clubNav = function () {
+		// open Global Nav from Club Nav
+		const globalNavLink = document.querySelector(".club-nav_item.is-global");
+		const globalMenuButton = document.querySelector(".header .nav-btn");
+		const clubMenuButton = document.querySelector(".header .club-nav-btn");
+		if (globalNavLink && globalMenuButton && clubMenuButton) {
+			globalNavLink.addEventListener("click", (event) => {
+				clubMenuButton.click();
+				globalMenuButton.click();
+			});
+		} else {
+		}
+
+		// when club menu button is clicked, toggle a class on the <body> so we can keep track
+		if (clubMenuButton) {
+			clubMenuButton.addEventListener("click", () =>
+				document.body.classList.toggle(aethos.helpers.clubNavClass)
+			);
+		}
+	};
+
 	/* CALL FUNCTIONS */
 	// aethos.anim.pageTransition();
 
@@ -3627,4 +3652,6 @@ function main() {
 	aethos.functions.formSubmissionStyling();
 
 	aethos.anim.wellTabsUnderline();
+
+	aethos.functions.clubNav();
 }
