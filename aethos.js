@@ -1109,7 +1109,7 @@ function main() {
 			if (windowWidth !== $(window).innerWidth()) {
 				windowWidth = $(window).innerWidth();
 				typeSplit.revert();
-				runSplit();
+				runSplit(false);
 			}
 		});
 
@@ -1146,31 +1146,44 @@ function main() {
 	aethos.anim.splitTextBasic = function () {
 		const targets = document.querySelectorAll(".anim-split-basic");
 
+		let initialized = false; // Track if setup has been run at least once
+
 		function setupSplits() {
 			targets.forEach((target) => {
-				// Reset if needed
+				// Reset only if the split instance exists and we haven't just resized
 				if (target.anim) {
-					target.anim.progress(1).kill();
-					target.split.revert();
+					// Ensure we kill the animation and revert the split only on first setup
+					if (!initialized) {
+						target.anim.progress(1).kill();
+						target.split.revert();
+					}
 				}
 
-				target.split = new SplitText(target, {
-					type: "lines",
-				});
+				// Recreate the split instance only if necessary
+				if (!initialized || !target.split) {
+					target.split = new SplitText(target, {
+						type: "lines",
+					});
+				}
 
-				let stagger = 1 / target.split.lines.length; // make stagger quicker if we have more lines;
+				let stagger = 1 / target.split.lines.length; // Adjust stagger based on line count
 
-				// Set up the anim
-				target.anim = gsap.from(target.split.lines, {
-					scrollTrigger: {
-						trigger: target,
-						start: "top 70%",
-					},
-					duration: 1,
-					opacity: 0,
-					stagger: stagger,
-				});
+				// Set up the animation only if it hasn't been created
+				if (!initialized) {
+					target.anim = gsap.from(target.split.lines, {
+						scrollTrigger: {
+							trigger: target,
+							start: "top 70%",
+						},
+						duration: 1,
+						opacity: 0,
+						stagger: stagger,
+					});
+				}
 			});
+
+			// Mark as initialized after first setup
+			initialized = true;
 		}
 
 		ScrollTrigger.addEventListener("refresh", setupSplits);
