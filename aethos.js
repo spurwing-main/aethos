@@ -785,8 +785,6 @@ function main() {
 			const start =
 				target.getAttribute("aethos-anim-scroll-start") ?? "top 80%";
 
-			console.log(target, y);
-
 			// Initial setup
 			gsap.set(target, { y: y, opacity: 0 });
 
@@ -1432,6 +1430,9 @@ function main() {
 
 					// Function to update the progress bar
 					function updateProgressBar() {
+						if (!bar) {
+							return;
+						}
 						// Set bar width relative to slide count
 						let count = splide.Components.Controller.getEnd() + 1;
 						bar.style.width = `${100 / count}%`;
@@ -3502,6 +3503,9 @@ function main() {
 
 	aethos.anim.wellTabsUnderline = function () {
 		const tabMenu = document.querySelector(".well-tabs_menu");
+		if (!tabMenu) {
+			return;
+		}
 		const tabs = tabMenu.querySelectorAll(".well-tabs_link");
 		const dropdownToggleLabel = document.querySelector(
 			".well-tabs_dd-toggle .label-heading"
