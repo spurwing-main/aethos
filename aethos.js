@@ -345,7 +345,7 @@ function main() {
 			effects: true,
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
-			normalizeScroll: true,
+			// normalizeScroll: true,
 			onUpdate: () => {},
 			onRefresh: () => {
 				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
