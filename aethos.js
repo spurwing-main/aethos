@@ -354,20 +354,6 @@ function main() {
 		});
 	};
 
-	aethos.helpers.enableScroll = function () {
-		var enable = document.querySelector(".fs-enable-scroll");
-		if (enable) {
-			enable.click();
-		}
-	};
-
-	aethos.helpers.disableScroll = function () {
-		var disable = document.querySelector(".fs-disable-scroll");
-		if (disable) {
-			disable.click();
-		}
-	};
-
 	/* add class to <body> when .nav is open. Used for animating nav burger icon */
 	aethos.functions.nav = function () {
 		aethos.helpers.globalNavClass = "nav-open";
@@ -375,11 +361,11 @@ function main() {
 		aethos.helpers.clubNavClass = "club-nav-open";
 
 		function handleResize() {
+			return;
 			// default - remove global nav class on mbl and smaller on close
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
 				if (window.innerWidth <= aethos.breakpoints.mbl) {
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// aethos.helpers.enableScroll();
 				}
 			}
 			// dest - remove dest nav class on tab and smaller on close
@@ -391,14 +377,12 @@ function main() {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.destNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// aethos.helpers.enableScroll();
 				}
 			}
 			if (aethos.settings.theme == "club") {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.clubNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// aethos.helpers.enableScroll();
 				}
 			}
 		}
