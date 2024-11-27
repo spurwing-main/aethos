@@ -414,8 +414,18 @@ function main() {
 		// if (destNavBtn)
 		// 	destNavBtn.addEventListener("click", () => toggleNavClass(destNavClass)); // we move this later since the dest nav is added dynamically
 
-		// Add resize event listener to handle window resizing
-		window.addEventListener("resize", handleResize);
+		// Add resize event listener to handle window resizing - for width only
+		// window.addEventListener("resize", handleResize);
+
+		var prevWidth = window.innerWidth;
+		window.addEventListener("resize", function () {
+			var width = window.innerWidth;
+			if (width !== prevWidth) {
+				prevWidth = width;
+				handleResize();
+				console.log(width);
+			}
+		});
 
 		// Initial check in case the page loads in mobile size
 		handleResize();
