@@ -3279,6 +3279,34 @@ function main() {
 		}
 	};
 
+	/* toggle normalise scroll depending on whether nav is open */
+	aethos.functions.toggleNormaliseScroll = function () {
+		// Check if any navigation menu is open
+		const isNavOpen = () =>
+			document.body.classList.contains("nav-open") ||
+			document.body.classList.contains("dest-nav-open") ||
+			document.body.classList.contains("club-nav-open");
+
+		// Toggle GSAP's normalizeScroll based on the nav state
+		const toggleNormalizeScroll = () => {
+			const normalizeState = !isNavOpen();
+			ScrollTrigger.normalizeScroll(normalizeState);
+			console.log(`Normalize Scroll is now ${normalizeState ? "ON" : "OFF"}`);
+		};
+
+		// Observe changes to the body's class list
+		const observer = new MutationObserver(() => toggleNormalizeScroll());
+
+		// Start observing the body for attribute changes (class additions/removals)
+		observer.observe(document.body, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+
+		// Initialize the correct state on load
+		toggleNormalizeScroll();
+	};
+
 	/* CALL FUNCTIONS */
 	aethos.functions.nav();
 	aethos.functions.buildDestinationNav();
@@ -3323,4 +3351,5 @@ function main() {
 	aethos.functions.formSubmissionStyling();
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
+	aethos.functions.toggleNormaliseScroll();
 }
