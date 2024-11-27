@@ -3290,6 +3290,7 @@ function main() {
 	/* toggle normalise and smooth scroll depending on whether nav is open */
 	aethos.functions.toggleNormaliseScroll = function () {
 		let smoother = null;
+		return;
 
 		// Check if any navigation menu is open
 		const isNavOpen = () =>
@@ -3325,7 +3326,6 @@ function main() {
 
 		// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
 		const toggleScrollFeatures = () => {
-			return;
 			const scrollEnabled = !isNavOpen();
 
 			// Toggle normalizeScroll
