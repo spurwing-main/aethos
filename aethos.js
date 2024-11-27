@@ -249,7 +249,6 @@ function main() {
 		aethos.helpers.clubNavClass = "club-nav-open";
 
 		function handleResize() {
-			return;
 			// default - remove global nav class on mbl and smaller on close
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
 				if (window.innerWidth <= aethos.breakpoints.mbl) {
@@ -280,9 +279,15 @@ function main() {
 		// const destNavBtn = document.querySelector(".dest-nav-btn");
 
 		if (navBtn)
-			navBtn.addEventListener("click", () =>
-				document.body.classList.toggle(aethos.helpers.globalNavClass)
+			navBtn.addEventListener(
+				"click",
+				() =>
+					function () {
+						document.body.classList.toggle(aethos.helpers.globalNavClass);
+						ScrollTrigger.refresh();
+					}
 			);
+
 		// if (destNavBtn)
 		// 	destNavBtn.addEventListener("click", () => toggleNavClass(destNavClass)); // we move this later since the dest nav is added dynamically
 
