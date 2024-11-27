@@ -3289,11 +3289,39 @@ function main() {
 
 	/* toggle normalise and smooth scroll depending on whether nav is open */
 	aethos.functions.toggleNormaliseScroll = function () {
+		let smoother = null;
+
 		// Check if any navigation menu is open
 		const isNavOpen = () =>
 			document.body.classList.contains("nav-open") ||
 			document.body.classList.contains("dest-nav-open") ||
 			document.body.classList.contains("club-nav-open");
+
+		// Initialize smooth scroll
+		const initSmoothScroll = () => {
+			if (!smoother) {
+				smoother = ScrollSmoother.create({
+					smooth: 1,
+					effects: true,
+					content: "#smooth-content",
+					wrapper: "#smooth-wrapper",
+					onUpdate: () => {},
+					onRefresh: () => {
+						ScrollTrigger.refresh();
+					},
+				});
+				console.log("Smooth Scroll initialized.");
+			}
+		};
+
+		// Kill smooth scroll
+		const killSmoothScroll = () => {
+			if (smoother) {
+				smoother.kill();
+				smoother = null;
+				console.log("Smooth Scroll disabled.");
+			}
+		};
 
 		// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
 		const toggleScrollFeatures = () => {
@@ -3303,15 +3331,11 @@ function main() {
 			ScrollTrigger.normalizeScroll(scrollEnabled);
 			console.log(`Normalize Scroll is now ${scrollEnabled ? "ON" : "OFF"}`);
 
-			// Toggle smoothScroll (if you're using a custom smooth scrolling implementation)
-			if (aethos.smoothScroll) {
-				if (scrollEnabled) {
-					aethos.smoothScroll.enable();
-					console.log("Smooth Scroll is now ON");
-				} else {
-					aethos.smoothScroll.disable();
-					console.log("Smooth Scroll is now OFF");
-				}
+			// Toggle smoothScroll
+			if (scrollEnabled) {
+				initSmoothScroll();
+			} else {
+				killSmoothScroll();
 			}
 		};
 
@@ -3339,7 +3363,7 @@ function main() {
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
-	aethos.anim.smoothScroll();
+	// aethos.anim.smoothScroll();
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
