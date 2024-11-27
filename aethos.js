@@ -3396,5 +3396,5 @@ function main() {
 	aethos.functions.formSubmissionStyling();
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
-	aethos.functions.toggleNormaliseScroll();
+	// aethos.functions.toggleNormaliseScroll();
 }
