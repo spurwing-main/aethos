@@ -278,15 +278,12 @@ function main() {
 		const navBtn = document.querySelector(".nav-btn");
 		// const destNavBtn = document.querySelector(".dest-nav-btn");
 
-		if (navBtn)
-			navBtn.addEventListener(
-				"click",
-				() =>
-					function () {
-						document.body.classList.toggle(aethos.helpers.globalNavClass);
-						ScrollTrigger.refresh();
-					}
-			);
+		if (navBtn) {
+			navBtn.addEventListener("click", () => {
+				document.body.classList.toggle(aethos.helpers.globalNavClass);
+				ScrollTrigger.refresh();
+			});
+		}
 
 		// if (destNavBtn)
 		// 	destNavBtn.addEventListener("click", () => toggleNavClass(destNavClass)); // we move this later since the dest nav is added dynamically
