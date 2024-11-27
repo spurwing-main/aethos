@@ -422,7 +422,6 @@ function main() {
 			if (width !== prevWidth) {
 				prevWidth = width;
 				handleResize();
-				console.log(width);
 			}
 		});
 
@@ -3288,7 +3287,7 @@ function main() {
 		}
 	};
 
-	/* toggle normalise scroll depending on whether nav is open */
+	/* toggle normalise and smooth scroll depending on whether nav is open */
 	aethos.functions.toggleNormaliseScroll = function () {
 		// Check if any navigation menu is open
 		const isNavOpen = () =>
@@ -3296,15 +3295,28 @@ function main() {
 			document.body.classList.contains("dest-nav-open") ||
 			document.body.classList.contains("club-nav-open");
 
-		// Toggle GSAP's normalizeScroll based on the nav state
-		const toggleNormalizeScroll = () => {
-			const normalizeState = !isNavOpen();
-			ScrollTrigger.normalizeScroll(normalizeState);
-			console.log(`Normalize Scroll is now ${normalizeState ? "ON" : "OFF"}`);
+		// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
+		const toggleScrollFeatures = () => {
+			const scrollEnabled = !isNavOpen();
+
+			// Toggle normalizeScroll
+			ScrollTrigger.normalizeScroll(scrollEnabled);
+			console.log(`Normalize Scroll is now ${scrollEnabled ? "ON" : "OFF"}`);
+
+			// Toggle smoothScroll (if you're using a custom smooth scrolling implementation)
+			if (aethos.smoothScroll) {
+				if (scrollEnabled) {
+					aethos.smoothScroll.enable();
+					console.log("Smooth Scroll is now ON");
+				} else {
+					aethos.smoothScroll.disable();
+					console.log("Smooth Scroll is now OFF");
+				}
+			}
 		};
 
 		// Observe changes to the body's class list
-		const observer = new MutationObserver(() => toggleNormalizeScroll());
+		const observer = new MutationObserver(() => toggleScrollFeatures());
 
 		// Start observing the body for attribute changes (class additions/removals)
 		observer.observe(document.body, {
@@ -3313,7 +3325,7 @@ function main() {
 		});
 
 		// Initialize the correct state on load
-		toggleNormalizeScroll();
+		toggleScrollFeatures();
 	};
 
 	/* CALL FUNCTIONS */
