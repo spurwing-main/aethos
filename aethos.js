@@ -415,7 +415,6 @@ function main() {
 		// 	destNavBtn.addEventListener("click", () => toggleNavClass(destNavClass)); // we move this later since the dest nav is added dynamically
 
 		// Add resize event listener to handle window resizing - for width only
-		// window.addEventListener("resize", handleResize);
 
 		var prevWidth = window.innerWidth;
 		window.addEventListener("resize", function () {
