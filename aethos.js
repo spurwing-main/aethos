@@ -3328,7 +3328,7 @@ function main() {
 			const scrollEnabled = !isNavOpen();
 
 			// Toggle normalizeScroll
-			// ScrollTrigger.normalizeScroll(scrollEnabled);
+			ScrollTrigger.normalizeScroll(scrollEnabled);
 			console.log(`Normalize Scroll is now ${scrollEnabled ? "ON" : "OFF"}`);
 
 			// Toggle smoothScroll
