@@ -3325,6 +3325,7 @@ function main() {
 
 		// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
 		const toggleScrollFeatures = () => {
+			return;
 			const scrollEnabled = !isNavOpen();
 
 			// Toggle normalizeScroll
