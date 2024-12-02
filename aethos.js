@@ -660,106 +660,111 @@ function main() {
 	/* animated text effect 1 */
 	aethos.anim.splitText = function () {
 		let typeSplit;
-		let targetClass = "anim-split";
-		let linesClass = "anim-split_line"; // class to add to lines
-		let maskClass = "anim-split_line-mask"; // class to add to masks
+		const targetClass = "anim-split";
+		const linesClass = "anim-split_line";
+		const maskClass = "anim-split_line-mask";
 
-		// Split the text up
 		function runSplit() {
+			// Revert any previous SplitText instance
+			if (typeSplit) {
+				typeSplit.revert();
+			}
+
+			// Create new SplitText instance
 			typeSplit = new SplitText("." + targetClass, {
 				types: "lines",
 				linesClass: linesClass,
 			});
-			$("." + linesClass).append("<div class='" + maskClass + "'></div>");
+
+			// Append masks to each line
+			$("." + linesClass).append(`<div class="${maskClass}"></div>`);
+
+			// Create the animation once
 			createAnimation();
 		}
-		runSplit();
-
-		// Update on window resize
-		let windowWidth = $(window).innerWidth();
-		window.addEventListener("resize", function () {
-			if (windowWidth !== $(window).innerWidth()) {
-				windowWidth = $(window).innerWidth();
-				typeSplit.revert();
-				runSplit(false);
-			}
-		});
 
 		function createAnimation() {
 			const trigger = document.querySelector("." + targetClass);
 			const lines = $("." + linesClass);
 
-			let tl = gsap.timeline({
-				scrollTrigger: {
-					trigger: trigger,
-					start: "top 90%",
-					end: "bottom 10%",
-					scrub: true,
-				},
-			});
-
-			tl.to(lines.find("." + maskClass), {
-				width: "0%",
-				duration: 1,
-				ease: "power2.out",
-				stagger: {
-					each: 0.5,
-					onComplete: () => {},
-				},
-			});
-
-			// Ensure that the animation duration matches the scroll distance
-			let totalScrollDistance = tl.scrollTrigger.end - tl.scrollTrigger.start;
-			tl.totalDuration(totalScrollDistance / 1000); // Adjusting the total duration to match scroll distance
+			gsap
+				.timeline({
+					scrollTrigger: {
+						trigger: trigger,
+						start: "top 90%",
+						end: "bottom 10%",
+						scrub: true,
+					},
+				})
+				.to(lines.find("." + maskClass), {
+					width: "0%",
+					duration: 1,
+					ease: "power2.out",
+					stagger: 0.5,
+				});
 		}
+
+		// Run the split and animation once
+		runSplit();
+
+		// Revert split on window resize without reanimating
+		let windowWidth = $(window).innerWidth();
+		window.addEventListener("resize", () => {
+			if (windowWidth !== $(window).innerWidth()) {
+				windowWidth = $(window).innerWidth();
+				typeSplit.revert();
+			}
+		});
 	};
 
 	/* animated text effect 2 */
 	aethos.anim.splitTextBasic = function () {
 		const targets = document.querySelectorAll(".anim-split-basic");
 
-		let initialized = false; // Track if setup has been run at least once
-
 		function setupSplits() {
 			targets.forEach((target) => {
-				// Reset only if the split instance exists and we haven't just resized
-				if (target.anim) {
-					// Ensure we kill the animation and revert the split only on first setup
-					if (!initialized) {
-						target.anim.progress(1).kill();
-						target.split.revert();
-					}
+				// Revert SplitText instance if it exists
+				if (target.split) {
+					target.split.revert();
 				}
 
-				// Recreate the split instance only if necessary
-				if (!initialized || !target.split) {
-					target.split = new SplitText(target, {
-						type: "lines",
-					});
-				}
+				// Create a new SplitText instance
+				target.split = new SplitText(target, {
+					type: "lines",
+				});
 
-				let stagger = 1 / target.split.lines.length; // Adjust stagger based on line count
-
-				// Set up the animation only if it hasn't been created
-				if (!initialized) {
-					target.anim = gsap.from(target.split.lines, {
+				// Set up the animation once
+				if (!target.animInitialized) {
+					target.animInitialized = true;
+					gsap.from(target.split.lines, {
 						scrollTrigger: {
 							trigger: target,
 							start: "top 70%",
+							toggleActions: "play none none none",
 						},
-						duration: 1,
 						opacity: 0,
-						stagger: stagger,
+						duration: 1,
+						stagger: 1 / target.split.lines.length,
 					});
 				}
 			});
-
-			// Mark as initialized after first setup
-			initialized = true;
 		}
 
-		ScrollTrigger.addEventListener("refresh", setupSplits);
+		// Initialize splits once
 		setupSplits();
+
+		// Revert on window resize without reanimating
+		let windowWidth = window.innerWidth;
+		window.addEventListener("resize", () => {
+			if (windowWidth !== window.innerWidth) {
+				windowWidth = window.innerWidth;
+				targets.forEach((target) => {
+					if (target.split) {
+						target.split.revert();
+					}
+				});
+			}
+		});
 	};
 
 	/* Carousel Animations */
