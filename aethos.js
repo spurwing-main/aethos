@@ -3062,23 +3062,19 @@ function main() {
 		});
 	};
 
-	/* underline effect on hover for tabs */
 	aethos.anim.wellTabsUnderline = function () {
 		const tabMenu = document.querySelector(".well-tabs_menu");
-		if (!tabMenu) {
-			return;
-		}
+		if (!tabMenu) return;
+
 		const tabs = tabMenu.querySelectorAll(".well-tabs_link");
 		const dropdownToggleLabel = document.querySelector(
 			".well-tabs_dd-toggle .label-heading"
 		);
 
 		function updateUnderline() {
-			// Find the currently active tab
 			const activeTab = tabMenu.querySelector(".well-tabs_link.is-active");
 			if (!activeTab) return;
 
-			// Recalculate underline position and width
 			const menuRect = tabMenu.getBoundingClientRect();
 			const activeTabRect = activeTab.getBoundingClientRect();
 			const offsetX = activeTabRect.left - menuRect.left;
@@ -3090,40 +3086,43 @@ function main() {
 			tabMenu.style.setProperty("--tabs-underline-offset-x", `${offsetX}px`);
 		}
 
+		function updateDropdownLabel(tab) {
+			const tabLabel = tab.querySelector(".label-heading")?.textContent;
+			if (dropdownToggleLabel && tabLabel) {
+				dropdownToggleLabel.textContent = tabLabel;
+			}
+		}
+
+		function setActiveTab(tab) {
+			tabs.forEach((t) => t.classList.remove("is-active"));
+			tab.classList.add("is-active");
+		}
+
 		tabs.forEach((tab) => {
 			tab.addEventListener("click", (event) => {
 				event.preventDefault();
-
-				// Ensure we are working with the `.well-tabs_link` element
 				const clickedTab = event.target.closest(".well-tabs_link");
 				if (!clickedTab) return;
 
-				// Update underline position and width
-				tabs.forEach((t) => t.classList.remove("is-active"));
-				clickedTab.classList.add("is-active");
+				setActiveTab(clickedTab);
 				updateUnderline();
-
-				// Update dropdown toggle label with clicked tab text
-				const clickedTabLabel =
-					clickedTab.querySelector(".label-heading").textContent;
-				if (dropdownToggleLabel) {
-					dropdownToggleLabel.textContent = clickedTabLabel;
-				}
+				updateDropdownLabel(clickedTab);
 			});
 		});
 
-		// Initialize the underline position and dropdown toggle label for the default active tab
-		updateUnderline();
-		const activeTab =
+		const initialTab =
 			tabMenu.querySelector(".well-tabs_link.is-active") || tabs[0];
-		if (dropdownToggleLabel) {
-			const initialTabLabel =
-				activeTab.querySelector(".label-heading").textContent;
-			dropdownToggleLabel.textContent = initialTabLabel;
+		if (initialTab) {
+			setActiveTab(initialTab);
+			updateUnderline();
+			updateDropdownLabel(initialTab);
 		}
 
-		// Update underline position and width on window resize
-		window.addEventListener("resize", updateUnderline);
+		let resizeTimeout;
+		window.addEventListener("resize", () => {
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(updateUnderline, 100);
+		});
 	};
 
 	/* club nav */
