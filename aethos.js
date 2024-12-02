@@ -1512,9 +1512,15 @@ function main() {
 			let content = gsap_section(".anim-load-hero_content"); // content element
 			let media = gsap_section(".anim-load-hero_media"); // media element
 			let content_bg = gsap_section(".anim-load-hero_content-bg"); // bg element behind content - already exists on page
-			const section_bg_color = getComputedStyle(
+			let section_bg_color = getComputedStyle(
 				document.documentElement
 			).getPropertyValue("--color--sand--light");
+
+			if (aethos.settings.theme == "club") {
+				section_bg_color = getComputedStyle(
+					document.documentElement
+				).getPropertyValue("--color--charcoal--dark");
+			}
 
 			/* decide if we are doing full animation or not */
 			/* if we have a content element AND the layout IS inverted (ie we only do it if text is above image), then we do full anim. Otherwise we just do an img fade in */
