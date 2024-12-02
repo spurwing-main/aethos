@@ -1689,21 +1689,21 @@ function main() {
 				onLeave: () => {
 					if (player) {
 						player.pause().catch(function (error) {
-							aethos.error(`Error pausing video ${vimeoId}:`, error);
+							console.error(`Error pausing video ${vimeoId}:`, error);
 						});
 					}
 				},
 				onEnterBack: () => {
 					if (player) {
 						player.play().catch(function (error) {
-							aethos.error(`Error resuming video ${vimeoId}:`, error);
+							console.error(`Error resuming video ${vimeoId}:`, error);
 						});
 					}
 				},
 				onLeaveBack: () => {
 					if (player) {
 						player.pause().catch(function (error) {
-							aethos.error(`Error pausing video ${vimeoId}:`, error);
+							console.error(`Error pausing video ${vimeoId}:`, error);
 						});
 					}
 				},
@@ -1728,7 +1728,7 @@ function main() {
 			player.on("loaded", function () {
 				// Attempt to play the video
 				player.play().catch(function (error) {
-					aethos.error(`Error playing video ${vimeoId}:`, error);
+					console.error(`Error playing video ${vimeoId}:`, error);
 				});
 
 				// Transition from image to video
@@ -2057,112 +2057,69 @@ function main() {
 			}
 		}
 
-		function addNavigationHoverTop() {
-			/* patch to let us distinguish between top and bottom items */
-			$(".dest-nav_bottom .link-cover").addClass("is-child");
+		function menuHover(menu, target, underlineWidthProp, underlineOffsetProp) {
+			const menuRect = menu.getBoundingClientRect();
+			const targetRect = target.getBoundingClientRect();
+			// Calculate the offset relative to the menu
+			const offsetX = targetRect.left - menuRect.left;
 
-			const menus = document.querySelectorAll(".dest-nav_top"); // do hover effect on both primary and subnavs
-
-			menus.forEach((menu) => {
-				menu.addEventListener("mouseover", (event) => {
-					// Check if screen width is 992px or above
-					if (
-						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
-							.matches
-					) {
-						if (
-							event.target.classList.contains("link-cover") &&
-							!event.target.classList.contains("is-child")
-						) {
-							const menuRect = menu.getBoundingClientRect();
-							const targetRect = event.target.getBoundingClientRect();
-
-							// Calculate the offset relative to the menu
-							const offsetX = targetRect.left - menuRect.left;
-
-							// console.log(event.target);
-							// console.log(menu);
-							// console.log(menuRect);
-							// console.log(targetRect);
-							// console.log(offsetX);
-
-							// Set underline width and position properties
-							menu.style.setProperty(
-								"--dest-nav-underline-width",
-								`${event.target.offsetWidth}px`
-							);
-
-							menu.style.setProperty(
-								"--dest-nav-underline-offset-x",
-								`${offsetX}px`
-							);
-
-							// console.log(menu);
-						}
-					}
-				});
-
-				menu.addEventListener("mouseleave", () => {
-					// Only reset underline if screen width is 992px or above
-					if (
-						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
-							.matches
-					) {
-						menu.style.setProperty("--dest-nav-underline-width", "0");
-					}
-				});
-			});
+			// Set underline width and position properties
+			menu.style.setProperty(underlineWidthProp, `${target.offsetWidth}px`);
+			menu.style.setProperty(underlineOffsetProp, `${offsetX}px`);
 		}
 
-		function addNavigationHoverBottom() {
-			const menus = document.querySelectorAll(".dest-nav_bottom");
+		function addNavigationHover(
+			menuSelector,
+			underlineWidthProp,
+			underlineOffsetProp,
+			isChildCheck = false
+		) {
+			const menus = document.querySelectorAll(menuSelector);
+
+			const topNav_selector = ".dest-nav_top";
+			const topNav_underlineWidthProp = "--dest-nav-underline-width";
+			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
 
 			menus.forEach((menu) => {
+				// set offset to a reasonable starting pos
+				menu.style.setProperty(
+					underlineOffsetProp,
+					`${window.innerWidth * 0.5}px`
+				);
+
 				menu.addEventListener("mouseover", (event) => {
-					// Check if screen width is 992px or above
 					if (
-						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
-							.matches
+						event.target.classList.contains("link-cover") &&
+						(!isChildCheck || !event.target.classList.contains("is-child"))
 					) {
-						if (event.target.classList.contains("link-cover")) {
-							const menuRect = menu.getBoundingClientRect();
-							const targetRect = event.target.getBoundingClientRect();
+						// trigger hover on this item
+						menuHover(
+							menu,
+							event.target,
+							underlineWidthProp,
+							underlineOffsetProp
+						);
 
-							console.log(targetRect);
-
-							// Calculate the offset relative to the menu
-							const offsetX = targetRect.left - menuRect.left;
-
-							// console.log(event.target);
-							// console.log(menu);
-							// console.log(menuRect);
-							// console.log(targetRect);
-							// console.log(offsetX);
-
-							// Set underline width and position properties
-							menu.style.setProperty(
-								"--dest-nav-underline-width-bot",
-								`${event.target.offsetWidth}px`
+						// if we are on a child item, trigger the parent item hover to be safe
+						if (event.target.classList.contains("is-child")) {
+							const parentItem = event.target.closest(
+								"[aethos-nav-children='true']"
 							);
+							const parentMenu = parentItem.closest(topNav_selector);
 
-							menu.style.setProperty(
-								"--dest-nav-underline-offset-x-bot",
-								`${offsetX}px`
+							console.log(parentItem, parentMenu);
+							menuHover(
+								parentMenu,
+								parentItem,
+								topNav_underlineWidthProp,
+								topNav_underlineOffsetProp
 							);
-
-							// console.log(menu);
 						}
 					}
 				});
 
 				menu.addEventListener("mouseleave", () => {
-					// Only reset underline if screen width is 992px or above
-					if (
-						window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
-							.matches
-					) {
-						menu.style.setProperty("--dest-nav-underline-width-bot", "0");
-					}
+					menu.style.setProperty(underlineWidthProp, "0");
 				});
 			});
 		}
@@ -2221,6 +2178,7 @@ function main() {
 					gsap
 						.matchMedia()
 						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+							console.log("setting up subnav hover");
 							const tl = setupSubnavTimeline();
 
 							// Desktop: toggle timeline on hover
@@ -2255,6 +2213,8 @@ function main() {
 
 							// Cleanup function for when the media query condition changes
 							return () => {
+								console.log("turning off subnav hover");
+
 								primaryItem.removeEventListener("mouseenter", openSubmenu);
 								primaryItem.removeEventListener("mouseleave", closeSubmenu);
 								subnav.removeEventListener("mouseenter", openSubmenu);
@@ -2304,9 +2264,32 @@ function main() {
 			// refresh scrolltrigger pagewide
 			ScrollTrigger.refresh();
 
-			// Now add the animations
-			addNavigationHoverTop();
-			addNavigationHoverBottom();
+			// Add navigation hover effects for top and bottom menus
+			$(".dest-nav_bottom .link-cover").addClass("is-child"); // Patch to distinguish top and bottom items
+
+			const topNav_selector = ".dest-nav_top";
+			const topNav_underlineWidthProp = "--dest-nav-underline-width";
+			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+
+			const botNav_selector = ".dest-nav_bottom";
+			const botNav_underlineWidthProp = "--dest-nav-underline-width-bot";
+			const botNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
+
+			// top
+			addNavigationHover(
+				topNav_selector,
+				topNav_underlineWidthProp,
+				topNav_underlineOffsetProp,
+				true
+			);
+
+			// bottom
+			addNavigationHover(
+				botNav_selector,
+				botNav_underlineWidthProp,
+				botNav_underlineOffsetProp,
+				false
+			);
 
 			showSubnavOnHover();
 			document.querySelector(".dest-nav").classList.add("is-ready");
@@ -3035,6 +3018,12 @@ function main() {
 		const menus = document.querySelectorAll(".club-nav");
 
 		menus.forEach((menu) => {
+			/* on load, set offset to a reasonable midway number to avoid underline sliding in from 0px on first hover */
+			const menuRect = menu.getBoundingClientRect();
+			menu.style.setProperty(
+				"--club-nav-underline-offset-x",
+				`${menuRect.right / 2}px`
+			);
 			menu.addEventListener("mouseover", (event) => {
 				// Check if screen width is 992px or above
 				if (
@@ -3042,15 +3031,10 @@ function main() {
 						.matches
 				) {
 					if (event.target.classList.contains("club-nav_link-text")) {
-						const menuRect = menu.getBoundingClientRect();
 						const targetRect = event.target.getBoundingClientRect();
-
-						console.log(targetRect);
 
 						// Calculate the offset relative to the menu
 						const offsetX = targetRect.left - menuRect.left;
-
-						console.log(offsetX);
 
 						// Set underline width and position properties
 						menu.style.setProperty(
@@ -3062,8 +3046,6 @@ function main() {
 							"--club-nav-underline-offset-x",
 							`${offsetX}px`
 						);
-
-						// console.log(menu);
 					}
 				}
 			});
