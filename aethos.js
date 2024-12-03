@@ -3305,7 +3305,7 @@ function main() {
 
 					// Determine current and target themes and destinations
 					const currentTheme = aethos.settings.theme || "default";
-					const currentDestination = aethos.settings.destination || "unknown"; // Track current destination
+					const currentDestination = aethos.settings.destination || "default"; // Track current destination
 
 					const { targetTheme, targetDestination } =
 						getThemeAndDestinationFromUrl(destinationUrl.pathname);
@@ -3316,12 +3316,12 @@ function main() {
 
 					// Skip transition if both destinations are unknown AND themes are the same
 					if (
-						currentDestination === "unknown" &&
-						targetDestination === "unknown" &&
+						currentDestination === "default" &&
+						targetDestination === "default" &&
 						currentTheme === targetTheme
 					) {
 						console.log(
-							"Both current and target destinations are unknown, and themes are the same. Skipping transition."
+							"Both current and target destinations are default, and themes are the same. Skipping transition."
 						);
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
