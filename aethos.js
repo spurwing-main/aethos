@@ -228,7 +228,7 @@ function main() {
 	aethos.anim.smoothScroll = function () {
 		gsap.registerPlugin(ScrollSmoother);
 
-		ScrollSmoother.create({
+		aethos.smoother = ScrollSmoother.create({
 			smooth: 1,
 			effects: true,
 			content: "#smooth-content",
@@ -3155,7 +3155,7 @@ function main() {
 
 	/* toggle normalise and smooth scroll depending on whether nav is open */
 	aethos.functions.toggleNormaliseScroll = function () {
-		let smoother = null;
+		aethos.smoother = null;
 
 		// Check if any navigation menu is open
 		const isNavOpen = () =>
@@ -3165,8 +3165,8 @@ function main() {
 
 		// Initialize smooth scroll
 		const initSmoothScroll = () => {
-			if (!smoother) {
-				smoother = ScrollSmoother.create({
+			if (!aethos.smoother) {
+				aethos.smoother = ScrollSmoother.create({
 					smooth: 1,
 					effects: true,
 					content: "#smooth-content",
@@ -3182,9 +3182,9 @@ function main() {
 
 		// Kill smooth scroll
 		const killSmoothScroll = () => {
-			if (smoother) {
-				smoother.kill();
-				smoother = null;
+			if (aethos.smoother) {
+				aethos.smoother.kill();
+				aethos.smoother = null;
 				console.log("Smooth Scroll disabled.");
 			}
 		};
@@ -3216,6 +3216,299 @@ function main() {
 
 		// Initialize the correct state on load
 		toggleScrollFeatures();
+	};
+
+	/* GSAP page transitions */
+	aethos.anim.pageTransition = function () {
+		aethos.transition = {};
+		console.log("Running page transition setup");
+		const links = document.querySelectorAll("a");
+
+		aethos.transition.themes = {
+			city: {
+				foreground: [0.733, 0.38, 0.341, 1.0], // Terracotta-dark (RGBA)
+				background: "#d19393", // Terracotta-light (Hex)
+			},
+			coast: {
+				foreground: [0.447, 0.506, 0.545, 1.0], // Sky-dark (RGBA)
+				background: "#a3afb8", // Sky-light (Hex)
+			},
+			country: {
+				foreground: [0.392, 0.545, 0.545, 1.0], // Leaf-dark (RGBA)
+				background: "#97b7b6", // Leaf-light (Hex)
+			},
+			club: {
+				foreground: [1, 1, 1, 1.0], // white (RGBA)
+				background: "#1e1d1b", // Charcoal-extra dark (Hex)
+			},
+			default: {
+				foreground: [0.0, 0.0, 0.0, 1.0], // Black (RGBA)
+				background: "#ffffff", // white (Hex)
+			},
+		};
+		// Transition elements
+		aethos.transition.element = document.querySelector(".page-transition");
+		aethos.transition.container = aethos.transition.element.querySelector(
+			".page-transition_lottie"
+		);
+
+		// Load the Lottie animation
+		aethos.transition.lottie = lottie.loadAnimation({
+			container: aethos.transition.container,
+			renderer: "svg",
+			loop: false,
+			autoplay: false,
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/674ee24887a636434c805fa4_page-transition-logo.json",
+		});
+
+		// Keep track of prefetched links
+		const prefetchedLinks = new Set();
+
+		// Add prefetch link to the head
+		function prefetchLink(href) {
+			if (!prefetchedLinks.has(href)) {
+				const link = document.createElement("link");
+				link.setAttribute("rel", "prefetch");
+				link.setAttribute("href", href);
+				document.head.appendChild(link);
+				prefetchedLinks.add(href);
+				console.log("Prefetching:", href);
+			}
+		}
+
+		function prerenderLink(href) {
+			if (!prefetchedLinks.has(href)) {
+				const link = document.createElement("link");
+				link.setAttribute("rel", "prerender");
+				link.setAttribute("href", href);
+				document.head.appendChild(link);
+				prefetchedLinks.add(href);
+				console.log("Prerendering:", href);
+			}
+		}
+
+		// Set up link event listeners
+		links.forEach((link) => {
+			link.addEventListener("click", function (e) {
+				const destinationUrl = new URL(link.href);
+
+				// Only trigger transition for internal links without hash targets or new tab links
+				if (
+					destinationUrl.hostname === window.location.hostname &&
+					!link.hash &&
+					link.target !== "_blank"
+				) {
+					e.preventDefault();
+
+					// Prefetch the destination page
+					prerenderLink(destinationUrl.href);
+
+					// Determine current and target themes
+					let currentTheme = aethos.settings.theme || "default";
+					let currentDestination = aethos.settings.destinationSlug || "unknown"; // Track current destination
+
+					const { targetTheme, targetDestination } =
+						getThemeAndDestinationFromUrl(destinationUrl.pathname);
+
+					console.log(
+						`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
+					);
+
+					// Play transition if themes or destinations are different
+					if (
+						currentTheme !== targetTheme ||
+						currentDestination !== targetDestination
+					) {
+						playPageTransition(currentTheme, targetTheme, () => {
+							console.log("Navigating with transition:", destinationUrl.href);
+							setTimeout(() => {
+								window.location.assign(destinationUrl.href);
+							}, 0);
+						});
+					} else {
+						console.log("Navigating without transition:", destinationUrl.href);
+						setTimeout(() => {
+							window.location.assign(destinationUrl.href);
+						}, 0);
+					}
+				}
+			});
+		});
+
+		function getThemeAndDestinationFromUrl(pathname) {
+			// Check for /club or /clubs at the start of the URL
+			if (pathname.startsWith("/club") || pathname.startsWith("/clubs")) {
+				return { targetTheme: "club", targetDestination: "club" };
+			}
+
+			// Check for /destinations/.../club
+			const clubInDestinationsMatch = pathname.match(
+				/^\/destinations\/[^\/]+\/club/
+			);
+			if (clubInDestinationsMatch) {
+				return { targetTheme: "club", targetDestination: "club" };
+			}
+
+			// Check for /hotels/x or /destinations/x
+			const hotelMatch = pathname.match(/^\/destinations\/([^\/]+)/);
+			if (hotelMatch) {
+				const slug = hotelMatch[1]; // Extract the destination slug
+				const theme = aethos.destinations?.[slug]?.theme || "default";
+				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
+			}
+
+			// Default theme and destination
+			return { targetTheme: "default", targetDestination: "default" };
+		}
+
+		function playPageTransition(theme1, theme2, onComplete) {
+			console.log("Initializing Lottie animation...");
+
+			// Hide the Lottie container initially
+			gsap.set(aethos.transition.container, { display: "none" });
+
+			// Update the Lottie animation colors based on themes
+			updateLottieColors(aethos.transition.lottie, theme1, theme2);
+
+			// Force Lottie renderer to refresh with updated colors
+			aethos.transition.lottie.goToAndStop(
+				aethos.transition.lottie.totalFrames - 1,
+				true
+			);
+			aethos.transition.lottie.renderer.renderFrame(
+				aethos.transition.lottie.currentFrame
+			);
+			aethos.transition.lottie.goToAndStop(0, true);
+			console.log(`Lottie colors updated: ${theme1} -> ${theme2}`);
+
+			// Once colors are updated, start the animation
+			startLottieAnimation(theme1, theme2, onComplete);
+		}
+
+		function startLottieAnimation(theme1, theme2, onComplete) {
+			console.log("Starting Lottie animation...");
+
+			// Display the transition overlay
+			gsap.set(aethos.transition.element, { display: "flex" });
+
+			// Disable scrolling
+			if (aethos.smoother) {
+				aethos.smoother.paused(true);
+			}
+
+			// Fade in transition element using CSS animations
+			aethos.transition.element.classList.remove("fade-out");
+			aethos.transition.element.classList.add("fade-in");
+
+			// Create the GSAP timeline for the transition
+			let tl = gsap.timeline({
+				paused: true,
+				delay: 1,
+				onComplete: () => {
+					console.log("Transition complete.");
+					onComplete();
+				},
+			});
+
+			// Play the Lottie animation
+			let playhead = { frame: 0 };
+			tl.to(
+				playhead,
+				{
+					frame: aethos.transition.lottie.totalFrames - 1,
+					duration: 2,
+					ease: "none",
+					onUpdate: () => {
+						aethos.transition.lottie.goToAndStop(playhead.frame, true);
+					},
+					onStart: () => console.log("Lottie animation started."),
+					onComplete: () => console.log("Lottie animation completed."),
+				},
+				0.5
+			);
+
+			tl.fromTo(
+				aethos.transition.element,
+				{ backgroundColor: aethos.transition.themes[theme1].background },
+				{
+					backgroundColor: aethos.transition.themes[theme2].background,
+					duration: 0.5,
+				},
+				"0.8"
+			);
+
+			tl.set(
+				aethos.transition.container,
+				{
+					display: "block",
+				},
+				0.25
+			);
+
+			// Play the timeline
+			console.log("Starting GSAP timeline...");
+			tl.play();
+		}
+
+		// Update Lottie colors based on themes
+		function updateLottieColors(animation, currentTheme, destinationTheme) {
+			const startColor =
+				aethos.transition.themes[currentTheme].foreground ||
+				aethos.transition.themes.default.foreground;
+			const endColor =
+				aethos.transition.themes[destinationTheme].foreground ||
+				aethos.transition.themes.default.foreground;
+
+			console.log(destinationTheme);
+
+			const elements = animation.renderer.elements;
+
+			// Recursive function to traverse shapes
+			function processShapes(shapes) {
+				shapes.forEach((shape) => {
+					// If the shape is a group, recursively process its items
+					if (shape.ty === "gr") {
+						// console.log("Processing group:", shape.nm);
+						processShapes(shape.it); // Process the group's items
+					}
+
+					// Handle animated fills
+					else if (shape.ty === "fl" && shape.c && shape.c.a === 1) {
+						// console.log("Updating animated fill for shape:", shape.nm);
+						const keyframes = shape.c.k;
+
+						if (keyframes[0]) keyframes[0].s = startColor; // Start color
+						if (keyframes[keyframes.length - 1])
+							keyframes[keyframes.length - 1].s = endColor; // End color
+					}
+
+					// Handle static fills
+					else if (shape.ty === "fl" && shape.c && shape.c.a === 0) {
+						// console.log("Updating static fill for shape:", shape.nm);
+						shape.c.k = startColor; // Update static color directly
+					}
+
+					// Handle strokes
+					else if (shape.ty === "st" && shape.c && shape.c.a === 0) {
+						// console.log("Updating static stroke for shape:", shape.nm);
+						shape.c.k = startColor; // Update static stroke color
+					}
+
+					// Log unhandled shapes
+					else {
+						// console.log("Unhandled shape type or missing properties:", shape);
+					}
+				});
+			}
+
+			// Process each element's shapes
+			elements.forEach((element) => {
+				if (element.data.ty === 4) {
+					// Vector shape layer
+					processShapes(element.data.shapes);
+				}
+			});
+		}
 	};
 
 	/* CALL FUNCTIONS */
@@ -3263,4 +3556,5 @@ function main() {
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
 	aethos.functions.toggleNormaliseScroll();
+	aethos.anim.pageTransition();
 }
