@@ -3303,9 +3303,9 @@ function main() {
 					// Prefetch the destination page
 					prerenderLink(destinationUrl.href);
 
-					// Determine current and target themes
-					let currentTheme = aethos.settings.theme || "default";
-					let currentDestination = aethos.settings.destinationSlug || "unknown"; // Track current destination
+					// Determine current and target themes and destinations
+					const currentTheme = aethos.settings.theme || "default";
+					const currentDestination = aethos.settings.destination || "unknown"; // Track current destination
 
 					const { targetTheme, targetDestination } =
 						getThemeAndDestinationFromUrl(destinationUrl.pathname);
@@ -3313,6 +3313,21 @@ function main() {
 					console.log(
 						`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
 					);
+
+					// Skip transition if both destinations are unknown AND themes are the same
+					if (
+						currentDestination === "unknown" &&
+						targetDestination === "unknown" &&
+						currentTheme === targetTheme
+					) {
+						console.log(
+							"Both current and target destinations are unknown, and themes are the same. Skipping transition."
+						);
+						setTimeout(() => {
+							window.location.assign(destinationUrl.href);
+						}, 0);
+						return;
+					}
 
 					// Play transition if themes or destinations are different
 					if (
