@@ -3284,6 +3284,9 @@ function main() {
 
 	/* GSAP page transitions */
 	aethos.anim.pageTransition = function () {
+		// clear localstorage - we use this to track whether we show second half of transition on a page load
+		localStorage.setItem("aethos_transition", "false");
+
 		aethos.transition = {};
 		console.log("Running page transition setup");
 		const links = document.querySelectorAll("a");
@@ -3400,12 +3403,14 @@ function main() {
 					) {
 						playPageTransition(currentTheme, targetTheme, () => {
 							console.log("Navigating with transition:", destinationUrl.href);
+							localStorage.setItem("aethos_transition", "true");
 							setTimeout(() => {
 								window.location.assign(destinationUrl.href);
 							}, 0);
 						});
 					} else {
 						console.log("Navigating without transition:", destinationUrl.href);
+						localStorage.setItem("aethos_transition", "false");
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
 						}, 0);
