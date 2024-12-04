@@ -1712,7 +1712,7 @@ function main() {
 
 		videoSections.forEach((section) => {
 			const vimeoContainer = section.querySelector(".video-cover");
-			gsap.set(vimeoContainer, { opacity: 0 }); // Hide container at first
+
 			if (!vimeoContainer) return;
 
 			const vimeoId = section.getAttribute("aethos-vimeo-id");
@@ -1729,6 +1729,11 @@ function main() {
 				debounceTimer = setTimeout(callback, delay);
 			};
 
+			const vimeoInnerContainer = document.createElement("div");
+			vimeoInnerContainer.classList.add(".video-cover");
+			vimeoContainer.append(vimeoInnerContainer);
+			gsap.set(vimeoInnerContainer, { opacity: 0 }); // Hide container at first
+
 			ScrollTrigger.create({
 				trigger: section,
 				start: "top 90%",
@@ -1736,7 +1741,7 @@ function main() {
 				onEnter: () => {
 					if (!player) {
 						debounce(() => {
-							player = initVimeo(vimeoContainer, vimeoId, imgs);
+							player = initVimeo(vimeoInnerContainer, vimeoId, imgs);
 						});
 					} else {
 						debounce(() => {
@@ -1776,7 +1781,7 @@ function main() {
 			});
 		});
 
-		function initVimeo(vimeoContainer, vimeoId, imgs) {
+		function initVimeo(vimeoInnerContainer, vimeoId, imgs) {
 			const options = {
 				id: vimeoId,
 				byline: false,
@@ -1789,7 +1794,7 @@ function main() {
 				responsive: true,
 			};
 
-			const player = new Vimeo.Player(vimeoContainer, options);
+			const player = new Vimeo.Player(vimeoInnerContainer, options);
 
 			player.on("loaded", function () {
 				// Attempt to play the video
@@ -1798,8 +1803,8 @@ function main() {
 				});
 
 				// Transition from image to video
-				gsap.to(imgs, { opacity: 0, duration: 0.5 });
-				gsap.to(vimeoContainer, { opacity: 1, duration: 1.5 });
+				// gsap.to(imgs, { opacity: 0, duration: 0.5 });
+				gsap.to(vimeoInnerContainer, { opacity: 1, duration: 2 });
 			});
 
 			player.on("play", function () {
