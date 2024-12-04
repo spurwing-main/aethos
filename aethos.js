@@ -1730,7 +1730,7 @@ function main() {
 			};
 
 			const vimeoInnerContainer = document.createElement("div");
-			vimeoInnerContainer.classList.add(".video-cover");
+			vimeoInnerContainer.classList.add("video-cover");
 			vimeoContainer.append(vimeoInnerContainer);
 			gsap.set(vimeoInnerContainer, { opacity: 0 }); // Hide container at first
 			vimeoContainer.classList.remove("video-cover"); // roundabout route to avoid having to replace all video-cover elements in WF - if we don't do this then the clever Vimeo covering CSS doesn't work for the inner container
