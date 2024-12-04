@@ -1019,101 +1019,115 @@ function main() {
 		}) {
 			let targets = document.querySelectorAll(selector);
 			let splides = [];
+
+			const isMobile = () => window.innerWidth <= aethos.breakpoints.mbl;
+
 			targets.forEach((target) => {
 				let splide = new Splide(target, options);
 
-				if (useProgressBar) {
-					let progressWrapper = target.querySelector(".progress");
-					let bar = target.querySelector(".progress_bar");
+				let list = target.querySelector(".splide__list");
+				let track = target.querySelector(".splide__track");
 
-					// Update progress bar position on carousel move
-					splide.on("mounted dragged", function () {
-						updateProgressBar();
+				track.style.overscrollBehavior = "none";
+
+				let progressWrapper, bar, observer;
+				const enableProgressBar = () => {
+					progressWrapper = target.querySelector(".progress");
+					bar = target.querySelector(".progress_bar");
+
+					if (!bar || !progressWrapper || !list) return;
+
+					let lastTransform = "";
+
+					// Helper function to calculate progress rate
+					const getRate = () => {
+						const { Layout, Move, Direction, Slides } = splide.Components;
+						const position = Direction.orient(Move.getPosition());
+						// const base = Layout.listSize(); // Visible size of the slider
+						const base = Layout.sliderSize(); // Computed size of the slider
+						const containerW = target.getBoundingClientRect().width;
+						adjustedBase = base - containerW;
+
+						let rate = 0;
+						if (splide.options.type === "loop") {
+							rate = Math.abs(
+								Math.abs(position / adjustedBase) - 1 / Slides.get(true).length
+							);
+						} else {
+							rate = position / adjustedBase + 0 / splide.length;
+						}
+						// console.log(
+						// 	`Base: ${base}, Adusted base: ${adjustedBase}, Position: ${position}, Rate: ${rate},`
+						// );
+						return rate;
+					};
+
+					// Update the progress bar position
+					const updateProgressBar = () => {
+						const rate = getRate();
+
+						// Calculate the maximum translation value
+						const maxTranslateX = progressWrapper.offsetWidth - bar.offsetWidth;
+
+						// Calculate the current position of the bar
+						const translateX = rate * maxTranslateX;
+
+						// Apply the transform
+						bar.style.transform = `translateX(${translateX}px)`;
+					};
+
+					// Detect changes to the .splide__list element's transform
+					const observer = new MutationObserver(() => {
+						const currentTransform = list.style.transform;
+
+						if (currentTransform !== lastTransform) {
+							lastTransform = currentTransform;
+							updateProgressBar();
+						}
 					});
 
-					// Function to update the progress bar
-					function updateProgressBar() {
-						if (!bar) {
-							return;
-						}
-						// Set bar width relative to slide count
-						let count = splide.Components.Controller.getEnd() + 1;
-						bar.style.width = `${100 / count}%`;
+					// Observe changes to the style attribute
+					observer.observe(list, {
+						attributes: true,
+						attributeFilter: ["style"],
+					});
 
-						// Move bar based on scroll position
-						const { Layout, Move, Direction } = splide.Components;
-						const position = Direction.orient(Move.getPosition());
-						const base = Layout.sliderSize() - Layout.listSize();
+					// Clean up when not needed
+					splide.on("destroy", () => {
+						observer.disconnect();
+					});
 
-						// Calculate the scroll rate (progress)
-						let rate = position / base;
+					// Initial update
+					splide.on("mounted", () => {
+						updateProgressBar();
+					});
+				};
 
-						// Ensure the rate is clamped between 0 and 1 to avoid overshooting
-						rate = Math.min(Math.max(rate, 0), 1);
+				const disableProgressBar = () => {
+					if (observer) observer.disconnect();
+					if (bar) bar.style.transform = ""; // Reset the bar position
+				};
 
-						// Calculate the maximum movement in the x-direction for the progress bar
-						const maxX = (count - 1) * 100; // The bar can move up to (N-1) * 100%
-
-						// Use GSAP to animate the 'x' transform of the progress bar
-						gsap.to(bar, {
-							duration: 0.3, // Animation duration
-							x: `${rate * maxX}%`, // Move the bar between 0% and (N-1) * 100%
-							ease: "power2.out", // Easing function for smoother transitions
-						});
+				// Handle mobile or desktop
+				const handleResize = () => {
+					if (isMobile()) {
+						disableProgressBar();
+					} else {
+						enableProgressBar();
 					}
+				};
 
-					// // Click event to move carousel based on click position on the progress bar
-					// progressWrapper.addEventListener("click", function (e) {
-					// 	let rect = progressWrapper.getBoundingClientRect();
-					// 	let clickPos = (e.clientX - rect.left) / rect.width;
-					// 	let targetSlide = Math.floor(clickPos * splide.length);
-					// 	splide.go(targetSlide);
-					// });
-
-					// // Draggable progress bar
-					// let isDragging = false;
-
-					// progressWrapper.addEventListener("mousedown", function (e) {
-					// 	isDragging = true;
-					// });
-
-					// document.addEventListener("mouseup", function () {
-					// 	if (isDragging) {
-					// 		isDragging = false;
-
-					// 		// Snap to the closest slide when dragging ends
-					// 		let slideCount = splide.Components.Controller.getEnd() + 1;
-					// 		let rate = parseFloat(bar.style.left) / 100;
-					// 		let targetSlide = Math.round(rate * slideCount);
-					// 		splide.go(targetSlide); // Moves to the corresponding slide
-					// 	}
-					// });
-
-					// document.addEventListener("mousemove", function (e) {
-					// 	if (isDragging) {
-					// 		let rect = progressWrapper.getBoundingClientRect();
-					// 		let dragPos = (e.clientX - rect.left) / rect.width;
-
-					// 		// Ensure drag position is within [0, 1]
-					// 		dragPos = Math.max(0, Math.min(1, dragPos));
-
-					// 		// Calculate slideCount and maxX movement for the bar
-					// 		let slideCount = splide.Components.Controller.getEnd() + 1;
-					// 		let maxX = (slideCount - 1) * 100;
-
-					// 		// Use GSAP to animate the 'x' transform of the progress bar during dragging
-					// 		gsap.to(bar, {
-					// 			duration: 0.1, // Quick animation during dragging
-					// 			x: `${dragPos * maxX}%`, // Set the 'x' transform relative to the progress wrapper
-					// 			ease: "none", // Linear easing for direct dragging
-					// 		});
-
-					// 		// Update carousel position based on the drag position
-					// 		let targetPos = dragPos * splide.Components.Controller.getEnd();
-					// 		splide.Components.Move.move(targetPos);
-					// 	}
-					// });
+				// Initial check
+				if (!isMobile() && useProgressBar) {
+					enableProgressBar();
 				}
+
+				// Listen for window resize
+				window.addEventListener("resize", handleResize);
+
+				splide.on("destroy", () => {
+					window.removeEventListener("resize", handleResize);
+				});
 
 				// Mount splide instance with or without extensions
 				if (useExtensions) {
