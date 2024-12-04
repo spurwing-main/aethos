@@ -1,4 +1,7 @@
 function main() {
+	// gsap.registerPlugin(GSDevTools);
+	// GSDevTools.create();
+
 	// Get themes
 	(function () {
 		// City Theme
@@ -1674,7 +1677,7 @@ function main() {
 
 		videoSections.forEach((section) => {
 			const vimeoContainer = section.querySelector(".video-cover");
-			gsap.set(vimeoContainer, { opacity: 0 }); // hide container at first
+			gsap.set(vimeoContainer, { opacity: 0 }); // Hide container at first
 			if (!vimeoContainer) return;
 
 			const vimeoId = section.getAttribute("aethos-vimeo-id");
@@ -1682,34 +1685,56 @@ function main() {
 
 			const imgs = section.querySelectorAll(".img-cover"); // Fallback/thumbnail images
 
-			let player; // Declare the player variable here to access it across different ScrollTrigger events
+			let player; // Declare player for reuse
 
-			// Use ScrollTrigger to initialize the video loading
+			// Debounce helper
+			let debounceTimer;
+			const debounce = (callback, delay = 300) => {
+				clearTimeout(debounceTimer);
+				debounceTimer = setTimeout(callback, delay);
+			};
+
 			ScrollTrigger.create({
 				trigger: section,
-				start: "top 90%", // Trigger when the section is 80% in the viewport
-				end: "bottom 10%", // Trigger ends when the bottom of the section reaches 20% of the viewport
+				start: "top 90%",
+				end: "bottom 10%",
 				onEnter: () => {
-					player = initVimeo(vimeoContainer, vimeoId, imgs);
+					if (!player) {
+						debounce(() => {
+							player = initVimeo(vimeoContainer, vimeoId, imgs);
+						});
+					} else {
+						debounce(() => {
+							player.play().catch((error) => {
+								console.error(`Error resuming video ${vimeoId}:`, error);
+							});
+						});
+					}
 				},
 				onLeave: () => {
 					if (player) {
-						player.pause().catch(function (error) {
-							console.error(`Error pausing video ${vimeoId}:`, error);
+						debounce(() => {
+							player.pause().catch((error) => {
+								console.error(`Error pausing video ${vimeoId}:`, error);
+							});
 						});
 					}
 				},
 				onEnterBack: () => {
 					if (player) {
-						player.play().catch(function (error) {
-							console.error(`Error resuming video ${vimeoId}:`, error);
+						debounce(() => {
+							player.play().catch((error) => {
+								console.error(`Error resuming video ${vimeoId}:`, error);
+							});
 						});
 					}
 				},
 				onLeaveBack: () => {
 					if (player) {
-						player.pause().catch(function (error) {
-							console.error(`Error pausing video ${vimeoId}:`, error);
+						debounce(() => {
+							player.pause().catch((error) => {
+								console.error(`Error pausing video ${vimeoId}:`, error);
+							});
 						});
 					}
 				},
@@ -1733,7 +1758,7 @@ function main() {
 
 			player.on("loaded", function () {
 				// Attempt to play the video
-				player.play().catch(function (error) {
+				player.play().catch((error) => {
 					console.error(`Error playing video ${vimeoId}:`, error);
 				});
 
@@ -3161,6 +3186,7 @@ function main() {
 		const isNavOpen = () =>
 			document.body.classList.contains("nav-open") ||
 			document.body.classList.contains("dest-nav-open") ||
+			document.body.classList.contains("loader-playing") ||
 			document.body.classList.contains("club-nav-open");
 
 		// Initialize smooth scroll
@@ -3183,9 +3209,7 @@ function main() {
 		// Kill smooth scroll
 		const killSmoothScroll = () => {
 			if (aethos.smoother) {
-				aethos.smoother.kill();
-				aethos.smoother = null;
-				console.log("Smooth Scroll disabled.");
+				aethos.smoother.paused(true);
 			}
 		};
 
@@ -3537,7 +3561,7 @@ function main() {
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
-	// aethos.anim.smoothScroll();
+	aethos.anim.smoothScroll();
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
@@ -3570,6 +3594,188 @@ function main() {
 	aethos.functions.formSubmissionStyling();
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
-	aethos.functions.toggleNormaliseScroll();
+	// aethos.functions.toggleNormaliseScroll();
 	aethos.anim.pageTransition();
+
+	// aethos.anim.loader = function () {
+	// 	console.log("Loader function initiated");
+
+	// 	// Only run this function if the pageLoader setting is true and the loader hasn't run before
+	// 	// if (
+	// 	// 	!aethos.settings.pageLoader ||
+	// 	// 	localStorage.getItem("aethos_loader_ran")
+	// 	// ) {
+	// 	// 	console.log("Loader already ran or pageLoader setting is false");
+	// 	// 	return;
+	// 	// }
+
+	// 	// console.log("Setting loader as played in local storage");
+
+	// 	// // Mark the loader as "played" in local storage, expiring in 30 days
+	// 	// const expirationDate = new Date();
+	// 	// expirationDate.setDate(expirationDate.getDate() + 30);
+	// 	// localStorage.setItem("aethos_loader_ran", true);
+	// 	// localStorage.setItem("aethos_loader_expiration", expirationDate.getTime());
+	// 	// console.log("Local storage keys set:", {
+	// 	// 	aethos_loader_ran: true,
+	// 	// 	aethos_loader_expiration: expirationDate.getTime(),
+	// 	// });
+
+	// 	// Get elements
+	// 	let header = document.querySelector(".header");
+	// 	let loader = document.querySelector(".site-loader");
+	// 	console.log("Elements selected:", { header, loader });
+
+	// 	// Load Lottie animation
+	// 	let loader_lottie = lottie.loadAnimation({
+	// 		container: document.querySelector(".site-loader_lottie"),
+	// 		renderer: "svg",
+	// 		loop: false,
+	// 		autoplay: false,
+	// 		path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/66d03670c7268e6c895d7847_Aethos%20Logo%20Lottie%20v2.json",
+	// 	});
+	// 	console.log("Lottie animation loaded");
+
+	// 	let playhead = { frame: 0 };
+
+	// 	// Set initial states
+	// 	console.log("Setting initial states for GSAP animations");
+	// 	gsap.set(loader, { display: "flex", autoAlpha: 0.5 });
+	// 	// gsap.set(".site-loader_overlay-bottom", { backgroundColor: "black" });
+	// 	gsap.set(".site-loader_lottie", { autoAlpha: 1, display: "block" });
+	// 	gsap.set(".site-loader_logo", { height: "auto", autoAlpha: 0 });
+	// 	gsap.set(".site-loader_img-container", { autoAlpha: 0 });
+	// 	gsap.set(".site-loader_img", { scale: 0.75 });
+	// 	gsap.set([".header-bar_left", ".header-bar_right"], { y: "200%" });
+	// 	// gsap.set(".site-loader_overlay-top", { backgroundColor: "black" });
+	// 	gsap.set(".header-bar_middle", { autoAlpha: 0 });
+	// 	gsap.set(".site-loader_img-wrap", { width: "50%", height: "75%" });
+	// 	gsap.set(".hero-home_content", { autoAlpha: 0, y: "20%" });
+
+	// 	console.log("Initial states set");
+
+	// 	// Create timeline
+	// 	console.log("Creating GSAP timeline");
+	// 	let tl = gsap.timeline({ paused: true });
+
+	// 	// Play Lottie animation [5s]
+	// 	tl.to(playhead, {
+	// 		frame: loader_lottie.totalFrames - 1,
+	// 		duration: 5,
+	// 		ease: "none",
+	// 		onUpdate: () => {
+	// 			loader_lottie.goToAndStop(playhead.frame, true);
+	// 			// console.log("Lottie animation playhead updated:", playhead.frame);
+	// 		},
+	// 	});
+
+	// 	// Logo height animation, occurs simultaneously with Lottie [5.3s]
+	// 	tl.to(".site-loader_logo", { height: "100%", duration: 5 }, 0.3);
+
+	// 	// At 5.3 seconds: lottie fades out, logo fades in, overlay colors change
+	// 	tl.to(
+	// 		".site-loader_lottie",
+	// 		{ autoAlpha: 0, duration: 1.25, ease: "power4.inOut" },
+	// 		5.3
+	// 	);
+	// 	tl.to(
+	// 		".site-loader_logo",
+	// 		{ autoAlpha: 1, duration: 1.25, ease: "power4.inOut" },
+	// 		5.3
+	// 	);
+	// 	tl.to(
+	// 		".site-loader_overlay-bottom",
+	// 		{ backgroundColor: "black", duration: 1.25, ease: "power4.inOut" },
+	// 		5.3
+	// 	);
+	// 	tl.to(
+	// 		".site-loader_overlay-top",
+	// 		{ backgroundColor: "transparent", duration: 1.25, ease: "power4.inOut" },
+	// 		5.3
+	// 	);
+
+	// 	// At 5.55s: Show image container [1s ease in]
+	// 	tl.to(
+	// 		".site-loader_img-container",
+	// 		{ autoAlpha: 1, duration: 1, ease: "power4.in" },
+	// 		5.55
+	// 	);
+
+	// 	// At 6.55s: Scale image to 1, adjust logo, move header bars, adjust image wrap [various durations]
+	// 	tl.to(
+	// 		".site-loader_img",
+	// 		{ scale: 1, duration: 1.5, ease: "power4.inOut" },
+	// 		6.55
+	// 	);
+	// 	tl.to(
+	// 		".site-loader_logo",
+	// 		{ height: "auto", duration: 1.5, ease: "power4.inOut" },
+	// 		6.55
+	// 	);
+	// 	tl.to(
+	// 		".header-bar_left",
+	// 		{ y: "0%", duration: 0.4, ease: "power4.inOut" },
+	// 		6.55
+	// 	);
+	// 	tl.to(
+	// 		".header-bar_right",
+	// 		{ y: "0%", duration: 0.4, ease: "power4.inOut" },
+	// 		6.55
+	// 	);
+	// 	tl.to(
+	// 		".site-loader_img-wrap",
+	// 		{ width: "100%", height: "100%", duration: 0.5, ease: "linear" },
+	// 		6.55
+	// 	);
+
+	// 	// At 8.8s: Show hero-home content [0.4s ioq]
+	// 	tl.to(
+	// 		".hero-home_content",
+	// 		{ autoAlpha: 1, y: "0%", duration: 0.4, ease: "power4.inOut" },
+	// 		8.8
+	// 	);
+
+	// 	// At 9.2s: Show header middle bar and hide loader
+	// 	tl.to(
+	// 		".header-bar_middle",
+	// 		{ autoAlpha: 1, display: "flex", duration: 0 },
+	// 		9.2
+	// 	);
+	// 	tl.to(loader, { autoAlpha: 0, display: "none", duration: 0 }, 9.2);
+
+	// 	console.log("Timeline animations created and playing");
+
+	// 	// Disable scrolling
+	// 	if (aethos.smoother) {
+	// 		aethos.smoother.paused(true);
+	// 	}
+
+	// 	// Play the timeline
+	// 	tl.play();
+
+	// 	console.log("Timeline started playing");
+	// 	console.log("Loader function completed");
+
+	// 	// enable scrolling
+	// 	if (aethos.smoother) {
+	// 		aethos.smoother.paused(false);
+	// 	}
+	// };
+
+	// // Check and remove expired local storage entry for loader animation
+	// aethos.helpers.clearExpiredLoader = function () {
+	// 	console.log("Checking for expired loader local storage entry");
+	// 	const expiration = localStorage.getItem("aethos_loader_expiration");
+	// 	if (expiration && new Date().getTime() > expiration) {
+	// 		console.log("Loader local storage expired, clearing keys");
+	// 		localStorage.removeItem("aethos_loader_ran");
+	// 		localStorage.removeItem("aethos_loader_expiration");
+	// 	} else {
+	// 		console.log("Loader local storage is still valid");
+	// 	}
+	// };
+
+	// // Call clearExpiredLoader when the page loads
+	// aethos.helpers.clearExpiredLoader();
+	// aethos.anim.loader();
 }
