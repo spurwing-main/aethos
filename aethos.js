@@ -3322,7 +3322,7 @@ function main() {
 			renderer: "svg",
 			loop: false,
 			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/675080050f9a0bbe47bc4bd8_page-transition-logo-v2.json",
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67508beb66c783b283415ad0_page-transition-logo-v3.json",
 		});
 
 		// Keep track of prefetched links
@@ -3511,9 +3511,9 @@ function main() {
 				{ backgroundColor: aethos.transition.themes[theme1].background },
 				{
 					backgroundColor: aethos.transition.themes[theme2].background,
-					duration: 0.8,
+					duration: 1,
 				},
-				2
+				1.6
 			);
 
 			tl.set(
