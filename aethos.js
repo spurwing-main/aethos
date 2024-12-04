@@ -236,12 +236,26 @@ function main() {
 			effects: true,
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
-			// normalizeScroll: true,
+			normalizeScroll: true,
 			onUpdate: () => {},
 			onRefresh: () => {
 				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
 				ScrollTrigger.refresh();
 			},
+		});
+
+		// disable normalise on mobile
+		let mm = gsap.matchMedia();
+		mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
+			console.log("normalise scroll disabled");
+			ScrollTrigger.normalizeScroll(false);
+
+			return () => {
+				// optional
+				console.log("normalise scroll enabled");
+
+				ScrollTrigger.normalizeScroll(true);
+			};
 		});
 	};
 
@@ -256,6 +270,7 @@ function main() {
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
 				if (window.innerWidth <= aethos.breakpoints.mbl) {
 					document.body.classList.remove(aethos.helpers.globalNavClass);
+					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			// dest - remove dest nav class on tab and smaller on close
@@ -267,32 +282,38 @@ function main() {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.destNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
+					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			if (aethos.settings.theme == "club") {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.clubNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
+					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 		}
 
 		// Check for nav buttons before adding event listeners
 		const navBtn = document.querySelector(".nav-btn");
-		// const destNavBtn = document.querySelector(".dest-nav-btn");
 
 		if (navBtn) {
 			navBtn.addEventListener("click", () => {
-				document.body.classList.toggle(aethos.helpers.globalNavClass);
-				ScrollTrigger.refresh();
+				const isNavOpen = document.body.classList.toggle(
+					aethos.helpers.globalNavClass
+				);
+				if (isNavOpen) {
+					console.log("normalise scroll off");
+					ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
+				} else {
+					console.log("normalise scroll on");
+
+					ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
+				}
 			});
 		}
 
-		// if (destNavBtn)
-		// 	destNavBtn.addEventListener("click", () => toggleNavClass(destNavClass)); // we move this later since the dest nav is added dynamically
-
 		// Add resize event listener to handle window resizing - for width only
-
 		var prevWidth = window.innerWidth;
 		window.addEventListener("resize", function () {
 			var width = window.innerWidth;
