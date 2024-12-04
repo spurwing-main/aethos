@@ -3317,7 +3317,7 @@ function main() {
 			renderer: "svg",
 			loop: false,
 			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/674ee24887a636434c805fa4_page-transition-logo.json",
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/675080050f9a0bbe47bc4bd8_page-transition-logo-v2.json",
 		});
 
 		// Keep track of prefetched links
@@ -3477,7 +3477,7 @@ function main() {
 			// Create the GSAP timeline for the transition
 			let tl = gsap.timeline({
 				paused: true,
-				delay: 1,
+				delay: 0,
 				onComplete: () => {
 					console.log("Transition complete.");
 					onComplete();
@@ -3490,7 +3490,7 @@ function main() {
 				playhead,
 				{
 					frame: aethos.transition.lottie.totalFrames - 1,
-					duration: 2,
+					duration: 3.16,
 					ease: "none",
 					onUpdate: () => {
 						aethos.transition.lottie.goToAndStop(playhead.frame, true);
@@ -3498,7 +3498,7 @@ function main() {
 					onStart: () => console.log("Lottie animation started."),
 					onComplete: () => console.log("Lottie animation completed."),
 				},
-				0.5
+				0.6
 			);
 
 			tl.fromTo(
@@ -3506,9 +3506,9 @@ function main() {
 				{ backgroundColor: aethos.transition.themes[theme1].background },
 				{
 					backgroundColor: aethos.transition.themes[theme2].background,
-					duration: 0.5,
+					duration: 0.8,
 				},
-				"0.8"
+				2
 			);
 
 			tl.set(
@@ -3516,7 +3516,7 @@ function main() {
 				{
 					display: "block",
 				},
-				0.25
+				0.1
 			);
 
 			// Play the timeline
