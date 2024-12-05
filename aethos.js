@@ -236,7 +236,9 @@ function main() {
 			effects: true,
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
-			normalizeScroll: true,
+			normalizeScroll: {
+				allowNestedScroll: true,
+			},
 			onUpdate: () => {},
 			onRefresh: () => {
 				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
@@ -3358,7 +3360,13 @@ function main() {
 		// Set up link event listeners
 		links.forEach((link) => {
 			link.addEventListener("click", function (e) {
-				const destinationUrl = new URL(link.href);
+				const destinationHref = link.getAttribute("href");
+				const destinationUrl = link.href ? new URL(link.href) : null;
+
+				// Ignore links with empty href or href="#"
+				if (!destinationHref || destinationHref === "#") {
+					return;
+				}
 
 				// Only trigger transition for internal links without hash targets or new tab links
 				if (
