@@ -3381,7 +3381,8 @@ function main() {
 
 					// Determine current and target themes and destinations
 					const currentTheme = aethos.settings.theme || "default";
-					const currentDestination = aethos.settings.destination || "default"; // Track current destination
+					const currentDestination =
+						aethos.settings.destinationSlug || "default"; // Track current destination
 
 					const { targetTheme, targetDestination } =
 						getThemeAndDestinationFromUrl(destinationUrl.pathname);
@@ -3401,7 +3402,7 @@ function main() {
 						);
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
-						}, 0);
+						}, 0000);
 						return;
 					}
 
@@ -3415,14 +3416,14 @@ function main() {
 							localStorage.setItem("aethos_transition", "true");
 							setTimeout(() => {
 								window.location.assign(destinationUrl.href);
-							}, 0);
+							}, 0000);
 						});
 					} else {
 						console.log("Navigating without transition:", destinationUrl.href);
 						localStorage.setItem("aethos_transition", "false");
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
-						}, 0);
+						}, 0000);
 					}
 				}
 			});
