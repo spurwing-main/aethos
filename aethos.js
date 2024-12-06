@@ -58,13 +58,13 @@ function main() {
 		const pageWrap = document.querySelector(".page-wrap");
 
 		if (pageWrap) {
-			// Retrieve and store the aethos-page-bg, aethos-page, and aethos-page-loader attributes
+			// Retrieve and store the aethos-page-bg, aethos-page, and aethos-site-loader attributes
 			aethos.settings.pageWrap = pageWrap;
 			aethos.settings.pageBg = pageWrap.getAttribute("aethos-page-bg") || "";
 			aethos.settings.pageName =
 				pageWrap.getAttribute("aethos-page-name") || "";
-			aethos.settings.pageLoader =
-				pageWrap.getAttribute("aethos-page-loader") || "";
+			aethos.settings.siteLoader =
+				pageWrap.getAttribute("aethos-site-loader") || "";
 			aethos.settings.destinationSlug =
 				pageWrap.getAttribute("aethos-destination-slug") || "";
 			aethos.settings.destinationStatus =
@@ -246,7 +246,7 @@ function main() {
 			},
 		});
 
-		// if (aethos.settings.pageLoader == "enabled") {
+		// if (aethos.settings.siteLoader == "enabled") {
 		// 	console.log("paused");
 		// 	requestAnimationFrame(() => {
 		// 		aethos.smoother.paused(true);
@@ -3621,12 +3621,13 @@ function main() {
 
 		if (
 			!forceLoader &&
-			(aethos.settings.loader !== "enabled" || !isFirstVisitIn30Days())
+			(aethos.settings.siteLoader !== "enabled" || !isFirstVisitIn30Days())
 		) {
+			console.log("Page loader not running");
 			return;
 		}
 
-		console.log("Page load running");
+		console.log("Page loader running");
 
 		// Disable scrolling
 		requestAnimationFrame(() => {
