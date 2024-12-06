@@ -246,13 +246,13 @@ function main() {
 			},
 		});
 
-		if (aethos.settings.pageLoader == "enabled") {
-			console.log("paused");
-			requestAnimationFrame(() => {
-				aethos.smoother.paused(true);
-			});
-		} else {
-		}
+		// if (aethos.settings.pageLoader == "enabled") {
+		// 	console.log("paused");
+		// 	requestAnimationFrame(() => {
+		// 		aethos.smoother.paused(true);
+		// 	});
+		// } else {
+		// }
 
 		// disable normalise on mobile
 		let mm = gsap.matchMedia();
@@ -3626,11 +3626,15 @@ function main() {
 			return;
 		}
 
-		// Store current visit time
-		localStorage.setItem("aethos_last_visit", Date.now());
+		console.log("Page load running");
 
 		// Disable scrolling
-		aethos.smoother.paused(true);
+		requestAnimationFrame(() => {
+			aethos.smoother.paused(true);
+		});
+
+		// Store current visit time
+		localStorage.setItem("aethos_last_visit", Date.now());
 
 		let header = document.querySelector(".header");
 		let loader = document.querySelector(".site-loader");
