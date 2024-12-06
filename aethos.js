@@ -3644,16 +3644,6 @@ function main() {
 		let header_logo_wrap = header.querySelector(".header-bar_logo-wrap");
 		let header_logo = header.querySelector(".header-bar_middle svg.logo");
 
-		// Calculate clip block sizes
-		let lottie_rect = lottie_container.getBoundingClientRect();
-		const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
-		let lottie_w = lottie_rect.height / logoRatio;
-		let screen_w = window.innerWidth;
-		let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
-		gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
-			width: clip_w + "%",
-		});
-
 		// get height of header logo
 		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
 
@@ -3670,12 +3660,23 @@ function main() {
 		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
 		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
 		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
-		gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
 		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
 		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
 
 		// when lottie loads
 		loader_lottie.addEventListener("DOMLoaded", () => {
+			// Calculate clip block sizes
+			let lottie_rect = lottie_container.getBoundingClientRect();
+			const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
+			let lottie_w = lottie_rect.height / logoRatio;
+			let screen_w = window.innerWidth;
+			let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
+			gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
+				width: clip_w + "%",
+			});
+
+			gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+
 			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
 
 			let playhead = { frame: 0 };
