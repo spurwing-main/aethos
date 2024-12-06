@@ -3649,7 +3649,7 @@ function main() {
 
 		let loader_lottie = lottie.loadAnimation({
 			container: lottie_container,
-			renderer: "svg",
+			renderer: "canvas",
 			loop: false,
 			autoplay: false,
 			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6752fe04509675318f4fafe9_aethoslogo_Siteloader_v2.json",
