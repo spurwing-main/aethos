@@ -211,10 +211,10 @@ function main() {
 		const value = getComputedStyle(element).getPropertyValue(propName).trim();
 		if (!value) {
 			console.warn(`CSS property "${propName}" not found on the element.`);
+			return "";
 		} else {
-			// aethos.log(value);
+			return value;
 		}
-		return value;
 	};
 
 	/* register GSAP plugins */
@@ -245,6 +245,14 @@ function main() {
 				ScrollTrigger.refresh();
 			},
 		});
+
+		if (aethos.settings.pageLoader == "enabled") {
+			console.log("paused");
+			requestAnimationFrame(() => {
+				aethos.smoother.paused(true);
+			});
+		} else {
+		}
 
 		// disable normalise on mobile
 		let mm = gsap.matchMedia();
@@ -3402,7 +3410,7 @@ function main() {
 						);
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
-						}, 0000);
+						}, 0);
 						return;
 					}
 
@@ -3416,14 +3424,14 @@ function main() {
 							localStorage.setItem("aethos_transition", "true");
 							setTimeout(() => {
 								window.location.assign(destinationUrl.href);
-							}, 0000);
+							}, 0);
 						});
 					} else {
 						console.log("Navigating without transition:", destinationUrl.href);
 						localStorage.setItem("aethos_transition", "false");
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
-						}, 0000);
+						}, 0);
 					}
 				}
 			});
@@ -3605,7 +3613,196 @@ function main() {
 		}
 	};
 
+	aethos.anim.loader = function () {
+		// Check if loader is enabled, if this is the user's first visit in 30 days,
+		// or if a specific URL parameter forces the loader.
+		const urlParams = new URLSearchParams(window.location.search);
+		const forceLoader = urlParams.has("forceLoader");
+
+		if (
+			!forceLoader &&
+			(aethos.settings.loader !== "enabled" || !isFirstVisitIn30Days())
+		) {
+			return;
+		}
+
+		// Store current visit time
+		localStorage.setItem("aethos_last_visit", Date.now());
+
+		// Disable scrolling
+		aethos.smoother.paused(true);
+
+		let header = document.querySelector(".header");
+		let loader = document.querySelector(".site-loader");
+		let lottie_container = document.querySelector(".site-loader_lottie");
+		let pageBg = aethos.helpers.getProp("--color--page-bg");
+		let header_logo_wrap = header.querySelector(".header-bar_logo-wrap");
+		let header_logo = header.querySelector(".header-bar_middle svg.logo");
+
+		// Calculate clip block sizes
+		let lottie_rect = lottie_container.getBoundingClientRect();
+		const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
+		let lottie_w = lottie_rect.height / logoRatio;
+		let screen_w = window.innerWidth;
+		let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
+		gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
+			width: clip_w + "%",
+		});
+
+		// get height of header logo
+		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
+
+		let loader_lottie = lottie.loadAnimation({
+			container: lottie_container,
+			renderer: "svg",
+			loop: false,
+			autoplay: false,
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6752fe04509675318f4fafe9_aethoslogo_Siteloader_v2.json",
+		});
+
+		gsap.set(loader, { display: "flex" }); // show loader
+		gsap.set(".header-bar", { y: "-100%" }); // hide header buttons offscreen at first
+		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
+		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
+		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
+		gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
+		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
+
+		// when lottie loads
+		loader_lottie.addEventListener("DOMLoaded", () => {
+			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
+
+			let playhead = { frame: 0 };
+
+			// play lottie
+			tl.to(playhead, {
+				frame: loader_lottie.totalFrames - 1,
+				duration: 5,
+				ease: "none",
+				onUpdate: () => {
+					loader_lottie.goToAndStop(playhead.frame, true);
+				},
+			});
+
+			// change bg color
+			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 4.5);
+
+			// show hero (only img is visible at first)
+			tl.to(
+				".section-hero-home",
+				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
+				4.5
+			);
+
+			// Scale image up
+			tl.to(
+				".hero-home_media-wrap",
+				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+
+			// shrink the clip elements. top clip stays bigger to allow for larger logo
+			tl.to(
+				".site-loader_img-clip.left, .site-loader_img-clip.right",
+				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+			tl.to(
+				".site-loader_img-clip.bottom",
+				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+			tl.to(
+				".site-loader_img-clip.top",
+				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+
+			// delete clip elements to avoid weirdness on resize
+			tl.call(removeElement(".site-loader_img-clip.left"));
+			tl.call(removeElement(".site-loader_img-clip.right"));
+			tl.call(removeElement(".site-loader_img-clip.bottom"));
+
+			// scale up the lottie spacer to force lottie up to header position
+			tl.to(
+				".site-loader_lottie-spacer",
+				{ height: "100%", duration: 2, ease: "power4.inOut" },
+				6.55
+			);
+
+			// show content
+			tl.to(
+				".hero-home_content",
+				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
+				7
+			);
+
+			// bring in header buttons
+			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" });
+
+			// get rid of extra space at top
+			tl.to(
+				".site-loader_img-clip.top",
+				{
+					height: 0,
+					duration: 1.5,
+					ease: "power4.inOut",
+				},
+				"<"
+			);
+
+			// shrink lottie to match real logo
+			tl.to(
+				lottie_container,
+				{ height: logo_h, duration: 1.5, ease: "power4.inOut" },
+				"<"
+			);
+
+			// delete clip elements to avoid weirdness on resize
+			tl.call(removeElement(".site-loader_img-clip.top"));
+
+			// Play the timeline
+			tl.play();
+		});
+
+		function removeElement(element) {
+			if (typeof element === "string") {
+				element = document.querySelector(element);
+			}
+			return function () {
+				if (element) {
+					element.parentNode.removeChild(element);
+				}
+			};
+		}
+
+		// enable scrolling
+		function loaderEnds() {
+			//move lottie to header and hide original logo
+			header_logo_wrap.prepend(lottie_container);
+			header_logo.style.display = "none";
+
+			// resume scroll
+			requestAnimationFrame(() => {
+				aethos.smoother.paused(false);
+			});
+		}
+
+		function isFirstVisitIn30Days() {
+			const lastVisit = localStorage.getItem("aethos_last_visit");
+			if (!lastVisit) return true; // No visit recorded
+			const daysSinceLastVisit =
+				(Date.now() - parseInt(lastVisit, 10)) / (1000 * 60 * 60 * 24);
+			return daysSinceLastVisit >= 30;
+		}
+	};
+
 	/* CALL FUNCTIONS */
+
+	aethos.anim.smoothScroll();
+	aethos.anim.loader();
+
 	aethos.functions.nav();
 	aethos.functions.buildDestinationNav();
 	aethos.functions.hiddenFormFields();
@@ -3616,7 +3813,7 @@ function main() {
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
-	aethos.anim.smoothScroll();
+
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
@@ -3652,171 +3849,6 @@ function main() {
 	// aethos.functions.toggleNormaliseScroll();
 	aethos.anim.pageTransition();
 
-	// aethos.anim.loader = function () {
-	// 	console.log("Loader function initiated");
-
-	// 	// Only run this function if the pageLoader setting is true and the loader hasn't run before
-	// 	// if (
-	// 	// 	!aethos.settings.pageLoader ||
-	// 	// 	localStorage.getItem("aethos_loader_ran")
-	// 	// ) {
-	// 	// 	console.log("Loader already ran or pageLoader setting is false");
-	// 	// 	return;
-	// 	// }
-
-	// 	// console.log("Setting loader as played in local storage");
-
-	// 	// // Mark the loader as "played" in local storage, expiring in 30 days
-	// 	// const expirationDate = new Date();
-	// 	// expirationDate.setDate(expirationDate.getDate() + 30);
-	// 	// localStorage.setItem("aethos_loader_ran", true);
-	// 	// localStorage.setItem("aethos_loader_expiration", expirationDate.getTime());
-	// 	// console.log("Local storage keys set:", {
-	// 	// 	aethos_loader_ran: true,
-	// 	// 	aethos_loader_expiration: expirationDate.getTime(),
-	// 	// });
-
-	// 	// Get elements
-	// 	let header = document.querySelector(".header");
-	// 	let loader = document.querySelector(".site-loader");
-	// 	console.log("Elements selected:", { header, loader });
-
-	// 	// Load Lottie animation
-	// 	let loader_lottie = lottie.loadAnimation({
-	// 		container: document.querySelector(".site-loader_lottie"),
-	// 		renderer: "svg",
-	// 		loop: false,
-	// 		autoplay: false,
-	// 		path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/66d03670c7268e6c895d7847_Aethos%20Logo%20Lottie%20v2.json",
-	// 	});
-	// 	console.log("Lottie animation loaded");
-
-	// 	let playhead = { frame: 0 };
-
-	// 	// Set initial states
-	// 	console.log("Setting initial states for GSAP animations");
-	// 	gsap.set(loader, { display: "flex", autoAlpha: 0.5 });
-	// 	// gsap.set(".site-loader_overlay-bottom", { backgroundColor: "black" });
-	// 	gsap.set(".site-loader_lottie", { autoAlpha: 1, display: "block" });
-	// 	gsap.set(".site-loader_logo", { height: "auto", autoAlpha: 0 });
-	// 	gsap.set(".site-loader_img-container", { autoAlpha: 0 });
-	// 	gsap.set(".site-loader_img", { scale: 0.75 });
-	// 	gsap.set([".header-bar_left", ".header-bar_right"], { y: "200%" });
-	// 	// gsap.set(".site-loader_overlay-top", { backgroundColor: "black" });
-	// 	gsap.set(".header-bar_middle", { autoAlpha: 0 });
-	// 	gsap.set(".site-loader_img-wrap", { width: "50%", height: "75%" });
-	// 	gsap.set(".hero-home_content", { autoAlpha: 0, y: "20%" });
-
-	// 	console.log("Initial states set");
-
-	// 	// Create timeline
-	// 	console.log("Creating GSAP timeline");
-	// 	let tl = gsap.timeline({ paused: true });
-
-	// 	// Play Lottie animation [5s]
-	// 	tl.to(playhead, {
-	// 		frame: loader_lottie.totalFrames - 1,
-	// 		duration: 5,
-	// 		ease: "none",
-	// 		onUpdate: () => {
-	// 			loader_lottie.goToAndStop(playhead.frame, true);
-	// 			// console.log("Lottie animation playhead updated:", playhead.frame);
-	// 		},
-	// 	});
-
-	// 	// Logo height animation, occurs simultaneously with Lottie [5.3s]
-	// 	tl.to(".site-loader_logo", { height: "100%", duration: 5 }, 0.3);
-
-	// 	// At 5.3 seconds: lottie fades out, logo fades in, overlay colors change
-	// 	tl.to(
-	// 		".site-loader_lottie",
-	// 		{ autoAlpha: 0, duration: 1.25, ease: "power4.inOut" },
-	// 		5.3
-	// 	);
-	// 	tl.to(
-	// 		".site-loader_logo",
-	// 		{ autoAlpha: 1, duration: 1.25, ease: "power4.inOut" },
-	// 		5.3
-	// 	);
-	// 	tl.to(
-	// 		".site-loader_overlay-bottom",
-	// 		{ backgroundColor: "black", duration: 1.25, ease: "power4.inOut" },
-	// 		5.3
-	// 	);
-	// 	tl.to(
-	// 		".site-loader_overlay-top",
-	// 		{ backgroundColor: "transparent", duration: 1.25, ease: "power4.inOut" },
-	// 		5.3
-	// 	);
-
-	// 	// At 5.55s: Show image container [1s ease in]
-	// 	tl.to(
-	// 		".site-loader_img-container",
-	// 		{ autoAlpha: 1, duration: 1, ease: "power4.in" },
-	// 		5.55
-	// 	);
-
-	// 	// At 6.55s: Scale image to 1, adjust logo, move header bars, adjust image wrap [various durations]
-	// 	tl.to(
-	// 		".site-loader_img",
-	// 		{ scale: 1, duration: 1.5, ease: "power4.inOut" },
-	// 		6.55
-	// 	);
-	// 	tl.to(
-	// 		".site-loader_logo",
-	// 		{ height: "auto", duration: 1.5, ease: "power4.inOut" },
-	// 		6.55
-	// 	);
-	// 	tl.to(
-	// 		".header-bar_left",
-	// 		{ y: "0%", duration: 0.4, ease: "power4.inOut" },
-	// 		6.55
-	// 	);
-	// 	tl.to(
-	// 		".header-bar_right",
-	// 		{ y: "0%", duration: 0.4, ease: "power4.inOut" },
-	// 		6.55
-	// 	);
-	// 	tl.to(
-	// 		".site-loader_img-wrap",
-	// 		{ width: "100%", height: "100%", duration: 0.5, ease: "linear" },
-	// 		6.55
-	// 	);
-
-	// 	// At 8.8s: Show hero-home content [0.4s ioq]
-	// 	tl.to(
-	// 		".hero-home_content",
-	// 		{ autoAlpha: 1, y: "0%", duration: 0.4, ease: "power4.inOut" },
-	// 		8.8
-	// 	);
-
-	// 	// At 9.2s: Show header middle bar and hide loader
-	// 	tl.to(
-	// 		".header-bar_middle",
-	// 		{ autoAlpha: 1, display: "flex", duration: 0 },
-	// 		9.2
-	// 	);
-	// 	tl.to(loader, { autoAlpha: 0, display: "none", duration: 0 }, 9.2);
-
-	// 	console.log("Timeline animations created and playing");
-
-	// 	// Disable scrolling
-	// 	if (aethos.smoother) {
-	// 		aethos.smoother.paused(true);
-	// 	}
-
-	// 	// Play the timeline
-	// 	tl.play();
-
-	// 	console.log("Timeline started playing");
-	// 	console.log("Loader function completed");
-
-	// 	// enable scrolling
-	// 	if (aethos.smoother) {
-	// 		aethos.smoother.paused(false);
-	// 	}
-	// };
-
 	// // Check and remove expired local storage entry for loader animation
 	// aethos.helpers.clearExpiredLoader = function () {
 	// 	console.log("Checking for expired loader local storage entry");
@@ -3830,7 +3862,7 @@ function main() {
 	// 	}
 	// };
 
-	// // Call clearExpiredLoader when the page loads
+	// Call clearExpiredLoader when the page loads
 	// aethos.helpers.clearExpiredLoader();
 	// aethos.anim.loader();
 }

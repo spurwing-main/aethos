@@ -1,0 +1,10 @@
+{
+    "liveServer.settings.root": "/",
+    "liveServer.settings.https": {
+      "enable": true,
+      "cert": "/Users/sampilgrim/localhost.pem",
+      "key": "/Users/sampilgrim/localhost.key",
+      "passphrase": "lyra"
+    }
+  }
+  
