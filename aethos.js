@@ -3652,7 +3652,7 @@ function main() {
 			renderer: "svg",
 			loop: false,
 			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6752fe04509675318f4fafe9_aethoslogo_Siteloader_v2.json",
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6756b2cbe8b1b5154668c4ac_aethoslogo_Siteloader_v3.json",
 		});
 
 		gsap.set(loader, { display: "flex" }); // show loader
