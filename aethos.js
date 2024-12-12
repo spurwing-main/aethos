@@ -2668,12 +2668,40 @@ function main() {
 		});
 
 		/* patch for date input fields to show date when one is selected instead of placeholder */
-		$("input[type='date']").on("input", function () {
-			if ($(this).val().length > 0) {
-				$(this).removeClass("is-date-placeholder");
-			} else {
-				$(this).addClass("is-date-placeholder");
+		// $("input[type='date']").on("input", function () {
+		// 	if ($(this).val().length > 0) {
+		// 		$(this).removeClass("is-date-placeholder");
+		// 	} else {
+		// 		$(this).addClass("is-date-placeholder");
+		// 	}
+		// });
+
+		// add placeholders to date fields
+		const dateFields = document.querySelectorAll(
+			".proposal-form_field.is-date-placeholder"
+		);
+
+		dateFields.forEach((dateField) => {
+			// Initialize placeholder
+			const placeholder = dateField.dataset.placeholder;
+			if (!dateField.value) {
+				dateField.type = "text";
+				dateField.placeholder = placeholder;
 			}
+
+			// Handle focus: Show the date picker
+			dateField.addEventListener("focus", () => {
+				dateField.type = "date";
+				dateField.placeholder = ""; // Clear placeholder on focus
+			});
+
+			// Handle blur: Restore placeholder if no value is entered
+			dateField.addEventListener("blur", () => {
+				if (!dateField.value) {
+					dateField.type = "text";
+					dateField.placeholder = placeholder;
+				}
+			});
 		});
 	};
 
