@@ -2676,6 +2676,9 @@ function main() {
 		sections.forEach((section) => {
 			// get sticky image container
 			const imgContainer = section.querySelector(".memberships_img-sticky");
+			const header = section.querySelector(".memberships_header");
+			const sectionParent = section.closest(".s-memberships");
+			const paddingBottom = gsap.getProperty(sectionParent, "paddingBottom");
 
 			// get all items
 			let items = section.querySelectorAll(".memberships-item");
@@ -2711,20 +2714,35 @@ function main() {
 			});
 			mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
 				// account for height of club nav
-				const updateStart = () => {
+				const updateStart = (includeExtra = true) => {
 					if (clubNavTop) {
 						const clubNavHeight = clubNavTop.offsetHeight || 0; // Get the height of `.club-nav_top`
-						return `top ${32 + clubNavHeight}px`; // Add 32px to the height
-					} else return "top 32px";
+						return `top ${clubNavHeight + (includeExtra ? 32 : 0)}px`; // Add 32px if includeExtra is true
+					} else {
+						return `top ${includeExtra ? 32 : 0}px`;
+					}
 				};
 
 				// make image wrap sticky
 				ScrollTrigger.create({
 					trigger: section,
-					start: () => updateStart(),
+					start: () => updateStart(true), // Include the extra 32px
+					end: () =>
+						`${
+							section.offsetHeight - imgContainer.offsetHeight - paddingBottom
+						}px 0px`,
+					pin: imgContainer,
+					invalidateOnRefresh: true,
+					pinSpacing: false,
+				});
+
+				// make header sticky
+				ScrollTrigger.create({
+					trigger: section,
+					start: () => updateStart(false), // Only account for the nav height
 					end: () =>
 						`${section.offsetHeight - imgContainer.offsetHeight}px 0px`,
-					pin: imgContainer,
+					pin: header,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
 				});
