@@ -55,7 +55,6 @@ function main() {
 		const pageWrap = document.querySelector(".page-wrap");
 
 		if (pageWrap) {
-			// Retrieve and store the aethos-page-bg, aethos-page, and aethos-site-loader attributes
 			aethos.settings.pageWrap = pageWrap;
 			aethos.settings.pageBg = pageWrap.getAttribute("aethos-page-bg") || "";
 			aethos.settings.pageName =
@@ -71,8 +70,10 @@ function main() {
 				? themeAttribute.toLowerCase()
 				: "";
 
-			// Log the settings if debug mode is on
-			aethos.log(`Page settings loaded: ${JSON.stringify(aethos.settings)}`);
+			// Log settings without circular references
+			const loggableSettings = { ...aethos.settings };
+			delete loggableSettings.pageWrap;
+			aethos.log(`Page settings loaded: ${JSON.stringify(loggableSettings)}`);
 		} else {
 			aethos.log("No .page-wrap element found.");
 		}
@@ -3464,7 +3465,7 @@ function main() {
 					const { targetTheme, targetDestination } =
 						getThemeAndDestinationFromUrl(destinationUrl.pathname);
 
-					console.log(
+					aethos.log(
 						`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
 					);
 
@@ -3474,7 +3475,7 @@ function main() {
 						targetDestination === "default" &&
 						currentTheme === targetTheme
 					) {
-						console.log(
+						aethos.log(
 							"Both current and target destinations are default, and themes are the same. Skipping transition."
 						);
 						setTimeout(() => {
@@ -3489,14 +3490,14 @@ function main() {
 						currentDestination !== targetDestination
 					) {
 						playPageTransition(currentTheme, targetTheme, () => {
-							console.log("Navigating with transition:", destinationUrl.href);
+							aethos.log("Navigating with transition:", destinationUrl.href);
 							localStorage.setItem("aethos_transition", "true");
 							setTimeout(() => {
 								window.location.assign(destinationUrl.href);
 							}, 0);
 						});
 					} else {
-						console.log("Navigating without transition:", destinationUrl.href);
+						aethos.log("Navigating without transition:", destinationUrl.href);
 						localStorage.setItem("aethos_transition", "false");
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
