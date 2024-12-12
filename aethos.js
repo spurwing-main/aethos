@@ -2497,17 +2497,17 @@ function main() {
 			field.value = location.href;
 		});
 
-		/* current destination */
-		const destinationFields = document.querySelectorAll(
-			'input[name="PAGEDESTINATION"]'
-		);
+		// /* current destination */ /* EDIT - this is now set manually in component overrides so we can control on a page by page basis, e.g. setting a destination on club pages */
+		// const destinationFields = document.querySelectorAll(
+		// 	'input[name="PAGEDESTINATION"]'
+		// );
 
-		// if we know the current destination
-		if (aethos.settings.destinationSlug) {
-			destinationFields.forEach((field) => {
-				field.value = aethos.settings.destinationSlug;
-			});
-		}
+		// // if we know the current destination
+		// if (aethos.settings.destinationSlug) {
+		// 	destinationFields.forEach((field) => {
+		// 		field.value = aethos.settings.destinationSlug;
+		// 	});
+		// }
 	};
 
 	// lang selector close button
@@ -2616,6 +2616,7 @@ function main() {
 
 	/* handle destination subscribe form names */
 	aethos.functions.updateSubscribeFormName = function () {
+		return;
 		// Find all forms with a data-destination attribute
 		const forms = document.querySelectorAll("form[data-destination]");
 
@@ -2670,6 +2671,8 @@ function main() {
 		// get all sections on page
 		let sections = document.querySelectorAll(".c-memberships");
 
+		const clubNavTop = document.querySelector(".club-nav_top");
+
 		sections.forEach((section) => {
 			// get sticky image container
 			const imgContainer = section.querySelector(".memberships_img-sticky");
@@ -2707,16 +2710,23 @@ function main() {
 				});
 			});
 			mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
+				// account for height of club nav
+				const updateStart = () => {
+					if (clubNavTop) {
+						const clubNavHeight = clubNavTop.offsetHeight || 0; // Get the height of `.club-nav_top`
+						return `top ${32 + clubNavHeight}px`; // Add 32px to the height
+					} else return "top 32px";
+				};
+
 				// make image wrap sticky
 				ScrollTrigger.create({
 					trigger: section,
-					start: "top 32px",
+					start: () => updateStart(),
 					end: () =>
 						`${section.offsetHeight - imgContainer.offsetHeight}px 0px`,
 					pin: imgContainer,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
-					// markers: true,
 				});
 			});
 		});
