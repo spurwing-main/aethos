@@ -1,7 +1,4 @@
 function main() {
-	// gsap.registerPlugin(GSDevTools);
-	// GSDevTools.create();
-
 	// Get themes
 	(function () {
 		// City Theme
@@ -218,7 +215,7 @@ function main() {
 	};
 
 	/* register GSAP plugins */
-	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother);
+	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother, ScrollToPlugin);
 
 	// /* GSAP config */
 	// ScrollTrigger.config({
@@ -1278,7 +1275,6 @@ function main() {
 						end: "bottom bottom",
 						pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
 						pinSpacing: false,
-						// markers: true,
 					},
 				});
 
@@ -1287,8 +1283,6 @@ function main() {
 					let title = titles[index];
 					let body = bodies[index];
 					let image = images[index];
-
-					console.log(index);
 
 					let start = "top 70%";
 					let end = "bottom 70%";
@@ -1308,22 +1302,32 @@ function main() {
 						toggleClass: { targets: [title, body], className: "is-active" },
 						scrub: true,
 						markers: markers,
-						// onEnter: () => {
-						// 	title.classList.add("is-active");
-						// 	body.classList.add("is-active");
-						// },
-						// onLeave: () => {
-						// 	title.classList.remove("is-active");
-						// 	body.classList.remove("is-active");
-						// },
-						// onEnterBack: () => {
-						// 	title.classList.add("is-active");
-						// 	body.classList.add("is-active");
-						// },
-						// onLeaveBack: () => {
-						// 	title.classList.remove("is-active");
-						// 	body.classList.remove("is-active");
-						// },
+					});
+				});
+
+				// Account for the height of the header
+				const header = document.querySelector(".header");
+				const headerOffset = () => {
+					if (header) {
+						return header.offsetHeight + 32; // Add extra spacing if needed
+					} else {
+						return 32; // Default offset if header is not present
+					}
+				};
+
+				/* Click to scroll to each item */
+				titles.forEach((title, index) => {
+					title.addEventListener("click", (event) => {
+						event.preventDefault(); // Prevent default anchor behavior
+						let targetImage = images[index]; // Find the corresponding image
+						gsap.to(window, {
+							scrollTo: {
+								y: targetImage,
+								offsetY: headerOffset(), // Use the dynamic offset value
+							},
+							duration: 1,
+							ease: "power2.inOut",
+						});
 					});
 				});
 			});
