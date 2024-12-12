@@ -458,24 +458,28 @@ function main() {
 				transformOrigin: "bottom left",
 			});
 
-			let arch_h = 0.2; // the amount of vertical straight bit of the arch on load
-			let arch_d =
-				"M0.001,0.559 c0,-0.198,0.219,-0.359,0.489,-0.359 h0.023 c0.27,0,0.489,0.161,0.489,0.359 v" +
-				arch_h +
-				"H0.001 v-" +
-				arch_h;
+			// update arch path with a newer simplified string
+			let newPath_start =
+				"M 0 0.36 C 0 0.16 0.22 0 0.5 0 H 0.5 C 0.78 0 1 0.16 1 0.36 V 1 H 0 V 0.36";
+			// update end path with the origin set at the bottom
+			let newPath_end =
+				"M 0 0.56 C 0 0.36 0.22 0.2 0.5 0.2 H 0.5 C 0.78 0.2 1 0.36 1 0.56 V 0.8 H 0 V 0.56";
+			gsap.set([arch_path_bg, arch_path], {
+				attr: { d: newPath_start },
+			});
 
 			// timeline and scroll trigger. Trigger element is the default position of the img wrapper, the same as the top of the text
 			let tl = gsap.timeline({
 				scrollTrigger: {
 					trigger: trigger,
 					start: "20% 95%",
-					// markers: true,
 				},
 			});
 
+			/* slow it down */
 			tl.timeScale(0.75);
 
+			/* but speed it up on contact page */
 			if (aethos.settings.pageName == "contact") {
 				tl.timeScale(1.5);
 			}
@@ -488,14 +492,18 @@ function main() {
 			});
 
 			// extend both fg & bg clipping paths to make arches 'taller'
-			// also apply a transform up
+			// also apply a transform up on pages other than contact
+			let y = 0.2;
+			if (aethos.settings.pageName == "contact") {
+				y = 0.2;
+			}
 			tl.from(
 				[arch_path, arch_path_bg],
 				{
 					attr: {
-						d: arch_d,
+						d: newPath_end,
 					},
-					y: 0.2,
+					y: y,
 					duration: 1.5,
 					ease: "power1.inOut",
 				},
@@ -503,6 +511,7 @@ function main() {
 			);
 
 			// scale fg path up
+
 			tl.from(
 				arch_path,
 				{
@@ -1224,11 +1233,11 @@ function main() {
 				// move clone to mbl list - this is the list we show on mbl only
 				list_mbl.append(value_clone);
 
-				// get id and set it on the title link
-				let id = /[^/]*$/.exec(
-					value.querySelector(".values_item-title").getAttribute("data-id")
-				)[0];
-				value.querySelector(".values_item-title").href = "#" + id;
+				// // get id and set it on the title link
+				// let id = /[^/]*$/.exec(
+				// 	value.querySelector(".values_item-title").getAttribute("data-id")
+				// )[0];
+				// value.querySelector(".values_item-title").href = "#" + id;
 
 				section
 					.querySelector(".values_title-list")
