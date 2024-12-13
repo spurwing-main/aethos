@@ -235,9 +235,9 @@ function main() {
 			effects: true,
 			content: "#smooth-content",
 			wrapper: "#smooth-wrapper",
-			normalizeScroll: {
-				allowNestedScroll: true,
-			},
+			// normalizeScroll: {
+			// 	allowNestedScroll: true,
+			// },
 			onUpdate: () => {},
 			onRefresh: () => {
 				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
@@ -257,13 +257,13 @@ function main() {
 		let mm = gsap.matchMedia();
 		mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
 			console.log("normalise scroll disabled");
-			ScrollTrigger.normalizeScroll(false);
+			// ScrollTrigger.normalizeScroll(false);
 
 			return () => {
 				// optional
 				console.log("normalise scroll enabled");
 
-				ScrollTrigger.normalizeScroll(true);
+				// ScrollTrigger.normalizeScroll(true);
 			};
 		});
 	};
@@ -279,7 +279,7 @@ function main() {
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
 				if (window.innerWidth <= aethos.breakpoints.mbl) {
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			// dest - remove dest nav class on tab and smaller on close
@@ -291,14 +291,14 @@ function main() {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.destNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			if (aethos.settings.theme == "club") {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.clubNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 		}
@@ -312,15 +312,14 @@ function main() {
 					aethos.helpers.globalNavClass
 				);
 				if (isNavOpen) {
-					console.log("normalise scroll off");
-					ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
-					document.body.style.removeProperty("height");
-					aethos.smoother.kill();
+					// console.log("normalise scroll off");
+					// ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
+					// document.body.style.removeProperty("height");
+					// aethos.smoother.kill();
 				} else {
-					console.log("normalise scroll on");
-
-					ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
-					aethos.anim.smoothScroll();
+					// console.log("normalise scroll on");
+					// ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
+					// aethos.anim.smoothScroll();
 				}
 			});
 		}
