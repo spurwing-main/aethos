@@ -3749,19 +3749,21 @@ function main() {
 			!forceLoader &&
 			(aethos.settings.siteLoader !== "enabled" || !isFirstVisitIn30Days())
 		) {
-			console.log("Page loader not running");
+			aethos.log("Page loader not running");
+			// Store current visit time
+			sessionStorage.setItem("aethos_last_visit", Date.now());
 			return;
 		}
 
-		console.log("Page loader running");
+		aethos.log("Page loader running");
+
+		// Store current visit time
+		sessionStorage.setItem("aethos_last_visit", Date.now());
 
 		// Disable scrolling
 		requestAnimationFrame(() => {
 			aethos.smoother.paused(true);
 		});
-
-		// Store current visit time
-		localStorage.setItem("aethos_last_visit", Date.now());
 
 		let header = document.querySelector(".header");
 		let loader = document.querySelector(".site-loader");
@@ -3922,7 +3924,7 @@ function main() {
 		}
 
 		function isFirstVisitIn30Days() {
-			const lastVisit = localStorage.getItem("aethos_last_visit");
+			const lastVisit = sessionStorage.getItem("aethos_last_visit");
 			if (!lastVisit) return true; // No visit recorded
 			const daysSinceLastVisit =
 				(Date.now() - parseInt(lastVisit, 10)) / (1000 * 60 * 60 * 24);
