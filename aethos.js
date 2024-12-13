@@ -1955,13 +1955,12 @@ function main() {
 			return new Promise(async (resolve, reject) => {
 				try {
 					// Check if navigation already exists on the page
-					let navElement = document.querySelector(
-						".header .dest-nav-wrap .dest-nav"
-					);
+					let navElement = document.querySelector(".site-header .dest-nav");
 
 					if (navElement) {
 						aethos.log(
-							"Navigation already exists on the page. Skipping fetch."
+							"Navigation already exists on the page. Skipping fetch.",
+							"info"
 						);
 					} else {
 						// Retrieve the destination slug from aethos.settings
@@ -2008,6 +2007,9 @@ function main() {
 					aethos.log(
 						"Navigation processing complete. Navigation is now visible."
 					);
+
+					// run our links function again to ensure any new links in the nav have the right params for page transitions
+					aethos.functions.listingLinks();
 
 					// Resolve the promise when done
 					resolve();
@@ -2471,16 +2473,40 @@ function main() {
 	// Replace listing links
 	aethos.functions.listingLinks = function () {
 		document
-			.querySelectorAll(
-				'a[href^="/experiences/"], a[href^="/happenings/"], a[href^="/wellness/"]'
-			)
+			.querySelectorAll("a[aethos-destination-slug]") // Select all links with the attribute
 			.forEach((link) => {
 				const destinationSlug = link.getAttribute("aethos-destination-slug");
 				if (destinationSlug) {
 					const currentHref = link.getAttribute("href");
-					const slug = currentHref.split("/").pop(); // Extract the `x` part from `/experiences/x`, `/events/x`, etc.
-					const updatedHref = `/listing?slug=${slug}&dest=${destinationSlug}`;
-					link.setAttribute("href", updatedHref);
+
+					// Ignore external links
+					if (
+						!currentHref.startsWith("/") &&
+						!currentHref.startsWith(window.location.origin)
+					) {
+						return;
+					}
+
+					// Extract the last segment of the URL
+					const slug = currentHref.split("/").pop();
+
+					// Check if the link is for experiences, happenings, or wellness
+					if (
+						currentHref.startsWith("/experiences/") ||
+						currentHref.startsWith("/happenings/") ||
+						currentHref.startsWith("/wellness/")
+					) {
+						const updatedHref = `/listing?slug=${slug}&dest=${destinationSlug}`;
+						link.setAttribute("href", updatedHref);
+					} else {
+						// For other links, append the destination parameter
+						const updatedHref = new URL(currentHref, window.location.origin);
+						updatedHref.searchParams.set("dest", destinationSlug);
+						link.setAttribute(
+							"href",
+							updatedHref.pathname + updatedHref.search
+						);
+					}
 				}
 			});
 	};
@@ -3370,7 +3396,6 @@ function main() {
 
 		aethos.transition = {};
 		console.log("Running page transition setup");
-		const links = document.querySelectorAll("a");
 
 		aethos.transition.themes = {
 			city: {
@@ -3436,78 +3461,81 @@ function main() {
 		}
 
 		// Set up link event listeners
-		links.forEach((link) => {
-			link.addEventListener("click", function (e) {
-				const destinationHref = link.getAttribute("href");
-				const destinationUrl = link.href ? new URL(link.href) : null;
+		document.addEventListener("click", function (e) {
+			const link = e.target.closest("a");
 
-				// Ignore links with empty href or href="#"
-				if (!destinationHref || destinationHref === "#") {
+			if (!link) return; // Ignore clicks not on <a> elements
+			const destinationHref = link.getAttribute("href");
+			const destinationUrl = link.href ? new URL(link.href) : null;
+
+			// Ignore links with empty href or href="#"
+			if (!destinationHref || destinationHref === "#") {
+				return;
+			}
+
+			// Only trigger transition for internal links without hash targets or new tab links
+			if (
+				destinationUrl.hostname === window.location.hostname &&
+				!link.hash &&
+				link.target !== "_blank"
+			) {
+				e.preventDefault();
+
+				// Prefetch the destination page
+				prerenderLink(destinationUrl.href);
+
+				// Determine current and target themes and destinations
+				const currentTheme = aethos.settings.theme || "default";
+				const currentDestination = aethos.settings.destinationSlug || "default"; // Track current destination
+
+				const { targetTheme, targetDestination } =
+					getThemeAndDestinationFromUrl(
+						destinationUrl.pathname,
+						new URLSearchParams(destinationUrl.search)
+					);
+
+				aethos.log(
+					`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
+				);
+
+				// Skip transition if both destinations are unknown AND themes are the same
+				if (
+					currentDestination === "default" &&
+					targetDestination === "default" &&
+					currentTheme === targetTheme
+				) {
+					aethos.log(
+						"Both current and target destinations are default, and themes are the same. Skipping transition."
+					);
+					setTimeout(() => {
+						window.location.assign(destinationUrl.href);
+					}, 0);
 					return;
 				}
 
-				// Only trigger transition for internal links without hash targets or new tab links
+				// Play transition if themes or destinations are different
 				if (
-					destinationUrl.hostname === window.location.hostname &&
-					!link.hash &&
-					link.target !== "_blank"
+					currentTheme !== targetTheme ||
+					currentDestination !== targetDestination
 				) {
-					e.preventDefault();
-
-					// Prefetch the destination page
-					prerenderLink(destinationUrl.href);
-
-					// Determine current and target themes and destinations
-					const currentTheme = aethos.settings.theme || "default";
-					const currentDestination =
-						aethos.settings.destinationSlug || "default"; // Track current destination
-
-					const { targetTheme, targetDestination } =
-						getThemeAndDestinationFromUrl(destinationUrl.pathname);
-
-					aethos.log(
-						`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
-					);
-
-					// Skip transition if both destinations are unknown AND themes are the same
-					if (
-						currentDestination === "default" &&
-						targetDestination === "default" &&
-						currentTheme === targetTheme
-					) {
-						aethos.log(
-							"Both current and target destinations are default, and themes are the same. Skipping transition."
-						);
+					playPageTransition(currentTheme, targetTheme, () => {
+						aethos.log("Navigating with transition:", destinationUrl.href);
+						localStorage.setItem("aethos_transition", "true");
 						setTimeout(() => {
 							window.location.assign(destinationUrl.href);
 						}, 0);
-						return;
-					}
-
-					// Play transition if themes or destinations are different
-					if (
-						currentTheme !== targetTheme ||
-						currentDestination !== targetDestination
-					) {
-						playPageTransition(currentTheme, targetTheme, () => {
-							aethos.log("Navigating with transition:", destinationUrl.href);
-							localStorage.setItem("aethos_transition", "true");
-							setTimeout(() => {
-								window.location.assign(destinationUrl.href);
-							}, 0);
-						});
-					} else {
-						aethos.log("Navigating without transition:", destinationUrl.href);
-						localStorage.setItem("aethos_transition", "false");
-						setTimeout(() => {
-							window.location.assign(destinationUrl.href);
-						}, 0);
-					}
+					});
+				} else {
+					aethos.log("Navigating without transition:", destinationUrl.href);
+					localStorage.setItem("aethos_transition", "false");
+					setTimeout(() => {
+						window.location.assign(destinationUrl.href);
+					}, 0);
 				}
-			});
+			}
 		});
 
-		function getThemeAndDestinationFromUrl(pathname) {
+		function getThemeAndDestinationFromUrl(pathname, searchParams) {
 			// Check for /club or /clubs at the start of the URL
 			if (pathname.startsWith("/club") || pathname.startsWith("/clubs")) {
 				return { targetTheme: "club", targetDestination: "club" };
@@ -3525,8 +3553,36 @@ function main() {
 			const hotelMatch = pathname.match(/^\/destinations\/([^\/]+)/);
 			if (hotelMatch) {
 				const slug = hotelMatch[1]; // Extract the destination slug
-				const theme = aethos.destinations?.[slug]?.theme || "default";
+				if (!aethos.destinations?.[slug]) {
+					return { targetTheme: "default", targetDestination: "default" };
+				}
+				const theme = aethos.destinations[slug].theme || "default";
 				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
+			}
+
+			// Check for URLs of the form /destination-SOMETHING/destination-name
+			const destinationMatch = pathname.match(
+				/^\/destination-[^\/]+\/([^\/]+)/
+			);
+			if (destinationMatch) {
+				const slug = destinationMatch[1]; // Extract the destination name
+				if (!aethos.destinations?.[slug]) {
+					return { targetTheme: "default", targetDestination: "default" };
+				}
+				const theme = aethos.destinations[slug].theme || "default";
+				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
+			}
+
+			// Check for listing links with destination stored in search parameters
+			if (searchParams) {
+				const dest = searchParams.get("dest");
+				if (dest) {
+					if (!aethos.destinations?.[dest]) {
+						return { targetTheme: "default", targetDestination: "default" };
+					}
+					const theme = aethos.destinations[dest].theme || "default";
+					return { targetTheme: theme.toLowerCase(), targetDestination: dest };
+				}
 			}
 
 			// Default theme and destination
