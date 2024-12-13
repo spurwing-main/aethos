@@ -315,11 +315,12 @@ function main() {
 					console.log("normalise scroll off");
 					ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
 					document.body.style.removeProperty("height");
-					aethos.smoother.paused(true);
+					aethos.smoother.kill;
 				} else {
 					console.log("normalise scroll on");
 
 					ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
+					aethos.anim.smoothScroll();
 				}
 			});
 		}
