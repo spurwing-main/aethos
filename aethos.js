@@ -3465,6 +3465,19 @@ function main() {
 			const link = e.target.closest("a");
 
 			if (!link) return; // Ignore clicks not on <a> elements
+
+			// Exclude links that are descendants of a `.pagination` element
+			if (link.closest(".pagination")) {
+				aethos.log("Link inside .pagination element. Skipping.");
+				return;
+			}
+
+			// Exclude links that are descendants of a `.filters` element
+			if (link.closest(".filters")) {
+				aethos.log("Link inside .filters element. Skipping.");
+				return;
+			}
+
 			const destinationHref = link.getAttribute("href");
 			const destinationUrl = link.href ? new URL(link.href) : null;
 
