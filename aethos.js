@@ -1,56 +1,55 @@
 function main() {
-	console.log("dev")(
-		// Get themes
-		function () {
-			// City Theme
-			aethos.themes.city = {
-				dark: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--terracotta--dark")
-					.trim(),
-				medium: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--terracotta--medium")
-					.trim(),
-				light: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--terracotta--light")
-					.trim(),
-				background: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--terracotta--bg")
-					.trim(),
-			};
+	console.log("dev");
+	// Get themes
+	(function () {
+		// City Theme
+		aethos.themes.city = {
+			dark: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--dark")
+				.trim(),
+			medium: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--medium")
+				.trim(),
+			light: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--light")
+				.trim(),
+			background: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--terracotta--bg")
+				.trim(),
+		};
 
-			// Coast Theme
-			aethos.themes.coast = {
-				dark: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--sky--dark")
-					.trim(),
-				medium: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--sky--medium")
-					.trim(),
-				light: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--sky--light")
-					.trim(),
-				background: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--sky--bg")
-					.trim(),
-			};
+		// Coast Theme
+		aethos.themes.coast = {
+			dark: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--dark")
+				.trim(),
+			medium: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--medium")
+				.trim(),
+			light: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--light")
+				.trim(),
+			background: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--sky--bg")
+				.trim(),
+		};
 
-			// Country Theme
-			aethos.themes.country = {
-				dark: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--leaf--dark")
-					.trim(),
-				medium: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--leaf--medium")
-					.trim(),
-				light: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--leaf--light")
-					.trim(),
-				background: getComputedStyle(document.documentElement)
-					.getPropertyValue("--color--leaf--bg")
-					.trim(),
-			};
-		}
-	)();
+		// Country Theme
+		aethos.themes.country = {
+			dark: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--dark")
+				.trim(),
+			medium: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--medium")
+				.trim(),
+			light: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--light")
+				.trim(),
+			background: getComputedStyle(document.documentElement)
+				.getPropertyValue("--color--leaf--bg")
+				.trim(),
+		};
+	})();
 
 	/* load aethos settings */
 	(function () {
