@@ -315,6 +315,8 @@ function main() {
 				if (isNavOpen) {
 					console.log("normalise scroll off");
 					ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
+					document.body.style.removeProperty("height");
+					aethos.smoother.paused(true);
 				} else {
 					console.log("normalise scroll on");
 
