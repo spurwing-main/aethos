@@ -222,7 +222,6 @@ function main() {
 
 	/* set up GSAP smooth scroll */
 	(function smoothScroll() {
-		return;
 		gsap.registerPlugin(ScrollSmoother);
 
 		aethos.smoother = ScrollSmoother.create({
@@ -899,7 +898,7 @@ function main() {
 				})
 				.progress(1);
 
-			ScrollTrigger.create({
+			aethos.navScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".header",
@@ -908,13 +907,13 @@ function main() {
 				},
 			});
 		} else if (aethos.settings.theme == "club") {
-			ScrollTrigger.create({
+			aethos.navScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".club-header",
 			});
 		} else {
-			ScrollTrigger.create({
+			aethos.navScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".dest-header",
@@ -3998,11 +3997,13 @@ function main() {
 						if (aethos.smoother) {
 							aethos.smoother.paused(true);
 							ScrollTrigger.normalizeScroll(false);
+							aethos.navScrollTrigger.disable();
 						}
 					} else {
 						if (aethos.smoother) {
 							aethos.smoother.paused(false);
 							ScrollTrigger.normalizeScroll(true);
+							aethos.navScrollTrigger.enable();
 						}
 					}
 				}
