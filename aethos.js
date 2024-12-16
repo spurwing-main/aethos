@@ -4017,6 +4017,7 @@ function main() {
 
 	// watch body for nav open classes so we can toggle smoother
 	aethos.functions.observeBody = function () {
+		return;
 		const body = document.body;
 
 		const observer = new MutationObserver((mutationsList) => {
