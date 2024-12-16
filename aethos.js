@@ -222,6 +222,7 @@ function main() {
 
 	/* set up GSAP smooth scroll */
 	(function smoothScroll() {
+		return;
 		gsap.registerPlugin(ScrollSmoother);
 
 		aethos.smoother = ScrollSmoother.create({
