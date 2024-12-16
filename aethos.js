@@ -3969,6 +3969,7 @@ function main() {
 						setTimeout(() => {
 							console.log("Refreshing ScrollTrigger");
 							gsap.delayedCall(0.1, ScrollTrigger.refresh); // Refresh GSAP ScrollTrigger
+							console.log("scroll trigger refresh");
 						}, 100); // Adjust delay as necessary for your animations
 					}
 				}
