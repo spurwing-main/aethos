@@ -3979,6 +3979,44 @@ function main() {
 	// Call the function
 	aethos.functions.observeNavGridChanges();
 
+	// watch body for nav open classes so we can toggle smoother
+	aethos.functions.observeBody = function () {
+		const body = document.body;
+
+		const observer = new MutationObserver((mutationsList) => {
+			for (const mutation of mutationsList) {
+				if (
+					mutation.type === "attributes" &&
+					mutation.attributeName === "class"
+				) {
+					// Check if the specific class is present
+					if (
+						body.classList.contains("dest-nav-open") ||
+						body.classList.contains("nav-open") ||
+						body.classList.contains("club-nav-open")
+					) {
+						if (aethos.smoother) {
+							aethos.smoother.paused(true);
+							ScrollTrigger.normalizeScroll(false);
+						}
+					} else {
+						if (aethos.smoother) {
+							aethos.smoother.paused(false);
+							ScrollTrigger.normalizeScroll(true);
+						}
+					}
+				}
+			}
+		});
+
+		observer.observe(body, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+	};
+
+	aethos.functions.observeBody();
+
 	/******/
 	/*** CALL FUNCTIONS ***/
 	/******/
