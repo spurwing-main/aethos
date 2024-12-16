@@ -1,6 +1,10 @@
 function main() {
+	/******/
+	/***  INITIAL SET UP - SETTINGS AND LINKS ***/
+	/******/
+
 	// Get themes
-	(function () {
+	(function getThemes() {
 		// City Theme
 		aethos.themes.city = {
 			dark: getComputedStyle(document.documentElement)
@@ -51,7 +55,7 @@ function main() {
 	})();
 
 	/* load aethos settings */
-	(function () {
+	(function loadSettings() {
 		const pageWrap = document.querySelector(".page-wrap");
 
 		if (pageWrap) {
@@ -80,7 +84,7 @@ function main() {
 	})();
 
 	/* load destination themes */
-	(function () {
+	(function loadDestinationThemes() {
 		const destinations = document.querySelectorAll(".dest-data_item");
 
 		destinations.forEach((item) => {
@@ -101,7 +105,7 @@ function main() {
 	})();
 
 	/* redirect if destination is coming soon */
-	(function () {
+	(function checkIfComingSoon() {
 		// Construct the destination homepage URL
 		const destinationHomepageUrl = `/destinations/${aethos.settings.destinationSlug}`;
 
@@ -116,9 +120,25 @@ function main() {
 		}
 	})();
 
-	/* update any relative destination links */
-	aethos.functions.updateRelativeLinks = function () {
-		// Step 1: Ensure `aethos` and `aethos.settings` are available
+	// Open all external links in a new tab
+	(function openExternalLinksInNewTab() {
+		const links = document.querySelectorAll(
+			"a[href^='https://'], a[href^='http://']"
+		);
+		const host = window.location.hostname;
+
+		const isInternalLink = (link) => new URL(link).hostname === host;
+
+		links.forEach((link) => {
+			if (isInternalLink(link)) return;
+
+			link.setAttribute("target", "_blank");
+			link.setAttribute("rel", "noopener");
+		});
+	})();
+
+	/* update any relative destination links - links of the form ./something on a destination page will be updated to /destinations/destination-name/something */
+	(function updateRelativeLinks() {
 		if (!aethos || !aethos.settings) {
 			console.warn(
 				"Aethos settings not found. Skipping relative links update."
@@ -126,10 +146,8 @@ function main() {
 			return;
 		}
 
-		// Step 2: Retrieve `destinationSlug` from settings
 		const destinationSlug = aethos.settings.destinationSlug;
 
-		// Step 3: If `destinationSlug` is not available, exit gracefully
 		if (!destinationSlug) {
 			aethos.log(
 				"Destination slug not found. Assuming this is not a destination page. Skipping relative links update."
@@ -137,12 +155,10 @@ function main() {
 			return;
 		}
 
-		// Step 4: Select all links with the `aethos-relative-link` attribute
 		const relativeLinks = document.querySelectorAll(
 			'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"]'
 		);
 
-		// Step 5: If no links found, log and exit
 		if (relativeLinks.length === 0) {
 			aethos.log(
 				"No links with aethos-relative-link attribute and './' or 'http://./' href found."
@@ -150,9 +166,7 @@ function main() {
 			return;
 		}
 
-		// Step 6: Iterate over each link and update it
 		relativeLinks.forEach((link) => {
-			// Ensure the href attribute is available
 			const originalHref = link.getAttribute("href");
 			if (!originalHref) {
 				console.warn(
@@ -179,27 +193,11 @@ function main() {
 			// Log success message for each updated link
 			aethos.log(`Link updated successfully: ${originalHref} ➔ ${newHref}`);
 		});
-	};
-
-	// Execute the function
-	aethos.functions.updateRelativeLinks();
-
-	// Open all external links in a new tab
-	(function openExternalLinksInNewTab() {
-		const links = document.querySelectorAll(
-			"a[href^='https://'], a[href^='http://']"
-		);
-		const host = window.location.hostname;
-
-		const isInternalLink = (link) => new URL(link).hostname === host;
-
-		links.forEach((link) => {
-			if (isInternalLink(link)) return;
-
-			link.setAttribute("target", "_blank");
-			link.setAttribute("rel", "noopener");
-		});
 	})();
+
+	/******/
+	/*** HELPER FUNCTIONS ***/
+	/******/
 
 	/* helper to get a custom prop value */
 	aethos.helpers.getProp = function (
@@ -215,18 +213,15 @@ function main() {
 		}
 	};
 
+	/******/
+	/*** GSAP INIT ***/
+	/******/
+
 	/* register GSAP plugins */
 	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother, ScrollToPlugin);
 
-	// /* GSAP config */
-	// ScrollTrigger.config({
-	// 	ignoreMobileResize: true,
-	// 	autoRefreshEvents:
-	// 		"DOMContentLoaded,load" /* we remove 'resize' and 'visibilitychange' to avoid unwanted re-animations https://gsap.com/docs/v3/Plugins/ScrollTrigger/static.config()/ */,
-	// });
-
 	/* set up GSAP smooth scroll */
-	aethos.anim.smoothScroll = function () {
+	(function smoothScroll() {
 		gsap.registerPlugin(ScrollSmoother);
 
 		aethos.smoother = ScrollSmoother.create({
@@ -244,14 +239,6 @@ function main() {
 			},
 		});
 
-		// if (aethos.settings.siteLoader == "enabled") {
-		// 	console.log("paused");
-		// 	requestAnimationFrame(() => {
-		// 		aethos.smoother.paused(true);
-		// 	});
-		// } else {
-		// }
-
 		// disable normalise on mobile
 		let mm = gsap.matchMedia();
 		mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
@@ -259,13 +246,576 @@ function main() {
 			ScrollTrigger.normalizeScroll(false);
 
 			return () => {
-				// optional
 				console.log("normalise scroll enabled");
-
 				ScrollTrigger.normalizeScroll(true);
 			};
 		});
+	})();
+
+	/******/
+	/***  FUNCTIONS - TRANSITIONS & LOADER ***/
+	/******/
+
+	/* Page transitions */
+	aethos.anim.pageTransition = function () {
+		// clear localstorage - we use this to track whether we show second half of transition on a page load
+		localStorage.setItem("aethos_transition", "false");
+
+		aethos.transition = {};
+		console.log("Running page transition setup");
+
+		aethos.transition.themes = {
+			city: {
+				foreground: [0.733, 0.38, 0.341, 1.0], // Terracotta-dark (RGBA)
+				background: "#d19393", // Terracotta-light (Hex)
+			},
+			coast: {
+				foreground: [0.447, 0.506, 0.545, 1.0], // Sky-dark (RGBA)
+				background: "#a3afb8", // Sky-light (Hex)
+			},
+			country: {
+				foreground: [0.392, 0.545, 0.545, 1.0], // Leaf-dark (RGBA)
+				background: "#97b7b6", // Leaf-light (Hex)
+			},
+			club: {
+				foreground: [1, 1, 1, 1.0], // white (RGBA)
+				background: "#1e1d1b", // Charcoal-extra dark (Hex)
+			},
+			default: {
+				foreground: [0.0, 0.0, 0.0, 1.0], // Black (RGBA)
+				background: "#ffffff", // white (Hex)
+			},
+		};
+		// Transition elements
+		aethos.transition.element = document.querySelector(".page-transition");
+		aethos.transition.container = aethos.transition.element.querySelector(
+			".page-transition_lottie"
+		);
+
+		// Load the Lottie animation
+		aethos.transition.lottie = lottie.loadAnimation({
+			container: aethos.transition.container,
+			renderer: "svg",
+			loop: false,
+			autoplay: false,
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67508beb66c783b283415ad0_page-transition-logo-v3.json",
+		});
+
+		// Keep track of prefetched links
+		const prefetchedLinks = new Set();
+
+		// Add prefetch link to the head
+		function prefetchLink(href) {
+			if (!prefetchedLinks.has(href)) {
+				const link = document.createElement("link");
+				link.setAttribute("rel", "prefetch");
+				link.setAttribute("href", href);
+				document.head.appendChild(link);
+				prefetchedLinks.add(href);
+				console.log("Prefetching:", href);
+			}
+		}
+
+		function prerenderLink(href) {
+			if (!prefetchedLinks.has(href)) {
+				const link = document.createElement("link");
+				link.setAttribute("rel", "prerender");
+				link.setAttribute("href", href);
+				document.head.appendChild(link);
+				prefetchedLinks.add(href);
+				console.log("Prerendering:", href);
+			}
+		}
+
+		// Set up link event listeners
+		document.addEventListener("click", function (e) {
+			const link = e.target.closest("a");
+
+			if (!link) return; // Ignore clicks not on <a> elements
+
+			// Exclude links that are descendants of a `.pagination` element
+			if (link.closest(".pagination")) {
+				aethos.log("Link inside .pagination element. Skipping.");
+				return;
+			}
+
+			// Exclude links that are descendants of a `.filters` element
+			if (link.closest(".filters")) {
+				aethos.log("Link inside .filters element. Skipping.");
+				return;
+			}
+
+			const destinationHref = link.getAttribute("href");
+			const destinationUrl = link.href ? new URL(link.href) : null;
+
+			// Ignore links with empty href or href="#"
+			if (!destinationHref || destinationHref === "#") {
+				return;
+			}
+
+			// Only trigger transition for internal links without hash targets or new tab links
+			if (
+				destinationUrl.hostname === window.location.hostname &&
+				!link.hash &&
+				link.target !== "_blank"
+			) {
+				e.preventDefault();
+
+				// Prefetch the destination page
+				prerenderLink(destinationUrl.href);
+
+				// Determine current and target themes and destinations
+				const currentTheme = aethos.settings.theme || "default";
+				const currentDestination = aethos.settings.destinationSlug || "default"; // Track current destination
+
+				const { targetTheme, targetDestination } =
+					getThemeAndDestinationFromUrl(
+						destinationUrl.pathname,
+						new URLSearchParams(destinationUrl.search)
+					);
+
+				aethos.log(
+					`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
+				);
+
+				// Skip transition if both destinations are unknown AND themes are the same
+				if (
+					currentDestination === "default" &&
+					targetDestination === "default" &&
+					currentTheme === targetTheme
+				) {
+					aethos.log(
+						"Both current and target destinations are default, and themes are the same. Skipping transition."
+					);
+					setTimeout(() => {
+						window.location.assign(destinationUrl.href);
+					}, 0);
+					return;
+				}
+
+				// Play transition if themes or destinations are different
+				if (
+					currentTheme !== targetTheme ||
+					currentDestination !== targetDestination
+				) {
+					playPageTransition(currentTheme, targetTheme, () => {
+						aethos.log("Navigating with transition:", destinationUrl.href);
+						localStorage.setItem("aethos_transition", "true");
+						setTimeout(() => {
+							window.location.assign(destinationUrl.href);
+						}, 0);
+					});
+				} else {
+					aethos.log("Navigating without transition:", destinationUrl.href);
+					localStorage.setItem("aethos_transition", "false");
+					setTimeout(() => {
+						window.location.assign(destinationUrl.href);
+					}, 0);
+				}
+			}
+		});
+
+		function getThemeAndDestinationFromUrl(pathname, searchParams) {
+			// Check for /club or /clubs at the start of the URL
+			if (pathname.startsWith("/club") || pathname.startsWith("/clubs")) {
+				return { targetTheme: "club", targetDestination: "club" };
+			}
+
+			// Check for /destinations/.../club
+			const clubInDestinationsMatch = pathname.match(
+				/^\/destinations\/[^\/]+\/club/
+			);
+			if (clubInDestinationsMatch) {
+				return { targetTheme: "club", targetDestination: "club" };
+			}
+
+			// Check for /hotels/x or /destinations/x
+			const hotelMatch = pathname.match(/^\/destinations\/([^\/]+)/);
+			if (hotelMatch) {
+				const slug = hotelMatch[1]; // Extract the destination slug
+				if (!aethos.destinations?.[slug]) {
+					return { targetTheme: "default", targetDestination: "default" };
+				}
+				const theme = aethos.destinations[slug].theme || "default";
+				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
+			}
+
+			// Check for URLs of the form /destination-SOMETHING/destination-name
+			const destinationMatch = pathname.match(
+				/^\/destination-[^\/]+\/([^\/]+)/
+			);
+			if (destinationMatch) {
+				const slug = destinationMatch[1]; // Extract the destination name
+				if (!aethos.destinations?.[slug]) {
+					return { targetTheme: "default", targetDestination: "default" };
+				}
+				const theme = aethos.destinations[slug].theme || "default";
+				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
+			}
+
+			// Check for listing links with destination stored in search parameters
+			if (searchParams) {
+				const dest = searchParams.get("dest");
+				if (dest) {
+					if (!aethos.destinations?.[dest]) {
+						return { targetTheme: "default", targetDestination: "default" };
+					}
+					const theme = aethos.destinations[dest].theme || "default";
+					return { targetTheme: theme.toLowerCase(), targetDestination: dest };
+				}
+			}
+
+			// Default theme and destination
+			return { targetTheme: "default", targetDestination: "default" };
+		}
+
+		function playPageTransition(theme1, theme2, onComplete) {
+			console.log("Initializing Lottie animation...");
+
+			// Hide the Lottie container initially
+			gsap.set(aethos.transition.container, { display: "none" });
+
+			// Update the Lottie animation colors based on themes
+			updateLottieColors(aethos.transition.lottie, theme1, theme2);
+
+			// Force Lottie renderer to refresh with updated colors
+			aethos.transition.lottie.goToAndStop(
+				aethos.transition.lottie.totalFrames - 1,
+				true
+			);
+			aethos.transition.lottie.renderer.renderFrame(
+				aethos.transition.lottie.currentFrame
+			);
+			aethos.transition.lottie.goToAndStop(0, true);
+			console.log(`Lottie colors updated: ${theme1} -> ${theme2}`);
+
+			// Once colors are updated, start the animation
+			startLottieAnimation(theme1, theme2, onComplete);
+		}
+
+		function startLottieAnimation(theme1, theme2, onComplete) {
+			console.log("Starting Lottie animation...");
+
+			// Display the transition overlay
+			gsap.set(aethos.transition.element, { display: "flex" });
+
+			// Disable scrolling
+			if (aethos.smoother) {
+				aethos.smoother.paused(true);
+			}
+
+			// Fade in transition element using CSS animations
+			aethos.transition.element.classList.remove("fade-out");
+			aethos.transition.element.classList.add("fade-in");
+
+			// Create the GSAP timeline for the transition
+			let tl = gsap.timeline({
+				paused: true,
+				delay: 0,
+				onComplete: () => {
+					console.log("Transition complete.");
+					onComplete();
+				},
+			});
+
+			// Play the Lottie animation
+			let playhead = { frame: 0 };
+			tl.to(
+				playhead,
+				{
+					frame: aethos.transition.lottie.totalFrames - 1,
+					duration: 3.16,
+					ease: "none",
+					onUpdate: () => {
+						aethos.transition.lottie.goToAndStop(playhead.frame, true);
+					},
+					onStart: () => console.log("Lottie animation started."),
+					onComplete: () => console.log("Lottie animation completed."),
+				},
+				0.6
+			);
+
+			tl.fromTo(
+				aethos.transition.element,
+				{ backgroundColor: aethos.transition.themes[theme1].background },
+				{
+					backgroundColor: aethos.transition.themes[theme2].background,
+					duration: 1,
+				},
+				1.6
+			);
+
+			tl.set(
+				aethos.transition.container,
+				{
+					display: "block",
+				},
+				0.1
+			);
+
+			// Play the timeline
+			console.log("Starting GSAP timeline...");
+			tl.play();
+		}
+
+		// Update Lottie colors based on themes
+		function updateLottieColors(animation, currentTheme, destinationTheme) {
+			const startColor =
+				aethos.transition.themes[currentTheme].foreground ||
+				aethos.transition.themes.default.foreground;
+			const endColor =
+				aethos.transition.themes[destinationTheme].foreground ||
+				aethos.transition.themes.default.foreground;
+
+			console.log(destinationTheme);
+
+			const elements = animation.renderer.elements;
+
+			// Recursive function to traverse shapes
+			function processShapes(shapes) {
+				shapes.forEach((shape) => {
+					// If the shape is a group, recursively process its items
+					if (shape.ty === "gr") {
+						// console.log("Processing group:", shape.nm);
+						processShapes(shape.it); // Process the group's items
+					}
+
+					// Handle animated fills
+					else if (shape.ty === "fl" && shape.c && shape.c.a === 1) {
+						// console.log("Updating animated fill for shape:", shape.nm);
+						const keyframes = shape.c.k;
+
+						if (keyframes[0]) keyframes[0].s = startColor; // Start color
+						if (keyframes[keyframes.length - 1])
+							keyframes[keyframes.length - 1].s = endColor; // End color
+					}
+
+					// Handle static fills
+					else if (shape.ty === "fl" && shape.c && shape.c.a === 0) {
+						// console.log("Updating static fill for shape:", shape.nm);
+						shape.c.k = startColor; // Update static color directly
+					}
+
+					// Handle strokes
+					else if (shape.ty === "st" && shape.c && shape.c.a === 0) {
+						// console.log("Updating static stroke for shape:", shape.nm);
+						shape.c.k = startColor; // Update static stroke color
+					}
+
+					// Log unhandled shapes
+					else {
+						// console.log("Unhandled shape type or missing properties:", shape);
+					}
+				});
+			}
+
+			// Process each element's shapes
+			elements.forEach((element) => {
+				if (element.data.ty === 4) {
+					// Vector shape layer
+					processShapes(element.data.shapes);
+				}
+			});
+		}
 	};
+
+	/* site loader */
+	aethos.anim.loader = function () {
+		// Check if loader is enabled, if this is the user's first visit in 30 days,
+		// or if a specific URL parameter forces the loader.
+		const urlParams = new URLSearchParams(window.location.search);
+		const forceLoader = urlParams.has("forceLoader");
+
+		if (
+			!forceLoader &&
+			(aethos.settings.siteLoader !== "enabled" || !isFirstVisitIn30Days())
+		) {
+			aethos.log("Page loader not running");
+			// Store current visit time
+			sessionStorage.setItem("aethos_last_visit", Date.now());
+			return;
+		}
+
+		aethos.log("Page loader running");
+
+		// Store current visit time
+		sessionStorage.setItem("aethos_last_visit", Date.now());
+
+		// Disable scrolling
+		requestAnimationFrame(() => {
+			aethos.smoother.paused(true);
+		});
+
+		let header = document.querySelector(".header");
+		let loader = document.querySelector(".site-loader");
+		let lottie_container = document.querySelector(".site-loader_lottie");
+		let pageBg = aethos.helpers.getProp("--color--page-bg");
+		let header_logo_wrap = header.querySelector(".header-bar_logo-wrap");
+		let header_logo = header.querySelector(".header-bar_middle svg.logo");
+
+		// get height of header logo
+		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
+
+		let loader_lottie = lottie.loadAnimation({
+			container: lottie_container,
+			renderer: "svg",
+			loop: false,
+			autoplay: false,
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6756d53724c7926c071f524d_aethoslogo_Siteloader_v3.json",
+		});
+
+		gsap.set(loader, { display: "flex" }); // show loader
+		gsap.set(".header-bar", { y: "-100%" }); // hide header buttons offscreen at first
+		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
+		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
+		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
+		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
+		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
+
+		// when lottie loads
+		loader_lottie.addEventListener("DOMLoaded", () => {
+			// Calculate clip block sizes
+			let lottie_rect = lottie_container.getBoundingClientRect();
+			const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
+			let lottie_w = lottie_rect.height / logoRatio;
+			let screen_w = window.innerWidth;
+			let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
+			gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
+				width: clip_w + "%",
+			});
+
+			gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+
+			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
+
+			let playhead = { frame: 0 };
+
+			// play lottie
+			tl.to(playhead, {
+				frame: loader_lottie.totalFrames - 1,
+				duration: 5,
+				ease: "none",
+				onUpdate: () => {
+					loader_lottie.goToAndStop(playhead.frame, true);
+				},
+			});
+
+			// change bg color
+			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 4.5);
+
+			// show hero (only img is visible at first)
+			tl.to(
+				".section-hero-home",
+				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
+				4.5
+			);
+
+			// Scale image up
+			tl.to(
+				".hero-home_media-wrap",
+				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+
+			// shrink the clip elements. top clip stays bigger to allow for larger logo
+			tl.to(
+				".site-loader_img-clip.left, .site-loader_img-clip.right",
+				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+			tl.to(
+				".site-loader_img-clip.bottom",
+				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+			tl.to(
+				".site-loader_img-clip.top",
+				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
+				6.55
+			);
+
+			// delete clip elements to avoid weirdness on resize
+			tl.call(removeElement(".site-loader_img-clip.left"));
+			tl.call(removeElement(".site-loader_img-clip.right"));
+			tl.call(removeElement(".site-loader_img-clip.bottom"));
+
+			// scale up the lottie spacer to force lottie up to header position
+			tl.to(
+				".site-loader_lottie-spacer",
+				{ height: "100%", duration: 2, ease: "power4.inOut" },
+				6.55
+			);
+
+			// show content
+			tl.to(
+				".hero-home_content",
+				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
+				7
+			);
+
+			// bring in header buttons
+			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" });
+
+			// get rid of extra space at top
+			tl.to(
+				".site-loader_img-clip.top",
+				{
+					height: 0,
+					duration: 1.5,
+					ease: "power4.inOut",
+				},
+				"<"
+			);
+
+			// shrink lottie to match real logo
+			tl.to(
+				lottie_container,
+				{ height: logo_h, duration: 1.5, ease: "power4.inOut" },
+				"<"
+			);
+
+			// delete clip elements to avoid weirdness on resize
+			tl.call(removeElement(".site-loader_img-clip.top"));
+
+			// Play the timeline
+			tl.play();
+		});
+
+		function removeElement(element) {
+			if (typeof element === "string") {
+				element = document.querySelector(element);
+			}
+			return function () {
+				if (element) {
+					element.parentNode.removeChild(element);
+				}
+			};
+		}
+
+		// enable scrolling
+		function loaderEnds() {
+			//move lottie to header and hide original logo
+			header_logo_wrap.prepend(lottie_container);
+			header_logo.style.display = "none";
+
+			// resume scroll
+			requestAnimationFrame(() => {
+				aethos.smoother.paused(false);
+			});
+		}
+
+		function isFirstVisitIn30Days() {
+			const lastVisit = sessionStorage.getItem("aethos_last_visit");
+			if (!lastVisit) return true; // No visit recorded
+			const daysSinceLastVisit =
+				(Date.now() - parseInt(lastVisit, 10)) / (1000 * 60 * 60 * 24);
+			return daysSinceLastVisit >= 30;
+		}
+	};
+
+	/******/
+	/***  FUNCTIONS - NAV ***/
+	/******/
 
 	/* add class to <body> when .nav is open. Used for animating nav burger icon */
 	aethos.functions.nav = function () {
@@ -312,10 +862,11 @@ function main() {
 				);
 				if (isNavOpen) {
 					console.log("normalise scroll off");
+					ScrollTrigger.refresh();
 					ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
 				} else {
 					console.log("normalise scroll on");
-
+					ScrollTrigger.refresh();
 					ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
 				}
 			});
@@ -369,6 +920,546 @@ function main() {
 			});
 		}
 	};
+
+	/* Show nav images on nav link hover */
+	aethos.anim.NavImage = function () {
+		const navLinkTriggers = document.querySelectorAll(
+			".anim-nav-img_trigger[data-link-id]"
+		);
+		const navLinkImgs = document.querySelectorAll(
+			".anim-nav-img_target[data-link-id]"
+		);
+		const navLinkImgDefault = document.querySelector(
+			".nav_img-wrap.is-default"
+		);
+
+		navLinkImgDefault.classList.add("is-active");
+
+		navLinkTriggers.forEach((link) => {
+			link.addEventListener("mouseenter", () => {
+				const linkId = link.getAttribute("data-link-id");
+				let imageFound = false;
+
+				navLinkImgs.forEach((img) => {
+					if (img.getAttribute("data-link-id") === linkId) {
+						img.classList.add("is-active");
+						imageFound = true;
+					} else {
+						img.classList.remove("is-active");
+					}
+				});
+
+				// Toggle default image visibility
+				navLinkImgDefault.classList.toggle("is-active", !imageFound);
+			});
+
+			link.addEventListener("mouseleave", () => {
+				navLinkImgs.forEach((img) => img.classList.remove("is-active"));
+				navLinkImgDefault.classList.add("is-active");
+			});
+		});
+	};
+
+	// Fetch the destination-specific nav
+	aethos.functions.buildDestinationNav = async function () {
+		async function fetchDestinationNav(destinationSlug) {
+			try {
+				aethos.log(`Fetching navigation for destination: ${destinationSlug}`);
+
+				// Fetch the destination-specific page
+				const response = await fetch(`/destinations/${destinationSlug}`);
+				if (!response.ok)
+					throw new Error("Failed to fetch the destination nav");
+
+				// Parse the response HTML to extract the .dest-nav element
+				const responseText = await response.text();
+				const tempDiv = document.createElement("div");
+				tempDiv.innerHTML = responseText;
+				const fetchedNav = tempDiv.querySelector(".dest-nav");
+
+				if (!fetchedNav)
+					throw new Error(".dest-nav element not found in the fetched page");
+
+				aethos.log(
+					`Successfully fetched navigation for destination: ${destinationSlug}`
+				);
+				return fetchedNav;
+			} catch (error) {
+				console.error(`Error fetching navigation: ${error.message}`);
+				return null;
+			}
+		}
+
+		async function setupNavigation() {
+			return new Promise(async (resolve, reject) => {
+				try {
+					// Check if navigation already exists on the page
+					let navElement = document.querySelector(".site-header .dest-nav");
+
+					if (navElement) {
+						aethos.log(
+							"Navigation already exists on the page. Skipping fetch.",
+							"info"
+						);
+					} else {
+						// Retrieve the destination slug from aethos.settings
+						const destinationSlug = aethos.settings.destinationSlug;
+
+						if (!destinationSlug) {
+							aethos.log("Destination slug not found in aethos.settings");
+							return reject("Destination slug not found");
+						}
+
+						aethos.log(
+							`Starting navigation setup for destination: ${destinationSlug}`
+						);
+
+						// Fetch the destination-specific navigation
+						navElement = await fetchDestinationNav(destinationSlug);
+
+						if (!navElement) {
+							console.warn("Failed to retrieve the navigation");
+							return reject("Failed to retrieve navigation");
+						}
+
+						// Insert the fetched nav into the .header element
+						const headerElement = document.querySelector(
+							".dest-header .dest-nav-wrap"
+						);
+						if (!headerElement) {
+							console.warn(".header element not found on the page");
+							return reject(".header element not found");
+						}
+
+						// Keep the nav hidden during processing
+
+						navElement.style.display = "none";
+						headerElement.appendChild(navElement);
+					}
+
+					// Process the navigation
+					aethos.log("Processing the navigation structure");
+					processNavigation(navElement);
+
+					// Show the navigation after processing
+					navElement.style.display = "";
+					aethos.log(
+						"Navigation processing complete. Navigation is now visible."
+					);
+
+					// run our links function again to ensure any new links in the nav have the right params for page transitions
+					aethos.functions.listingLinks();
+
+					// Resolve the promise when done
+					resolve();
+				} catch (error) {
+					console.error(`Error during navigation setup: ${error}`);
+					reject(error);
+				}
+			});
+		}
+
+		function processNavigation(navElement) {
+			// Select all nav items within the fetched .dest-nav element
+			const navItems = Array.from(
+				navElement.querySelectorAll(".dest-nav_item")
+			);
+
+			// Separate primary and secondary items
+			const primaryItems = [];
+			const secondaryItems = [];
+
+			navItems.forEach((item) => {
+				const level = item.getAttribute("aethos-nav-level");
+				const parentId = item.getAttribute("aethos-nav-parent-id");
+				const bottomContainer = item.querySelector(".dest-nav_bottom");
+
+				if (!level) {
+					// If `aethos-nav-level` is blank, it's a primary item
+					primaryItems.push({
+						element: item,
+						id: item.getAttribute("aethos-nav-id"),
+						bottomContainer: bottomContainer,
+					});
+				} else if (level === "secondary") {
+					// If `aethos-nav-level` is 'secondary', it's a secondary item
+					secondaryItems.push({
+						element: item,
+						parentId: parentId || null, // Set to null if empty
+					});
+				}
+			});
+
+			// Reference to the .dest-nav_bottom container within the fetched nav
+			const bottomContainer_global =
+				navElement.querySelector(".dest-nav_bottom");
+
+			if (!bottomContainer_global) {
+				console.warn(
+					".dest-nav_bottom element not found within the fetched nav"
+				);
+				return;
+			}
+
+			// Process primary items
+			primaryItems.forEach((primary) => {
+				// Create a container for the secondary links related to this primary
+				const childContainer = document.createElement("div");
+				childContainer.classList.add("dest-nav_child-list");
+
+				// Assign the primary ID to the child container
+				if (primary.id) {
+					childContainer.setAttribute("aethos-nav-id", primary.id);
+					// aethos.log(
+					// 	`Creating child container for primary item with ID: ${primary.id}`
+					// );
+				}
+
+				// Function to create a clone of the primary item, but without appending it
+				function clonePrimary(primary) {
+					const clone = primary.element.cloneNode(true);
+					const cloneTextEl = clone.querySelector(
+						".dest-nav_link-text:not(.w-condition-invisible)"
+					);
+					cloneTextEl.innerHTML = "All " + cloneTextEl.innerHTML; // append 'All' to clone link text
+					clone.classList.add("is-clone");
+					primary.clonedElement = clone; // store reference to use later
+					primary.cloned = true;
+				}
+
+				// Append secondary items that belong to this primary
+				secondaryItems.forEach((secondary) => {
+					if (secondary.parentId === primary.id) {
+						// aethos.log(
+						// 	`Appending secondary item to primary item with ID: ${primary.id}`
+						// );
+
+						childContainer.appendChild(secondary.element);
+						primary.element.setAttribute("aethos-nav-children", "true");
+
+						// Create clone if it hasn't been done yet
+						if (!primary.cloned) {
+							clonePrimary(primary);
+						}
+					}
+				});
+
+				// Append the clone to the end of the child container, if it exists
+				if (primary.cloned && primary.clonedElement) {
+					childContainer.appendChild(primary.clonedElement);
+				}
+
+				// Append the child container to the .dest-nav_bottom if it has children
+				if (childContainer.children.length > 0) {
+					primary.bottomContainer.appendChild(childContainer);
+					// aethos.log(
+					// 	`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
+					// );
+				}
+			});
+
+			// Hide any secondary items with no parent or invalid parent reference
+			secondaryItems.forEach((secondary) => {
+				if (
+					!secondary.parentId ||
+					!primaryItems.some((primary) => primary.id === secondary.parentId)
+				) {
+					// Hide the orphaned secondary link
+					secondary.element.style.display = "none";
+					console.warn(
+						`Hiding orphaned secondary item with parent ID: ${secondary.parentId}`
+					);
+				}
+			});
+
+			// open Global Nav from Dest Nav
+			const globalNavLink = navElement.querySelector(
+				".dest-nav_link.is-global"
+			);
+			const globalMenuButton = document.querySelector(".header .nav-btn");
+			const destMenuButton = document.querySelector(".header .dest-nav-btn");
+			if (globalNavLink && globalMenuButton && destMenuButton) {
+				globalNavLink.addEventListener("click", (event) => {
+					destMenuButton.click();
+					globalMenuButton.click();
+				});
+			} else {
+			}
+
+			// when dest menu button is clicked, toggle a class on the <body> so we can keep track
+			if (destMenuButton) {
+				destMenuButton.addEventListener("click", () =>
+					document.body.classList.toggle(aethos.helpers.destNavClass)
+				);
+			}
+		}
+
+		function menuHover(menu, target, underlineWidthProp, underlineOffsetProp) {
+			const menuRect = menu.getBoundingClientRect();
+			const targetRect = target.getBoundingClientRect();
+			// Calculate the offset relative to the menu
+			const offsetX = targetRect.left - menuRect.left;
+
+			// Set underline width and position properties
+			menu.style.setProperty(underlineWidthProp, `${target.offsetWidth}px`);
+			menu.style.setProperty(underlineOffsetProp, `${offsetX}px`);
+		}
+
+		function addNavigationHover(
+			menuSelector,
+			underlineWidthProp,
+			underlineOffsetProp,
+			isChildCheck = false
+		) {
+			const menus = document.querySelectorAll(menuSelector);
+
+			const topNav_selector = ".dest-nav_top";
+			const topNav_underlineWidthProp = "--dest-nav-underline-width";
+			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+
+			menus.forEach((menu) => {
+				// set offset to a reasonable starting pos
+				menu.style.setProperty(
+					underlineOffsetProp,
+					`${window.innerWidth * 0.5}px`
+				);
+
+				menu.addEventListener("mouseover", (event) => {
+					if (
+						event.target.classList.contains("link-cover") &&
+						(!isChildCheck || !event.target.classList.contains("is-child"))
+					) {
+						// trigger hover on this item
+						menuHover(
+							menu,
+							event.target,
+							underlineWidthProp,
+							underlineOffsetProp
+						);
+
+						// if we are on a child item, trigger the parent item hover to be safe
+						if (event.target.classList.contains("is-child")) {
+							const parentItem = event.target.closest(
+								"[aethos-nav-children='true']"
+							);
+							const parentMenu = parentItem.closest(topNav_selector);
+
+							console.log(parentItem, parentMenu);
+							menuHover(
+								parentMenu,
+								parentItem,
+								topNav_underlineWidthProp,
+								topNav_underlineOffsetProp
+							);
+						}
+					}
+				});
+
+				menu.addEventListener("mouseleave", () => {
+					menu.style.setProperty(underlineWidthProp, "0");
+				});
+			});
+		}
+
+		function showSubnavOnHover() {
+			const primaryItems = document.querySelectorAll(
+				".dest-nav_item[aethos-nav-children='true']" // get primary items with children
+			);
+
+			primaryItems.forEach((primaryItem) => {
+				const primaryId = primaryItem.getAttribute("aethos-nav-id");
+
+				// Find the corresponding sub-navigation container
+				const subnav = primaryItem.querySelector(
+					`.dest-nav_child-list[aethos-nav-id="${primaryId}"]`
+				);
+
+				const subnav_wrapper = primaryItem.querySelector(".dest-nav_bottom");
+
+				function setupSubnavTimeline() {
+					gsap.set(subnav, { overflow: "hidden" });
+
+					var tl = gsap
+						.timeline({
+							paused: true,
+							// reversed: true,
+							onReverseComplete: function () {
+								gsap.set(subnav_wrapper, { display: "none" });
+							},
+						})
+						.set(subnav_wrapper, { display: "grid" })
+						.fromTo(
+							subnav,
+							{ autoAlpha: 0, height: 0 },
+							{
+								autoAlpha: 1,
+								height: "auto",
+								duration: 0.2,
+							}
+						)
+						.fromTo(
+							subnav.querySelectorAll(".dest-nav_link"),
+							{ autoAlpha: 0 },
+							{
+								autoAlpha: 1,
+								duration: 0.15,
+								stagger: 0.075,
+							},
+							0
+						);
+
+					return tl;
+				}
+
+				if (subnav) {
+					gsap
+						.matchMedia()
+						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+							console.log("setting up subnav hover");
+							const tl = setupSubnavTimeline();
+
+							// Desktop: toggle timeline on hover
+							let isHovered = false;
+
+							function toggleTimeline() {
+								isHovered ? tl.play() : tl.reverse();
+							}
+
+							primaryItem.addEventListener("mouseenter", () => {
+								isHovered = true;
+								toggleTimeline();
+							});
+
+							primaryItem.addEventListener("mouseleave", () => {
+								isHovered = false;
+
+								toggleTimeline();
+							});
+
+							subnav.addEventListener("mouseenter", () => {
+								isHovered = true;
+
+								toggleTimeline();
+							});
+
+							subnav.addEventListener("mouseleave", () => {
+								isHovered = false;
+
+								toggleTimeline();
+							});
+
+							// Cleanup function for when the media query condition changes
+							return () => {
+								console.log("turning off subnav hover");
+
+								primaryItem.removeEventListener("mouseenter", openSubmenu);
+								primaryItem.removeEventListener("mouseleave", closeSubmenu);
+								subnav.removeEventListener("mouseenter", openSubmenu);
+								subnav.removeEventListener("mouseleave", closeSubmenu);
+							};
+						});
+
+					gsap
+						.matchMedia()
+						.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
+							const tl = setupSubnavTimeline();
+
+							let isOpen = false;
+
+							primaryItem.addEventListener("click", () => {
+								isOpen = !isOpen;
+								isOpen ? tl.play() : tl.reverse();
+							});
+
+							// Back button closes subnav
+							const backBtn = document.querySelector(".dest-nav_back");
+							if (backBtn) {
+								backBtn.addEventListener("click", () => {
+									gsap.set(subnavWrapper, { display: "none" });
+									isOpen = false;
+									tl.reverse();
+								});
+							}
+
+							// Cleanup function for when the media query condition changes
+							return () => {
+								primaryItem.removeEventListener("click", onClick);
+								if (backBtn) {
+									backBtn.removeEventListener("click", onClick);
+								}
+							};
+						});
+				}
+			});
+		}
+
+		// Run the setup and animation functions sequentially
+		try {
+			// Wait for the navigation setup to complete
+			await setupNavigation();
+
+			// refresh scrolltrigger pagewide
+			ScrollTrigger.refresh();
+
+			// Add navigation hover effects for top and bottom menus
+			$(".dest-nav_bottom .link-cover").addClass("is-child"); // Patch to distinguish top and bottom items
+
+			const topNav_selector = ".dest-nav_top";
+			const topNav_underlineWidthProp = "--dest-nav-underline-width";
+			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+
+			const botNav_selector = ".dest-nav_bottom";
+			const botNav_underlineWidthProp = "--dest-nav-underline-width-bot";
+			const botNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
+
+			// top
+			addNavigationHover(
+				topNav_selector,
+				topNav_underlineWidthProp,
+				topNav_underlineOffsetProp,
+				true
+			);
+
+			// bottom
+			addNavigationHover(
+				botNav_selector,
+				botNav_underlineWidthProp,
+				botNav_underlineOffsetProp,
+				false
+			);
+
+			showSubnavOnHover();
+			document.querySelector(".dest-nav").classList.add("is-ready");
+		} catch (error) {
+			console.error("Error setting up the destination navigation:", error);
+		}
+	};
+
+	/* club nav */
+	aethos.functions.clubNav = function () {
+		// open Global Nav from Club Nav
+		const globalNavLink = document.querySelector(".club-nav_item.is-global");
+		const globalMenuButton = document.querySelector(".header .nav-btn");
+		const clubMenuButton = document.querySelector(".header .club-nav-btn");
+		if (globalNavLink && globalMenuButton && clubMenuButton) {
+			globalNavLink.addEventListener("click", (event) => {
+				clubMenuButton.click(); // close club nav
+				globalMenuButton.click(); // open global nav
+			});
+		} else {
+		}
+
+		// when club menu button is clicked, toggle a class on the <body> so we can keep track
+		if (clubMenuButton) {
+			clubMenuButton.addEventListener("click", () =>
+				document.body.classList.toggle(aethos.helpers.clubNavClass)
+			);
+		}
+	};
+
+	/******/
+	/*** ANIMATION FUNCTIONS - GENERAL ***/
+	/******/
 
 	/* Basic slide and fade animation */
 	aethos.anim.fadeUp = function () {
@@ -655,45 +1746,6 @@ function main() {
 			trigger.addEventListener("mouseout", function () {
 				trigger.classList.remove("is-active");
 				parent.classList.remove("is-child-active");
-			});
-		});
-	};
-
-	/* Show nav images on nav link hover */
-	aethos.anim.NavImage = function () {
-		const navLinkTriggers = document.querySelectorAll(
-			".anim-nav-img_trigger[data-link-id]"
-		);
-		const navLinkImgs = document.querySelectorAll(
-			".anim-nav-img_target[data-link-id]"
-		);
-		const navLinkImgDefault = document.querySelector(
-			".nav_img-wrap.is-default"
-		);
-
-		navLinkImgDefault.classList.add("is-active");
-
-		navLinkTriggers.forEach((link) => {
-			link.addEventListener("mouseenter", () => {
-				const linkId = link.getAttribute("data-link-id");
-				let imageFound = false;
-
-				navLinkImgs.forEach((img) => {
-					if (img.getAttribute("data-link-id") === linkId) {
-						img.classList.add("is-active");
-						imageFound = true;
-					} else {
-						img.classList.remove("is-active");
-					}
-				});
-
-				// Toggle default image visibility
-				navLinkImgDefault.classList.toggle("is-active", !imageFound);
-			});
-
-			link.addEventListener("mouseleave", () => {
-				navLinkImgs.forEach((img) => img.classList.remove("is-active"));
-				navLinkImgDefault.classList.add("is-active");
 			});
 		});
 	};
@@ -1921,481 +2973,6 @@ function main() {
 		}
 	};
 
-	// Helper function to fetch the destination-specific nav
-	aethos.functions.buildDestinationNav = async function () {
-		async function fetchDestinationNav(destinationSlug) {
-			try {
-				aethos.log(`Fetching navigation for destination: ${destinationSlug}`);
-
-				// Fetch the destination-specific page
-				const response = await fetch(`/destinations/${destinationSlug}`);
-				if (!response.ok)
-					throw new Error("Failed to fetch the destination nav");
-
-				// Parse the response HTML to extract the .dest-nav element
-				const responseText = await response.text();
-				const tempDiv = document.createElement("div");
-				tempDiv.innerHTML = responseText;
-				const fetchedNav = tempDiv.querySelector(".dest-nav");
-
-				if (!fetchedNav)
-					throw new Error(".dest-nav element not found in the fetched page");
-
-				aethos.log(
-					`Successfully fetched navigation for destination: ${destinationSlug}`
-				);
-				return fetchedNav;
-			} catch (error) {
-				console.error(`Error fetching navigation: ${error.message}`);
-				return null;
-			}
-		}
-
-		async function setupNavigation() {
-			return new Promise(async (resolve, reject) => {
-				try {
-					// Check if navigation already exists on the page
-					let navElement = document.querySelector(".site-header .dest-nav");
-
-					if (navElement) {
-						aethos.log(
-							"Navigation already exists on the page. Skipping fetch.",
-							"info"
-						);
-					} else {
-						// Retrieve the destination slug from aethos.settings
-						const destinationSlug = aethos.settings.destinationSlug;
-
-						if (!destinationSlug) {
-							aethos.log("Destination slug not found in aethos.settings");
-							return reject("Destination slug not found");
-						}
-
-						aethos.log(
-							`Starting navigation setup for destination: ${destinationSlug}`
-						);
-
-						// Fetch the destination-specific navigation
-						navElement = await fetchDestinationNav(destinationSlug);
-
-						if (!navElement) {
-							console.warn("Failed to retrieve the navigation");
-							return reject("Failed to retrieve navigation");
-						}
-
-						// Insert the fetched nav into the .header element
-						const headerElement = document.querySelector(
-							".dest-header .dest-nav-wrap"
-						);
-						if (!headerElement) {
-							console.warn(".header element not found on the page");
-							return reject(".header element not found");
-						}
-
-						// Keep the nav hidden during processing
-
-						navElement.style.display = "none";
-						headerElement.appendChild(navElement);
-					}
-
-					// Process the navigation
-					aethos.log("Processing the navigation structure");
-					processNavigation(navElement);
-
-					// Show the navigation after processing
-					navElement.style.display = "";
-					aethos.log(
-						"Navigation processing complete. Navigation is now visible."
-					);
-
-					// run our links function again to ensure any new links in the nav have the right params for page transitions
-					aethos.functions.listingLinks();
-
-					// Resolve the promise when done
-					resolve();
-				} catch (error) {
-					console.error(`Error during navigation setup: ${error}`);
-					reject(error);
-				}
-			});
-		}
-
-		function processNavigation(navElement) {
-			// Select all nav items within the fetched .dest-nav element
-			const navItems = Array.from(
-				navElement.querySelectorAll(".dest-nav_item")
-			);
-
-			// Separate primary and secondary items
-			const primaryItems = [];
-			const secondaryItems = [];
-
-			navItems.forEach((item) => {
-				const level = item.getAttribute("aethos-nav-level");
-				const parentId = item.getAttribute("aethos-nav-parent-id");
-				const bottomContainer = item.querySelector(".dest-nav_bottom");
-
-				if (!level) {
-					// If `aethos-nav-level` is blank, it's a primary item
-					primaryItems.push({
-						element: item,
-						id: item.getAttribute("aethos-nav-id"),
-						bottomContainer: bottomContainer,
-					});
-				} else if (level === "secondary") {
-					// If `aethos-nav-level` is 'secondary', it's a secondary item
-					secondaryItems.push({
-						element: item,
-						parentId: parentId || null, // Set to null if empty
-					});
-				}
-			});
-
-			// Reference to the .dest-nav_bottom container within the fetched nav
-			const bottomContainer_global =
-				navElement.querySelector(".dest-nav_bottom");
-
-			if (!bottomContainer_global) {
-				console.warn(
-					".dest-nav_bottom element not found within the fetched nav"
-				);
-				return;
-			}
-
-			// Process primary items
-			primaryItems.forEach((primary) => {
-				// Create a container for the secondary links related to this primary
-				const childContainer = document.createElement("div");
-				childContainer.classList.add("dest-nav_child-list");
-
-				// Assign the primary ID to the child container
-				if (primary.id) {
-					childContainer.setAttribute("aethos-nav-id", primary.id);
-					// aethos.log(
-					// 	`Creating child container for primary item with ID: ${primary.id}`
-					// );
-				}
-
-				// Function to create a clone of the primary item, but without appending it
-				function clonePrimary(primary) {
-					const clone = primary.element.cloneNode(true);
-					const cloneTextEl = clone.querySelector(
-						".dest-nav_link-text:not(.w-condition-invisible)"
-					);
-					cloneTextEl.innerHTML = "All " + cloneTextEl.innerHTML; // append 'All' to clone link text
-					clone.classList.add("is-clone");
-					primary.clonedElement = clone; // store reference to use later
-					primary.cloned = true;
-				}
-
-				// Append secondary items that belong to this primary
-				secondaryItems.forEach((secondary) => {
-					if (secondary.parentId === primary.id) {
-						// aethos.log(
-						// 	`Appending secondary item to primary item with ID: ${primary.id}`
-						// );
-
-						childContainer.appendChild(secondary.element);
-						primary.element.setAttribute("aethos-nav-children", "true");
-
-						// Create clone if it hasn't been done yet
-						if (!primary.cloned) {
-							clonePrimary(primary);
-						}
-					}
-				});
-
-				// Append the clone to the end of the child container, if it exists
-				if (primary.cloned && primary.clonedElement) {
-					childContainer.appendChild(primary.clonedElement);
-				}
-
-				// Append the child container to the .dest-nav_bottom if it has children
-				if (childContainer.children.length > 0) {
-					primary.bottomContainer.appendChild(childContainer);
-					// aethos.log(
-					// 	`Child container for primary item with ID: ${primary.id} added to .dest-nav_bottom`
-					// );
-				}
-			});
-
-			// Hide any secondary items with no parent or invalid parent reference
-			secondaryItems.forEach((secondary) => {
-				if (
-					!secondary.parentId ||
-					!primaryItems.some((primary) => primary.id === secondary.parentId)
-				) {
-					// Hide the orphaned secondary link
-					secondary.element.style.display = "none";
-					console.warn(
-						`Hiding orphaned secondary item with parent ID: ${secondary.parentId}`
-					);
-				}
-			});
-
-			// open Global Nav from Dest Nav
-			const globalNavLink = navElement.querySelector(
-				".dest-nav_link.is-global"
-			);
-			const globalMenuButton = document.querySelector(".header .nav-btn");
-			const destMenuButton = document.querySelector(".header .dest-nav-btn");
-			if (globalNavLink && globalMenuButton && destMenuButton) {
-				globalNavLink.addEventListener("click", (event) => {
-					destMenuButton.click();
-					globalMenuButton.click();
-				});
-			} else {
-			}
-
-			// when dest menu button is clicked, toggle a class on the <body> so we can keep track
-			if (destMenuButton) {
-				destMenuButton.addEventListener("click", () =>
-					document.body.classList.toggle(aethos.helpers.destNavClass)
-				);
-			}
-		}
-
-		function menuHover(menu, target, underlineWidthProp, underlineOffsetProp) {
-			const menuRect = menu.getBoundingClientRect();
-			const targetRect = target.getBoundingClientRect();
-			// Calculate the offset relative to the menu
-			const offsetX = targetRect.left - menuRect.left;
-
-			// Set underline width and position properties
-			menu.style.setProperty(underlineWidthProp, `${target.offsetWidth}px`);
-			menu.style.setProperty(underlineOffsetProp, `${offsetX}px`);
-		}
-
-		function addNavigationHover(
-			menuSelector,
-			underlineWidthProp,
-			underlineOffsetProp,
-			isChildCheck = false
-		) {
-			const menus = document.querySelectorAll(menuSelector);
-
-			const topNav_selector = ".dest-nav_top";
-			const topNav_underlineWidthProp = "--dest-nav-underline-width";
-			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
-
-			menus.forEach((menu) => {
-				// set offset to a reasonable starting pos
-				menu.style.setProperty(
-					underlineOffsetProp,
-					`${window.innerWidth * 0.5}px`
-				);
-
-				menu.addEventListener("mouseover", (event) => {
-					if (
-						event.target.classList.contains("link-cover") &&
-						(!isChildCheck || !event.target.classList.contains("is-child"))
-					) {
-						// trigger hover on this item
-						menuHover(
-							menu,
-							event.target,
-							underlineWidthProp,
-							underlineOffsetProp
-						);
-
-						// if we are on a child item, trigger the parent item hover to be safe
-						if (event.target.classList.contains("is-child")) {
-							const parentItem = event.target.closest(
-								"[aethos-nav-children='true']"
-							);
-							const parentMenu = parentItem.closest(topNav_selector);
-
-							console.log(parentItem, parentMenu);
-							menuHover(
-								parentMenu,
-								parentItem,
-								topNav_underlineWidthProp,
-								topNav_underlineOffsetProp
-							);
-						}
-					}
-				});
-
-				menu.addEventListener("mouseleave", () => {
-					menu.style.setProperty(underlineWidthProp, "0");
-				});
-			});
-		}
-
-		function showSubnavOnHover() {
-			const primaryItems = document.querySelectorAll(
-				".dest-nav_item[aethos-nav-children='true']" // get primary items with children
-			);
-
-			primaryItems.forEach((primaryItem) => {
-				const primaryId = primaryItem.getAttribute("aethos-nav-id");
-
-				// Find the corresponding sub-navigation container
-				const subnav = primaryItem.querySelector(
-					`.dest-nav_child-list[aethos-nav-id="${primaryId}"]`
-				);
-
-				const subnav_wrapper = primaryItem.querySelector(".dest-nav_bottom");
-
-				function setupSubnavTimeline() {
-					gsap.set(subnav, { overflow: "hidden" });
-
-					var tl = gsap
-						.timeline({
-							paused: true,
-							// reversed: true,
-							onReverseComplete: function () {
-								gsap.set(subnav_wrapper, { display: "none" });
-							},
-						})
-						.set(subnav_wrapper, { display: "grid" })
-						.fromTo(
-							subnav,
-							{ autoAlpha: 0, height: 0 },
-							{
-								autoAlpha: 1,
-								height: "auto",
-								duration: 0.2,
-							}
-						)
-						.fromTo(
-							subnav.querySelectorAll(".dest-nav_link"),
-							{ autoAlpha: 0 },
-							{
-								autoAlpha: 1,
-								duration: 0.15,
-								stagger: 0.075,
-							},
-							0
-						);
-
-					return tl;
-				}
-
-				if (subnav) {
-					gsap
-						.matchMedia()
-						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
-							console.log("setting up subnav hover");
-							const tl = setupSubnavTimeline();
-
-							// Desktop: toggle timeline on hover
-							let isHovered = false;
-
-							function toggleTimeline() {
-								isHovered ? tl.play() : tl.reverse();
-							}
-
-							primaryItem.addEventListener("mouseenter", () => {
-								isHovered = true;
-								toggleTimeline();
-							});
-
-							primaryItem.addEventListener("mouseleave", () => {
-								isHovered = false;
-
-								toggleTimeline();
-							});
-
-							subnav.addEventListener("mouseenter", () => {
-								isHovered = true;
-
-								toggleTimeline();
-							});
-
-							subnav.addEventListener("mouseleave", () => {
-								isHovered = false;
-
-								toggleTimeline();
-							});
-
-							// Cleanup function for when the media query condition changes
-							return () => {
-								console.log("turning off subnav hover");
-
-								primaryItem.removeEventListener("mouseenter", openSubmenu);
-								primaryItem.removeEventListener("mouseleave", closeSubmenu);
-								subnav.removeEventListener("mouseenter", openSubmenu);
-								subnav.removeEventListener("mouseleave", closeSubmenu);
-							};
-						});
-
-					gsap
-						.matchMedia()
-						.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
-							const tl = setupSubnavTimeline();
-
-							let isOpen = false;
-
-							primaryItem.addEventListener("click", () => {
-								isOpen = !isOpen;
-								isOpen ? tl.play() : tl.reverse();
-							});
-
-							// Back button closes subnav
-							const backBtn = document.querySelector(".dest-nav_back");
-							if (backBtn) {
-								backBtn.addEventListener("click", () => {
-									gsap.set(subnavWrapper, { display: "none" });
-									isOpen = false;
-									tl.reverse();
-								});
-							}
-
-							// Cleanup function for when the media query condition changes
-							return () => {
-								primaryItem.removeEventListener("click", onClick);
-								if (backBtn) {
-									backBtn.removeEventListener("click", onClick);
-								}
-							};
-						});
-				}
-			});
-		}
-
-		// Run the setup and animation functions sequentially
-		try {
-			// Wait for the navigation setup to complete
-			await setupNavigation();
-
-			// refresh scrolltrigger pagewide
-			ScrollTrigger.refresh();
-
-			// Add navigation hover effects for top and bottom menus
-			$(".dest-nav_bottom .link-cover").addClass("is-child"); // Patch to distinguish top and bottom items
-
-			const topNav_selector = ".dest-nav_top";
-			const topNav_underlineWidthProp = "--dest-nav-underline-width";
-			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
-
-			const botNav_selector = ".dest-nav_bottom";
-			const botNav_underlineWidthProp = "--dest-nav-underline-width-bot";
-			const botNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
-
-			// top
-			addNavigationHover(
-				topNav_selector,
-				topNav_underlineWidthProp,
-				topNav_underlineOffsetProp,
-				true
-			);
-
-			// bottom
-			addNavigationHover(
-				botNav_selector,
-				botNav_underlineWidthProp,
-				botNav_underlineOffsetProp,
-				false
-			);
-
-			showSubnavOnHover();
-			document.querySelector(".dest-nav").classList.add("is-ready");
-		} catch (error) {
-			console.error("Error setting up the destination navigation:", error);
-		}
-	};
-
 	// Function to apply theme based on destination slug in URL
 	aethos.functions.updateThemeOnStaticPages = function () {
 		// 1. Get the destination name from the URL
@@ -3304,28 +3881,6 @@ function main() {
 		});
 	};
 
-	/* club nav */
-	aethos.functions.clubNav = function () {
-		// open Global Nav from Club Nav
-		const globalNavLink = document.querySelector(".club-nav_item.is-global");
-		const globalMenuButton = document.querySelector(".header .nav-btn");
-		const clubMenuButton = document.querySelector(".header .club-nav-btn");
-		if (globalNavLink && globalMenuButton && clubMenuButton) {
-			globalNavLink.addEventListener("click", (event) => {
-				clubMenuButton.click(); // close club nav
-				globalMenuButton.click(); // open global nav
-			});
-		} else {
-		}
-
-		// when club menu button is clicked, toggle a class on the <body> so we can keep track
-		if (clubMenuButton) {
-			clubMenuButton.addEventListener("click", () =>
-				document.body.classList.toggle(aethos.helpers.clubNavClass)
-			);
-		}
-	};
-
 	/* toggle normalise and smooth scroll depending on whether nav is open */
 	aethos.functions.toggleNormaliseScroll = function () {
 		aethos.smoother = null;
@@ -3390,565 +3945,10 @@ function main() {
 		toggleScrollFeatures();
 	};
 
-	/* GSAP page transitions */
-	aethos.anim.pageTransition = function () {
-		// clear localstorage - we use this to track whether we show second half of transition on a page load
-		localStorage.setItem("aethos_transition", "false");
+	/******/
+	/*** CALL FUNCTIONS ***/
+	/******/
 
-		aethos.transition = {};
-		console.log("Running page transition setup");
-
-		aethos.transition.themes = {
-			city: {
-				foreground: [0.733, 0.38, 0.341, 1.0], // Terracotta-dark (RGBA)
-				background: "#d19393", // Terracotta-light (Hex)
-			},
-			coast: {
-				foreground: [0.447, 0.506, 0.545, 1.0], // Sky-dark (RGBA)
-				background: "#a3afb8", // Sky-light (Hex)
-			},
-			country: {
-				foreground: [0.392, 0.545, 0.545, 1.0], // Leaf-dark (RGBA)
-				background: "#97b7b6", // Leaf-light (Hex)
-			},
-			club: {
-				foreground: [1, 1, 1, 1.0], // white (RGBA)
-				background: "#1e1d1b", // Charcoal-extra dark (Hex)
-			},
-			default: {
-				foreground: [0.0, 0.0, 0.0, 1.0], // Black (RGBA)
-				background: "#ffffff", // white (Hex)
-			},
-		};
-		// Transition elements
-		aethos.transition.element = document.querySelector(".page-transition");
-		aethos.transition.container = aethos.transition.element.querySelector(
-			".page-transition_lottie"
-		);
-
-		// Load the Lottie animation
-		aethos.transition.lottie = lottie.loadAnimation({
-			container: aethos.transition.container,
-			renderer: "svg",
-			loop: false,
-			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67508beb66c783b283415ad0_page-transition-logo-v3.json",
-		});
-
-		// Keep track of prefetched links
-		const prefetchedLinks = new Set();
-
-		// Add prefetch link to the head
-		function prefetchLink(href) {
-			if (!prefetchedLinks.has(href)) {
-				const link = document.createElement("link");
-				link.setAttribute("rel", "prefetch");
-				link.setAttribute("href", href);
-				document.head.appendChild(link);
-				prefetchedLinks.add(href);
-				console.log("Prefetching:", href);
-			}
-		}
-
-		function prerenderLink(href) {
-			if (!prefetchedLinks.has(href)) {
-				const link = document.createElement("link");
-				link.setAttribute("rel", "prerender");
-				link.setAttribute("href", href);
-				document.head.appendChild(link);
-				prefetchedLinks.add(href);
-				console.log("Prerendering:", href);
-			}
-		}
-
-		// Set up link event listeners
-		document.addEventListener("click", function (e) {
-			const link = e.target.closest("a");
-
-			if (!link) return; // Ignore clicks not on <a> elements
-
-			// Exclude links that are descendants of a `.pagination` element
-			if (link.closest(".pagination")) {
-				aethos.log("Link inside .pagination element. Skipping.");
-				return;
-			}
-
-			// Exclude links that are descendants of a `.filters` element
-			if (link.closest(".filters")) {
-				aethos.log("Link inside .filters element. Skipping.");
-				return;
-			}
-
-			const destinationHref = link.getAttribute("href");
-			const destinationUrl = link.href ? new URL(link.href) : null;
-
-			// Ignore links with empty href or href="#"
-			if (!destinationHref || destinationHref === "#") {
-				return;
-			}
-
-			// Only trigger transition for internal links without hash targets or new tab links
-			if (
-				destinationUrl.hostname === window.location.hostname &&
-				!link.hash &&
-				link.target !== "_blank"
-			) {
-				e.preventDefault();
-
-				// Prefetch the destination page
-				prerenderLink(destinationUrl.href);
-
-				// Determine current and target themes and destinations
-				const currentTheme = aethos.settings.theme || "default";
-				const currentDestination = aethos.settings.destinationSlug || "default"; // Track current destination
-
-				const { targetTheme, targetDestination } =
-					getThemeAndDestinationFromUrl(
-						destinationUrl.pathname,
-						new URLSearchParams(destinationUrl.search)
-					);
-
-				aethos.log(
-					`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
-				);
-
-				// Skip transition if both destinations are unknown AND themes are the same
-				if (
-					currentDestination === "default" &&
-					targetDestination === "default" &&
-					currentTheme === targetTheme
-				) {
-					aethos.log(
-						"Both current and target destinations are default, and themes are the same. Skipping transition."
-					);
-					setTimeout(() => {
-						window.location.assign(destinationUrl.href);
-					}, 0);
-					return;
-				}
-
-				// Play transition if themes or destinations are different
-				if (
-					currentTheme !== targetTheme ||
-					currentDestination !== targetDestination
-				) {
-					playPageTransition(currentTheme, targetTheme, () => {
-						aethos.log("Navigating with transition:", destinationUrl.href);
-						localStorage.setItem("aethos_transition", "true");
-						setTimeout(() => {
-							window.location.assign(destinationUrl.href);
-						}, 0);
-					});
-				} else {
-					aethos.log("Navigating without transition:", destinationUrl.href);
-					localStorage.setItem("aethos_transition", "false");
-					setTimeout(() => {
-						window.location.assign(destinationUrl.href);
-					}, 0);
-				}
-			}
-		});
-
-		function getThemeAndDestinationFromUrl(pathname, searchParams) {
-			// Check for /club or /clubs at the start of the URL
-			if (pathname.startsWith("/club") || pathname.startsWith("/clubs")) {
-				return { targetTheme: "club", targetDestination: "club" };
-			}
-
-			// Check for /destinations/.../club
-			const clubInDestinationsMatch = pathname.match(
-				/^\/destinations\/[^\/]+\/club/
-			);
-			if (clubInDestinationsMatch) {
-				return { targetTheme: "club", targetDestination: "club" };
-			}
-
-			// Check for /hotels/x or /destinations/x
-			const hotelMatch = pathname.match(/^\/destinations\/([^\/]+)/);
-			if (hotelMatch) {
-				const slug = hotelMatch[1]; // Extract the destination slug
-				if (!aethos.destinations?.[slug]) {
-					return { targetTheme: "default", targetDestination: "default" };
-				}
-				const theme = aethos.destinations[slug].theme || "default";
-				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
-			}
-
-			// Check for URLs of the form /destination-SOMETHING/destination-name
-			const destinationMatch = pathname.match(
-				/^\/destination-[^\/]+\/([^\/]+)/
-			);
-			if (destinationMatch) {
-				const slug = destinationMatch[1]; // Extract the destination name
-				if (!aethos.destinations?.[slug]) {
-					return { targetTheme: "default", targetDestination: "default" };
-				}
-				const theme = aethos.destinations[slug].theme || "default";
-				return { targetTheme: theme.toLowerCase(), targetDestination: slug };
-			}
-
-			// Check for listing links with destination stored in search parameters
-			if (searchParams) {
-				const dest = searchParams.get("dest");
-				if (dest) {
-					if (!aethos.destinations?.[dest]) {
-						return { targetTheme: "default", targetDestination: "default" };
-					}
-					const theme = aethos.destinations[dest].theme || "default";
-					return { targetTheme: theme.toLowerCase(), targetDestination: dest };
-				}
-			}
-
-			// Default theme and destination
-			return { targetTheme: "default", targetDestination: "default" };
-		}
-
-		function playPageTransition(theme1, theme2, onComplete) {
-			console.log("Initializing Lottie animation...");
-
-			// Hide the Lottie container initially
-			gsap.set(aethos.transition.container, { display: "none" });
-
-			// Update the Lottie animation colors based on themes
-			updateLottieColors(aethos.transition.lottie, theme1, theme2);
-
-			// Force Lottie renderer to refresh with updated colors
-			aethos.transition.lottie.goToAndStop(
-				aethos.transition.lottie.totalFrames - 1,
-				true
-			);
-			aethos.transition.lottie.renderer.renderFrame(
-				aethos.transition.lottie.currentFrame
-			);
-			aethos.transition.lottie.goToAndStop(0, true);
-			console.log(`Lottie colors updated: ${theme1} -> ${theme2}`);
-
-			// Once colors are updated, start the animation
-			startLottieAnimation(theme1, theme2, onComplete);
-		}
-
-		function startLottieAnimation(theme1, theme2, onComplete) {
-			console.log("Starting Lottie animation...");
-
-			// Display the transition overlay
-			gsap.set(aethos.transition.element, { display: "flex" });
-
-			// Disable scrolling
-			if (aethos.smoother) {
-				aethos.smoother.paused(true);
-			}
-
-			// Fade in transition element using CSS animations
-			aethos.transition.element.classList.remove("fade-out");
-			aethos.transition.element.classList.add("fade-in");
-
-			// Create the GSAP timeline for the transition
-			let tl = gsap.timeline({
-				paused: true,
-				delay: 0,
-				onComplete: () => {
-					console.log("Transition complete.");
-					onComplete();
-				},
-			});
-
-			// Play the Lottie animation
-			let playhead = { frame: 0 };
-			tl.to(
-				playhead,
-				{
-					frame: aethos.transition.lottie.totalFrames - 1,
-					duration: 3.16,
-					ease: "none",
-					onUpdate: () => {
-						aethos.transition.lottie.goToAndStop(playhead.frame, true);
-					},
-					onStart: () => console.log("Lottie animation started."),
-					onComplete: () => console.log("Lottie animation completed."),
-				},
-				0.6
-			);
-
-			tl.fromTo(
-				aethos.transition.element,
-				{ backgroundColor: aethos.transition.themes[theme1].background },
-				{
-					backgroundColor: aethos.transition.themes[theme2].background,
-					duration: 1,
-				},
-				1.6
-			);
-
-			tl.set(
-				aethos.transition.container,
-				{
-					display: "block",
-				},
-				0.1
-			);
-
-			// Play the timeline
-			console.log("Starting GSAP timeline...");
-			tl.play();
-		}
-
-		// Update Lottie colors based on themes
-		function updateLottieColors(animation, currentTheme, destinationTheme) {
-			const startColor =
-				aethos.transition.themes[currentTheme].foreground ||
-				aethos.transition.themes.default.foreground;
-			const endColor =
-				aethos.transition.themes[destinationTheme].foreground ||
-				aethos.transition.themes.default.foreground;
-
-			console.log(destinationTheme);
-
-			const elements = animation.renderer.elements;
-
-			// Recursive function to traverse shapes
-			function processShapes(shapes) {
-				shapes.forEach((shape) => {
-					// If the shape is a group, recursively process its items
-					if (shape.ty === "gr") {
-						// console.log("Processing group:", shape.nm);
-						processShapes(shape.it); // Process the group's items
-					}
-
-					// Handle animated fills
-					else if (shape.ty === "fl" && shape.c && shape.c.a === 1) {
-						// console.log("Updating animated fill for shape:", shape.nm);
-						const keyframes = shape.c.k;
-
-						if (keyframes[0]) keyframes[0].s = startColor; // Start color
-						if (keyframes[keyframes.length - 1])
-							keyframes[keyframes.length - 1].s = endColor; // End color
-					}
-
-					// Handle static fills
-					else if (shape.ty === "fl" && shape.c && shape.c.a === 0) {
-						// console.log("Updating static fill for shape:", shape.nm);
-						shape.c.k = startColor; // Update static color directly
-					}
-
-					// Handle strokes
-					else if (shape.ty === "st" && shape.c && shape.c.a === 0) {
-						// console.log("Updating static stroke for shape:", shape.nm);
-						shape.c.k = startColor; // Update static stroke color
-					}
-
-					// Log unhandled shapes
-					else {
-						// console.log("Unhandled shape type or missing properties:", shape);
-					}
-				});
-			}
-
-			// Process each element's shapes
-			elements.forEach((element) => {
-				if (element.data.ty === 4) {
-					// Vector shape layer
-					processShapes(element.data.shapes);
-				}
-			});
-		}
-	};
-
-	aethos.anim.loader = function () {
-		// Check if loader is enabled, if this is the user's first visit in 30 days,
-		// or if a specific URL parameter forces the loader.
-		const urlParams = new URLSearchParams(window.location.search);
-		const forceLoader = urlParams.has("forceLoader");
-
-		if (
-			!forceLoader &&
-			(aethos.settings.siteLoader !== "enabled" || !isFirstVisitIn30Days())
-		) {
-			aethos.log("Page loader not running");
-			// Store current visit time
-			sessionStorage.setItem("aethos_last_visit", Date.now());
-			return;
-		}
-
-		aethos.log("Page loader running");
-
-		// Store current visit time
-		sessionStorage.setItem("aethos_last_visit", Date.now());
-
-		// Disable scrolling
-		requestAnimationFrame(() => {
-			aethos.smoother.paused(true);
-		});
-
-		let header = document.querySelector(".header");
-		let loader = document.querySelector(".site-loader");
-		let lottie_container = document.querySelector(".site-loader_lottie");
-		let pageBg = aethos.helpers.getProp("--color--page-bg");
-		let header_logo_wrap = header.querySelector(".header-bar_logo-wrap");
-		let header_logo = header.querySelector(".header-bar_middle svg.logo");
-
-		// get height of header logo
-		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
-
-		let loader_lottie = lottie.loadAnimation({
-			container: lottie_container,
-			renderer: "svg",
-			loop: false,
-			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6756d53724c7926c071f524d_aethoslogo_Siteloader_v3.json",
-		});
-
-		gsap.set(loader, { display: "flex" }); // show loader
-		gsap.set(".header-bar", { y: "-100%" }); // hide header buttons offscreen at first
-		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
-		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
-		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
-		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
-		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
-
-		// when lottie loads
-		loader_lottie.addEventListener("DOMLoaded", () => {
-			// Calculate clip block sizes
-			let lottie_rect = lottie_container.getBoundingClientRect();
-			const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
-			let lottie_w = lottie_rect.height / logoRatio;
-			let screen_w = window.innerWidth;
-			let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
-			gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
-				width: clip_w + "%",
-			});
-
-			gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
-
-			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
-
-			let playhead = { frame: 0 };
-
-			// play lottie
-			tl.to(playhead, {
-				frame: loader_lottie.totalFrames - 1,
-				duration: 5,
-				ease: "none",
-				onUpdate: () => {
-					loader_lottie.goToAndStop(playhead.frame, true);
-				},
-			});
-
-			// change bg color
-			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 4.5);
-
-			// show hero (only img is visible at first)
-			tl.to(
-				".section-hero-home",
-				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
-				4.5
-			);
-
-			// Scale image up
-			tl.to(
-				".hero-home_media-wrap",
-				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
-				6.55
-			);
-
-			// shrink the clip elements. top clip stays bigger to allow for larger logo
-			tl.to(
-				".site-loader_img-clip.left, .site-loader_img-clip.right",
-				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
-				6.55
-			);
-			tl.to(
-				".site-loader_img-clip.bottom",
-				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
-				6.55
-			);
-			tl.to(
-				".site-loader_img-clip.top",
-				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
-				6.55
-			);
-
-			// delete clip elements to avoid weirdness on resize
-			tl.call(removeElement(".site-loader_img-clip.left"));
-			tl.call(removeElement(".site-loader_img-clip.right"));
-			tl.call(removeElement(".site-loader_img-clip.bottom"));
-
-			// scale up the lottie spacer to force lottie up to header position
-			tl.to(
-				".site-loader_lottie-spacer",
-				{ height: "100%", duration: 2, ease: "power4.inOut" },
-				6.55
-			);
-
-			// show content
-			tl.to(
-				".hero-home_content",
-				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
-				7
-			);
-
-			// bring in header buttons
-			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" });
-
-			// get rid of extra space at top
-			tl.to(
-				".site-loader_img-clip.top",
-				{
-					height: 0,
-					duration: 1.5,
-					ease: "power4.inOut",
-				},
-				"<"
-			);
-
-			// shrink lottie to match real logo
-			tl.to(
-				lottie_container,
-				{ height: logo_h, duration: 1.5, ease: "power4.inOut" },
-				"<"
-			);
-
-			// delete clip elements to avoid weirdness on resize
-			tl.call(removeElement(".site-loader_img-clip.top"));
-
-			// Play the timeline
-			tl.play();
-		});
-
-		function removeElement(element) {
-			if (typeof element === "string") {
-				element = document.querySelector(element);
-			}
-			return function () {
-				if (element) {
-					element.parentNode.removeChild(element);
-				}
-			};
-		}
-
-		// enable scrolling
-		function loaderEnds() {
-			//move lottie to header and hide original logo
-			header_logo_wrap.prepend(lottie_container);
-			header_logo.style.display = "none";
-
-			// resume scroll
-			requestAnimationFrame(() => {
-				aethos.smoother.paused(false);
-			});
-		}
-
-		function isFirstVisitIn30Days() {
-			const lastVisit = sessionStorage.getItem("aethos_last_visit");
-			if (!lastVisit) return true; // No visit recorded
-			const daysSinceLastVisit =
-				(Date.now() - parseInt(lastVisit, 10)) / (1000 * 60 * 60 * 24);
-			return daysSinceLastVisit >= 30;
-		}
-	};
-
-	/* CALL FUNCTIONS */
-
-	aethos.anim.smoothScroll();
 	aethos.anim.loader();
 
 	aethos.functions.nav();
@@ -3994,23 +3994,5 @@ function main() {
 	aethos.functions.formSubmissionStyling();
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
-	// aethos.functions.toggleNormaliseScroll();
 	aethos.anim.pageTransition();
-
-	// // Check and remove expired local storage entry for loader animation
-	// aethos.helpers.clearExpiredLoader = function () {
-	// 	console.log("Checking for expired loader local storage entry");
-	// 	const expiration = localStorage.getItem("aethos_loader_expiration");
-	// 	if (expiration && new Date().getTime() > expiration) {
-	// 		console.log("Loader local storage expired, clearing keys");
-	// 		localStorage.removeItem("aethos_loader_ran");
-	// 		localStorage.removeItem("aethos_loader_expiration");
-	// 	} else {
-	// 		console.log("Loader local storage is still valid");
-	// 	}
-	// };
-
-	// Call clearExpiredLoader when the page loads
-	// aethos.helpers.clearExpiredLoader();
-	// aethos.anim.loader();
 }
