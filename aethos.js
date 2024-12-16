@@ -222,7 +222,6 @@ function main() {
 
 	/* set up GSAP smooth scroll */
 	(function smoothScroll() {
-		return;
 		gsap.registerPlugin(ScrollSmoother);
 
 		aethos.smoother = ScrollSmoother.create({
@@ -3997,14 +3996,14 @@ function main() {
 					) {
 						if (aethos.smoother) {
 							aethos.smoother.paused(true);
-							ScrollTrigger.normalizeScroll(false);
-							aethos.navScrollTrigger.disable();
+							// ScrollTrigger.normalizeScroll(false);
+							// aethos.navScrollTrigger.disable();
 						}
 					} else {
 						if (aethos.smoother) {
 							aethos.smoother.paused(false);
-							ScrollTrigger.normalizeScroll(true);
-							aethos.navScrollTrigger.enable();
+							// ScrollTrigger.normalizeScroll(true);
+							// aethos.navScrollTrigger.enable();
 						}
 					}
 				}
