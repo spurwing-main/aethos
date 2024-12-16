@@ -828,7 +828,7 @@ function main() {
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
 				if (window.innerWidth <= aethos.breakpoints.mbl) {
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			// dest - remove dest nav class on tab and smaller on close
@@ -840,14 +840,14 @@ function main() {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.destNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			if (aethos.settings.theme == "club") {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.clubNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 		}
