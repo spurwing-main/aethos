@@ -3947,6 +3947,7 @@ function main() {
 
 	// Function to observe changes in the .nav_grid element
 	aethos.functions.observeNavGridChanges = function () {
+		return;
 		const navGrid = document.querySelector(".nav_bg");
 
 		if (!navGrid) {
