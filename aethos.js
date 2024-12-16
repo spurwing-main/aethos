@@ -3945,7 +3945,46 @@ function main() {
 	// 	toggleScrollFeatures();
 	// };
 
-	// Function to observe changes in the .nav_grid element
+	// // Function to observe changes in the .nav_grid element
+	// aethos.functions.observeNavGridChanges = function () {
+	// 	const navGrid = document.querySelector(".nav_bg");
+
+	// 	if (!navGrid) {
+	// 		console.error(".nav_bg element not found");
+	// 		return;
+	// 	}
+
+	// 	// Create a MutationObserver instance
+	// 	const observer = new MutationObserver(() => {
+	// 		// Use a small delay to ensure layout recalculations are complete
+
+	// 		setTimeout(() => {
+	// 			requestAnimationFrame(() => {
+	// 				console.log("Refreshing ScrollTrigger");
+	// 				ScrollTrigger.refresh();
+	// 			});
+	// 		}, 500); // Adjust delay as necessary for your animations
+	// 	});
+
+	// 	// Observe the target for changes to attributes
+	// 	observer.observe(navGrid, {
+	// 		attributes: true, // Monitor attribute changes
+	// 		attributeFilter: ["style"], // Only watch style changes
+	// 	});
+
+	// 	console.log("MutationObserver set up for .nav_bg");
+	// };
+
+	// Debounce utility function
+	function debounce(func, wait) {
+		let timeout;
+		return function (...args) {
+			clearTimeout(timeout);
+			timeout = setTimeout(() => func.apply(this, args), wait);
+		};
+	}
+
+	// Function to observe changes in the .nav_bg element
 	aethos.functions.observeNavGridChanges = function () {
 		const navGrid = document.querySelector(".nav_bg");
 
@@ -3954,17 +3993,15 @@ function main() {
 			return;
 		}
 
-		// Create a MutationObserver instance
-		const observer = new MutationObserver(() => {
-			// Use a small delay to ensure layout recalculations are complete
-
-			setTimeout(() => {
+		// Create a MutationObserver instance with a debounced callback
+		const observer = new MutationObserver(
+			debounce(() => {
 				requestAnimationFrame(() => {
 					console.log("Refreshing ScrollTrigger");
 					ScrollTrigger.refresh();
 				});
-			}, 500); // Adjust delay as necessary for your animations
-		});
+			}, 500) // Adjust the debounce delay as necessary
+		);
 
 		// Observe the target for changes to attributes
 		observer.observe(navGrid, {
