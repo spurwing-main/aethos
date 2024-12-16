@@ -3958,10 +3958,13 @@ function main() {
 		// Create a MutationObserver instance
 		const observer = new MutationObserver(() => {
 			// Use a small delay to ensure layout recalculations are complete
-			requestAnimationFrame(() => {
-				console.log("Refreshing ScrollTrigger");
-				ScrollTrigger.refresh();
-			});
+
+			setTimeout(() => {
+				requestAnimationFrame(() => {
+					console.log("Refreshing ScrollTrigger");
+					ScrollTrigger.refresh();
+				});
+			}, 1000); // Adjust delay as necessary for your animations
 		});
 
 		// Observe the target for changes to attributes
