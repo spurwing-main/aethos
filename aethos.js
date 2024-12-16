@@ -2720,6 +2720,7 @@ function main() {
 			dateField.addEventListener("focus", () => {
 				dateField.type = "date";
 				dateField.placeholder = ""; // Clear placeholder on focus
+				dateField.showPicker();
 			});
 
 			// Handle blur: Restore placeholder if no value is entered
