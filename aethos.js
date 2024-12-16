@@ -3946,6 +3946,47 @@ function main() {
 		toggleScrollFeatures();
 	};
 
+	// Function to observe changes in the .nav_grid element
+	aethos.functions.observeNavGridChanges = function () {
+		const navGrid = document.querySelector(".nav_grid");
+
+		if (!navGrid) {
+			return;
+		}
+
+		// Create a MutationObserver instance
+		const observer = new MutationObserver((mutationsList) => {
+			mutationsList.forEach((mutation) => {
+				if (
+					mutation.type === "attributes" &&
+					mutation.attributeName === "style"
+				) {
+					// Get the current display property
+					const currentDisplay = window.getComputedStyle(navGrid).display;
+
+					if (currentDisplay === "none" || currentDisplay === "grid") {
+						// Wait for the transition or animation to complete if needed
+						setTimeout(() => {
+							console.log("Refreshing ScrollTrigger");
+							gsap.delayedCall(0.1, ScrollTrigger.refresh); // Refresh GSAP ScrollTrigger
+						}, 100); // Adjust delay as necessary for your animations
+					}
+				}
+			});
+		});
+
+		// Observe the target for changes to attributes
+		observer.observe(navGrid, {
+			attributes: true, // Monitor attributes
+			attributeFilter: ["style"], // Only watch style changes
+		});
+
+		console.log("MutationObserver set up for .nav_grid");
+	};
+
+	// Call the function
+	observeNavGridChanges();
+
 	/******/
 	/*** CALL FUNCTIONS ***/
 	/******/
