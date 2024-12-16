@@ -4017,7 +4017,6 @@ function main() {
 
 	// watch body for nav open classes so we can toggle smoother
 	aethos.functions.observeBody = function () {
-		return;
 		const body = document.body;
 
 		const observer = new MutationObserver((mutationsList) => {
@@ -4034,14 +4033,14 @@ function main() {
 					) {
 						if (aethos.smoother) {
 							aethos.smoother.paused(true);
-							ScrollTrigger.normalizeScroll(false);
-							// aethos.navScrollTrigger.disable();
+							// ScrollTrigger.normalizeScroll(false);
+							aethos.navScrollTrigger.disable();
 						}
 					} else {
 						if (aethos.smoother) {
 							aethos.smoother.paused(false);
-							ScrollTrigger.normalizeScroll(true);
-							// aethos.navScrollTrigger.enable();
+							// ScrollTrigger.normalizeScroll(true);
+							aethos.navScrollTrigger.enable();
 						}
 					}
 				}
