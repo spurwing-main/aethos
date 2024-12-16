@@ -3295,14 +3295,23 @@ function main() {
 
 			// Handle focus: Show the date picker
 			dateField.addEventListener("focus", () => {
-				dateField.type = "date";
-				dateField.placeholder = ""; // Clear placeholder on focus
-				dateField.showPicker();
+				if (dateField.type !== "date") {
+					dateField.type = "date"; // Change type to "date" only if it's not already
+					dateField.showPicker(); // Trigger the picker explicitly
+				}
 			});
 
 			// Handle blur: Restore placeholder if no value is entered
 			dateField.addEventListener("blur", () => {
 				if (!dateField.value) {
+					dateField.type = "text";
+					dateField.placeholder = placeholder;
+				}
+			});
+
+			// Optional: Revert to placeholder if user manually clears the input
+			dateField.addEventListener("input", () => {
+				if (!dateField.value && dateField.type === "date") {
 					dateField.type = "text";
 					dateField.placeholder = placeholder;
 				}
