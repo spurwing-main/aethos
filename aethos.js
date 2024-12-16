@@ -3502,8 +3502,8 @@ function main() {
 		const proposalForms = document.querySelectorAll(".proposal-form");
 		const forms = document.querySelectorAll("form");
 
-		// fade in success message on footer forms - TODO, not working
-		gsap.set(".footer-form_success", { opacity: 0 });
+		// fade in success message on footer forms
+		gsap.set(".footer-form_success-content", { opacity: 0 });
 
 		forms.forEach((form) => {
 			form.addEventListener("submit", () => {
@@ -3511,8 +3511,9 @@ function main() {
 				form.classList.add("is-submitted");
 
 				if (form.classList.contains("footer-form")) {
-					gsap.set(".footer-form_success", { display: "block" });
-					gsap.to(".footer-form_success", { opacity: 1, duration: 0.3 });
+					setTimeout(() => {
+						gsap.set(".footer-form_success-content", { opacity: "1" });
+					}, 1500); // large delay before fading in content to let WF forms do their thing
 				}
 			});
 		});
