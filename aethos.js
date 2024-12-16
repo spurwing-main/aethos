@@ -4032,13 +4032,13 @@ function main() {
 						body.classList.contains("club-nav-open")
 					) {
 						if (aethos.smoother) {
-							aethos.smoother.paused(true);
+							// aethos.smoother.paused(true);
 							// ScrollTrigger.normalizeScroll(false);
 							aethos.navScrollTrigger.disable();
 						}
 					} else {
 						if (aethos.smoother) {
-							aethos.smoother.paused(false);
+							// aethos.smoother.paused(false);
 							// ScrollTrigger.normalizeScroll(true);
 							aethos.navScrollTrigger.enable();
 						}
