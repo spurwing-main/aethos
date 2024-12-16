@@ -3997,13 +3997,13 @@ function main() {
 						if (aethos.smoother) {
 							aethos.smoother.paused(true);
 							// ScrollTrigger.normalizeScroll(false);
-							aethos.navScrollTrigger.disable();
+							// aethos.navScrollTrigger.disable();
 						}
 					} else {
 						if (aethos.smoother) {
 							aethos.smoother.paused(false);
 							// ScrollTrigger.normalizeScroll(true);
-							aethos.navScrollTrigger.enable();
+							// aethos.navScrollTrigger.enable();
 						}
 					}
 				}
