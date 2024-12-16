@@ -3951,34 +3951,22 @@ function main() {
 		const navGrid = document.querySelector(".nav_grid");
 
 		if (!navGrid) {
+			console.error(".nav_grid element not found");
 			return;
 		}
 
 		// Create a MutationObserver instance
-		const observer = new MutationObserver((mutationsList) => {
-			mutationsList.forEach((mutation) => {
-				if (
-					mutation.type === "attributes" &&
-					mutation.attributeName === "style"
-				) {
-					// Get the current display property
-					const currentDisplay = window.getComputedStyle(navGrid).display;
-
-					if (currentDisplay === "none" || currentDisplay === "grid") {
-						// Wait for the transition or animation to complete if needed
-						setTimeout(() => {
-							console.log("Refreshing ScrollTrigger");
-							gsap.delayedCall(0.1, ScrollTrigger.refresh); // Refresh GSAP ScrollTrigger
-							console.log("scroll trigger refresh");
-						}, 100); // Adjust delay as necessary for your animations
-					}
-				}
+		const observer = new MutationObserver(() => {
+			// Use a small delay to ensure layout recalculations are complete
+			requestAnimationFrame(() => {
+				console.log("Refreshing ScrollTrigger");
+				ScrollTrigger.refresh();
 			});
 		});
 
 		// Observe the target for changes to attributes
 		observer.observe(navGrid, {
-			attributes: true, // Monitor attributes
+			attributes: true, // Monitor attribute changes
 			attributeFilter: ["style"], // Only watch style changes
 		});
 
