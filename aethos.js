@@ -3964,7 +3964,7 @@ function main() {
 					console.log("Refreshing ScrollTrigger");
 					ScrollTrigger.refresh();
 				});
-			}, 1000); // Adjust delay as necessary for your animations
+			}, 500); // Adjust delay as necessary for your animations
 		});
 
 		// Observe the target for changes to attributes
