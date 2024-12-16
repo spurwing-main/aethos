@@ -3947,7 +3947,6 @@ function main() {
 
 	// Function to observe changes in the .nav_grid element
 	aethos.functions.observeNavGridChanges = function () {
-		return;
 		const navGrid = document.querySelector(".nav_bg");
 
 		if (!navGrid) {
@@ -3981,6 +3980,7 @@ function main() {
 
 	// watch body for nav open classes so we can toggle smoother
 	aethos.functions.observeBody = function () {
+		return;
 		const body = document.body;
 
 		const observer = new MutationObserver((mutationsList) => {
