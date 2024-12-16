@@ -3986,7 +3986,7 @@ function main() {
 	};
 
 	// Call the function
-	observeNavGridChanges();
+	aethos.functions.observeNavGridChanges();
 
 	/******/
 	/*** CALL FUNCTIONS ***/
