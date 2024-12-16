@@ -239,17 +239,17 @@ function main() {
 			},
 		});
 
-		// disable normalise on mobile
-		let mm = gsap.matchMedia();
-		mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
-			console.log("normalise scroll disabled");
-			ScrollTrigger.normalizeScroll(false);
+		// // disable normalise on mobile
+		// let mm = gsap.matchMedia();
+		// mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
+		// 	console.log("normalise scroll disabled on mobile");
+		// 	ScrollTrigger.normalizeScroll(false);
 
-			return () => {
-				console.log("normalise scroll enabled");
-				ScrollTrigger.normalizeScroll(true);
-			};
-		});
+		// 	return () => {
+		// 		console.log("normalise scroll enabled on desktop");
+		// 		ScrollTrigger.normalizeScroll(true);
+		// 	};
+		// });
 	})();
 
 	/******/
@@ -828,7 +828,7 @@ function main() {
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
 				if (window.innerWidth <= aethos.breakpoints.mbl) {
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			// dest - remove dest nav class on tab and smaller on close
@@ -840,14 +840,14 @@ function main() {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.destNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 			if (aethos.settings.theme == "club") {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.clubNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
 				}
 			}
 		}
@@ -863,11 +863,11 @@ function main() {
 				if (isNavOpen) {
 					console.log("normalise scroll off");
 					ScrollTrigger.refresh();
-					ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
+					// ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
 				} else {
 					console.log("normalise scroll on");
 					ScrollTrigger.refresh();
-					ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
+					// ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
 				}
 			});
 		}
@@ -3881,69 +3881,69 @@ function main() {
 		});
 	};
 
-	/* toggle normalise and smooth scroll depending on whether nav is open */
-	aethos.functions.toggleNormaliseScroll = function () {
-		aethos.smoother = null;
+	// /* toggle normalise and smooth scroll depending on whether nav is open */
+	// aethos.functions.toggleNormaliseScroll = function () {
+	// 	aethos.smoother = null;
 
-		// Check if any navigation menu is open
-		const isNavOpen = () =>
-			document.body.classList.contains("nav-open") ||
-			document.body.classList.contains("dest-nav-open") ||
-			document.body.classList.contains("loader-playing") ||
-			document.body.classList.contains("club-nav-open");
+	// 	// Check if any navigation menu is open
+	// 	const isNavOpen = () =>
+	// 		document.body.classList.contains("nav-open") ||
+	// 		document.body.classList.contains("dest-nav-open") ||
+	// 		document.body.classList.contains("loader-playing") ||
+	// 		document.body.classList.contains("club-nav-open");
 
-		// Initialize smooth scroll
-		const initSmoothScroll = () => {
-			if (!aethos.smoother) {
-				aethos.smoother = ScrollSmoother.create({
-					smooth: 1,
-					effects: true,
-					content: "#smooth-content",
-					wrapper: "#smooth-wrapper",
-					onUpdate: () => {},
-					onRefresh: () => {
-						ScrollTrigger.refresh();
-					},
-				});
-				console.log("Smooth Scroll initialized.");
-			}
-		};
+	// 	// Initialize smooth scroll
+	// 	const initSmoothScroll = () => {
+	// 		if (!aethos.smoother) {
+	// 			aethos.smoother = ScrollSmoother.create({
+	// 				smooth: 1,
+	// 				effects: true,
+	// 				content: "#smooth-content",
+	// 				wrapper: "#smooth-wrapper",
+	// 				onUpdate: () => {},
+	// 				onRefresh: () => {
+	// 					ScrollTrigger.refresh();
+	// 				},
+	// 			});
+	// 			console.log("Smooth Scroll initialized.");
+	// 		}
+	// 	};
 
-		// Kill smooth scroll
-		const killSmoothScroll = () => {
-			if (aethos.smoother) {
-				aethos.smoother.paused(true);
-			}
-		};
+	// 	// Kill smooth scroll
+	// 	const killSmoothScroll = () => {
+	// 		if (aethos.smoother) {
+	// 			aethos.smoother.paused(true);
+	// 		}
+	// 	};
 
-		// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
-		const toggleScrollFeatures = () => {
-			const scrollEnabled = !isNavOpen();
+	// 	// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
+	// 	const toggleScrollFeatures = () => {
+	// 		const scrollEnabled = !isNavOpen();
 
-			// Toggle normalizeScroll
-			ScrollTrigger.normalizeScroll(scrollEnabled);
-			console.log(`Normalize Scroll is now ${scrollEnabled ? "ON" : "OFF"}`);
+	// 		// Toggle normalizeScroll
+	// 		ScrollTrigger.normalizeScroll(scrollEnabled);
+	// 		console.log(`Normalize Scroll is now ${scrollEnabled ? "ON" : "OFF"}`);
 
-			// Toggle smoothScroll
-			if (scrollEnabled) {
-				initSmoothScroll();
-			} else {
-				killSmoothScroll();
-			}
-		};
+	// 		// Toggle smoothScroll
+	// 		if (scrollEnabled) {
+	// 			initSmoothScroll();
+	// 		} else {
+	// 			killSmoothScroll();
+	// 		}
+	// 	};
 
-		// Observe changes to the body's class list
-		const observer = new MutationObserver(() => toggleScrollFeatures());
+	// 	// Observe changes to the body's class list
+	// 	const observer = new MutationObserver(() => toggleScrollFeatures());
 
-		// Start observing the body for attribute changes (class additions/removals)
-		observer.observe(document.body, {
-			attributes: true,
-			attributeFilter: ["class"],
-		});
+	// 	// Start observing the body for attribute changes (class additions/removals)
+	// 	observer.observe(document.body, {
+	// 		attributes: true,
+	// 		attributeFilter: ["class"],
+	// 	});
 
-		// Initialize the correct state on load
-		toggleScrollFeatures();
-	};
+	// 	// Initialize the correct state on load
+	// 	toggleScrollFeatures();
+	// };
 
 	// Function to observe changes in the .nav_grid element
 	aethos.functions.observeNavGridChanges = function () {
@@ -3996,13 +3996,13 @@ function main() {
 					) {
 						if (aethos.smoother) {
 							aethos.smoother.paused(true);
-							// ScrollTrigger.normalizeScroll(false);
+							ScrollTrigger.normalizeScroll(false);
 							// aethos.navScrollTrigger.disable();
 						}
 					} else {
 						if (aethos.smoother) {
 							aethos.smoother.paused(false);
-							// ScrollTrigger.normalizeScroll(true);
+							ScrollTrigger.normalizeScroll(true);
 							// aethos.navScrollTrigger.enable();
 						}
 					}
