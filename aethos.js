@@ -3948,10 +3948,10 @@ function main() {
 
 	// Function to observe changes in the .nav_grid element
 	aethos.functions.observeNavGridChanges = function () {
-		const navGrid = document.querySelector(".nav_grid");
+		const navGrid = document.querySelector(".nav_bg");
 
 		if (!navGrid) {
-			console.error(".nav_grid element not found");
+			console.error(".nav_bg element not found");
 			return;
 		}
 
@@ -3973,7 +3973,7 @@ function main() {
 			attributeFilter: ["style"], // Only watch style changes
 		});
 
-		console.log("MutationObserver set up for .nav_grid");
+		console.log("MutationObserver set up for .nav_bg");
 	};
 
 	// Call the function
