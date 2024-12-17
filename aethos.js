@@ -675,8 +675,20 @@ function main() {
 		let loader = document.querySelector(".site-loader");
 		let lottie_container = document.querySelector(".site-loader_lottie");
 		let pageBg = aethos.helpers.getProp("--color--page-bg");
-		let header_logo_wrap = header.querySelector(".header-bar_logo-wrap");
-		let header_logo = header.querySelector(".header-bar_middle svg.logo");
+		let header_logo_wrap = header?.querySelector(".header-bar_logo-wrap");
+		let header_logo = header?.querySelector(".header-bar_middle svg.logo");
+
+		// Check if any required element is missing
+		if (
+			!header ||
+			!loader ||
+			!lottie_container ||
+			!header_logo_wrap ||
+			!header_logo
+		) {
+			console.warn("One or more required elements are missing. Exiting...");
+			return; // Exit early
+		}
 
 		// get height of header logo
 		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
