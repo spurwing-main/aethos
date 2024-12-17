@@ -227,6 +227,14 @@ function main() {
 		}
 	};
 
+	/* pause smooth scroll if exists */
+	aethos.helpers.pauseScroll = function (paused = true) {
+		if (aethos.smoother) {
+			aethos.smoother.paused(paused);
+			aethos.log(`Smooth scroll has been ${paused ? "paused" : "resumed"}.`);
+		}
+	};
+
 	/******/
 	/*** GSAP INIT ***/
 	/******/
@@ -518,9 +526,7 @@ function main() {
 			gsap.set(aethos.transition.element, { display: "flex" });
 
 			// Disable scrolling
-			if (aethos.smoother) {
-				aethos.smoother.paused(true);
-			}
+			aethos.helpers.pauseScroll(true);
 
 			// Fade in transition element using CSS animations
 			aethos.transition.element.classList.remove("fade-out");
@@ -659,9 +665,9 @@ function main() {
 		// Store current visit time
 		sessionStorage.setItem("aethos_last_visit", Date.now());
 
-		// Disable scrolling
 		requestAnimationFrame(() => {
-			aethos.smoother.paused(true);
+			// Disable scrolling
+			aethos.helpers.pauseScroll(true);
 		});
 
 		let header = document.querySelector(".header");
@@ -818,7 +824,8 @@ function main() {
 
 			// resume scroll
 			requestAnimationFrame(() => {
-				aethos.smoother.paused(false);
+				// Disable scrolling
+				aethos.helpers.pauseScroll(false);
 			});
 		}
 
@@ -881,16 +888,14 @@ function main() {
 				if (isNavOpen) {
 					console.log("normalise scroll off");
 					ScrollTrigger.refresh();
-					if (aethos.smoother) {
-						aethos.smoother.paused(true);
-					}
+					// Disable scrolling
+					aethos.helpers.pauseScroll(true);
 					// ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
 				} else {
 					console.log("normalise scroll on");
 					ScrollTrigger.refresh();
-					if (aethos.smoother) {
-						aethos.smoother.paused(false);
-					}
+					// Disable scrolling
+					aethos.helpers.pauseScroll(false);
 					// ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
 				}
 			});
