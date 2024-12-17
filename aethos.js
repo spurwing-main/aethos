@@ -251,19 +251,30 @@ function main() {
 			return;
 		}
 
-		aethos.smoother = ScrollSmoother.create({
-			smooth: 1,
-			effects: true,
-			content: "#smooth-content",
-			wrapper: "#smooth-wrapper",
-			normalizeScroll: {
-				allowNestedScroll: true,
-			},
-			onUpdate: () => {},
-			onRefresh: () => {
-				// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
-				ScrollTrigger.refresh();
-			},
+		let mm = gsap.matchMedia();
+
+		// add a media query. When it matches, the associated function will run
+		mm.add("(min-width: 768px)", () => {
+			aethos.smoother = ScrollSmoother.create({
+				smooth: 1,
+				effects: true,
+				content: "#smooth-content",
+				wrapper: "#smooth-wrapper",
+				normalizeScroll: {
+					allowNestedScroll: true,
+				},
+				onUpdate: () => {},
+				onRefresh: () => {
+					// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
+					ScrollTrigger.refresh();
+				},
+			});
+			// kill smoother on mobile
+			return () => {
+				if (aethos.smoother) {
+					aethos.smoother.kill();
+				}
+			};
 		});
 
 		// // disable normalise on mobile
