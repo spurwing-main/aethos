@@ -6,6 +6,7 @@ function main() {
 	}
 
 	// Update settings based on parameters
+	aethos.settings.dev = {};
 	aethos.settings.dev.splide = getParam("splide") === "on";
 	aethos.settings.dev.smooth = getParam("smooth") === "on";
 	aethos.settings.dev.navReveal = getParam("navReveal") === "on";
@@ -238,7 +239,7 @@ function main() {
 	(function smoothScroll() {
 		gsap.registerPlugin(ScrollSmoother);
 
-		if (aethos.settings.dev.smooth == "off") {
+		if (!aethos.settings.dev.smooth) {
 			return;
 		}
 
@@ -989,7 +990,7 @@ function main() {
 
 	/* nav hide/show */
 	aethos.anim.navReveal = function () {
-		if (aethos.settings.dev.navReveal == "off") {
+		if (!aethos.settings.dev.navReveal) {
 			return;
 		}
 
@@ -2389,7 +2390,7 @@ function main() {
 	// };
 
 	aethos.anim.loadSliders = function () {
-		if (aethos.settings.dev.splide == "off") {
+		if (!aethos.settings.dev.splide) {
 			return;
 		}
 
