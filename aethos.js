@@ -1,17 +1,16 @@
 function main() {
+	aethos.settings.dev = aethos.settings.dev || {};
+
 	// Function to get URL parameters
 	function getParam(name) {
 		const params = new URLSearchParams(window.location.search);
 		return params.get(name);
 	}
 
-	// Update settings based on parameters
-	aethos.settings.dev = {};
-	aethos.settings.dev.splide = getParam("splide") === "on";
-	aethos.settings.dev.smooth = getParam("smooth") === "on";
-	aethos.settings.dev.navReveal = getParam("navReveal") === "on";
-
-	// Log updated settings (for debugging)
+	// Update settings based on parameters, default to true
+	aethos.settings.dev.splide = getParam("splide") !== "off";
+	aethos.settings.dev.smooth = getParam("smooth") !== "off";
+	aethos.settings.dev.navReveal = getParam("navReveal") !== "off";
 	console.log("Updated aethos.settings.dev:", aethos.settings.dev);
 
 	/******/
