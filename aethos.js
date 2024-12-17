@@ -4410,6 +4410,10 @@ function main() {
 	/*** CALL FUNCTIONS ***/
 	/******/
 
+	if (!aethos.settings.dev.all) {
+		return;
+	}
+
 	aethos.anim.loader();
 
 	aethos.functions.nav();
