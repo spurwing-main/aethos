@@ -981,12 +981,32 @@ function main() {
 				})
 				.progress(1);
 
+			let lastScrollY = window.scrollY; // Store the last scroll position
+			const scrollThreshold = 50; // Pixel distance to trigger nav reveal
+			let scrollBuffer = 0; // Accumulated scroll-up distance
+
 			aethos.navScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".header",
 				onUpdate: (self) => {
-					self.direction === -1 ? navReveal.play() : navReveal.reverse();
+					const currentScrollY = window.scrollY;
+					const deltaY = currentScrollY - lastScrollY;
+
+					if (deltaY > 0) {
+						// Scrolling Down: Hide the nav and reset buffer
+						navReveal.reverse();
+						scrollBuffer = 0;
+					} else if (deltaY < 0) {
+						// Scrolling Up: Accumulate buffer and show nav after threshold
+						scrollBuffer -= deltaY; // deltaY is negative, so subtracting increases the buffer
+						if (scrollBuffer >= scrollThreshold) {
+							navReveal.play();
+							scrollBuffer = 0; // Reset buffer after showing nav
+						}
+					}
+
+					lastScrollY = currentScrollY; // Update last scroll position
 				},
 			});
 		} else if (aethos.settings.theme == "club") {
