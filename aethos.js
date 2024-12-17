@@ -885,7 +885,7 @@ function main() {
 				if (window.innerWidth <= aethos.breakpoints.tab) {
 					document.body.classList.remove(aethos.helpers.clubNavClass);
 					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on x
 				}
 			}
 		}
