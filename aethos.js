@@ -1,4 +1,18 @@
 function main() {
+	// Function to get URL parameters
+	function getParam(name) {
+		const params = new URLSearchParams(window.location.search);
+		return params.get(name);
+	}
+
+	// Update settings based on parameters
+	aethos.settings.dev.splide = getParam("splide") === "on";
+	aethos.settings.dev.smooth = getParam("smooth") === "on";
+	aethos.settings.dev.navReveal = getParam("navReveal") === "on";
+
+	// Log updated settings (for debugging)
+	console.log("Updated aethos.settings.dev:", aethos.settings.dev);
+
 	/******/
 	/***  INITIAL SET UP - SETTINGS AND LINKS ***/
 	/******/
@@ -223,6 +237,10 @@ function main() {
 	/* set up GSAP smooth scroll */
 	(function smoothScroll() {
 		gsap.registerPlugin(ScrollSmoother);
+
+		if (aethos.settings.dev.smooth == "off") {
+			return;
+		}
 
 		aethos.smoother = ScrollSmoother.create({
 			smooth: 1,
@@ -971,6 +989,10 @@ function main() {
 
 	/* nav hide/show */
 	aethos.anim.navReveal = function () {
+		if (aethos.settings.dev.navReveal == "off") {
+			return;
+		}
+
 		// if we are on a non-destination page...
 		if (!aethos.settings.theme || aethos.settings.theme == "default") {
 			const navReveal = gsap
@@ -2367,6 +2389,10 @@ function main() {
 	// };
 
 	aethos.anim.loadSliders = function () {
+		if (aethos.settings.dev.splide == "off") {
+			return;
+		}
+
 		/* Global Splide instances array */
 		aethos.splides = [];
 
