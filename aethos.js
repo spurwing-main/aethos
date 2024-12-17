@@ -244,7 +244,7 @@ function main() {
 	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother, ScrollToPlugin);
 
 	/* set up GSAP smooth scroll */
-	(function smoothScroll() {
+	aethos.anim.smoothScroll = function () {
 		gsap.registerPlugin(ScrollSmoother);
 
 		if (!aethos.settings.dev.smooth) {
@@ -277,7 +277,7 @@ function main() {
 		// 		ScrollTrigger.normalizeScroll(true);
 		// 	};
 		// });
-	})();
+	};
 
 	/******/
 	/***  FUNCTIONS - TRANSITIONS & LOADER ***/
@@ -4379,7 +4379,6 @@ function main() {
 		// Initialize observer on load if already in mobile view
 		handleViewportChange(mediaQuery);
 	};
-	aethos.functions.observeNavGridChanges();
 
 	// watch body for nav open classes so we can toggle smoother
 	// aethos.functions.observeBody = function () {
@@ -4430,6 +4429,8 @@ function main() {
 		return;
 	}
 
+	aethos.anim.smoothScroll();
+
 	aethos.anim.loader();
 
 	aethos.functions.nav();
@@ -4477,4 +4478,6 @@ function main() {
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
 	aethos.anim.pageTransition();
+
+	aethos.functions.observeNavGridChanges();
 }
