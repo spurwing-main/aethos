@@ -258,6 +258,7 @@ function main() {
 
 	/* Page transitions */
 	aethos.anim.pageTransition = function () {
+		return;
 		// clear localstorage - we use this to track whether we show second half of transition on a page load
 		localStorage.setItem("aethos_transition", "false");
 
