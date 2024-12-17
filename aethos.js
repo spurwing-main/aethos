@@ -863,10 +863,16 @@ function main() {
 				if (isNavOpen) {
 					console.log("normalise scroll off");
 					ScrollTrigger.refresh();
+					if (aethos.smoother) {
+						aethos.smoother.paused(true);
+					}
 					// ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
 				} else {
 					console.log("normalise scroll on");
 					ScrollTrigger.refresh();
+					if (aethos.smoother) {
+						aethos.smoother.paused(false);
+					}
 					// ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
 				}
 			});
@@ -884,6 +890,86 @@ function main() {
 
 		// Initial check in case the page loads in mobile size
 		handleResize();
+	};
+
+	aethos.anim.navReveal_alt = function () {
+		const nav = document.querySelector(".header");
+
+		console.log(nav);
+
+		if (!nav) {
+			console.warn('Navigation element with class ".nav" not found.');
+			return;
+		}
+
+		if (!aethos.settings.theme || aethos.settings.theme == "default") {
+			// Pin the navigation bar using ScrollTrigger
+			ScrollTrigger.create({
+				trigger: nav,
+				start: "top top",
+				end: "max",
+				pin: true,
+				pinSpacing: false, // Prevents adding space below the pinned element
+				markers: false, // Enable for debugging
+			});
+
+			// GSAP Timeline for Navigation Animation
+			const navAnim = gsap.timeline({ paused: true }).to(nav, {
+				yPercent: -100, // Moves nav out of view
+				duration: 0.5,
+				ease: "power2.inOut",
+			});
+
+			// Scroll State Management
+			let lastScrollY = window.scrollY;
+			const deadzone = 20;
+			let accumulatedDelta = 0;
+
+			// Scroll Event Handler
+			function onScroll() {
+				const currentScrollY = window.scrollY;
+				const deltaY = currentScrollY - lastScrollY;
+
+				accumulatedDelta += deltaY;
+
+				if (Math.abs(accumulatedDelta) >= deadzone) {
+					if (accumulatedDelta > 0 && !navAnim.isActive()) {
+						// Scroll Down: Hide Nav
+						navAnim.play();
+					} else if (accumulatedDelta < 0 && !navAnim.isActive()) {
+						// Scroll Up: Show Nav
+						navAnim.reverse();
+					}
+					accumulatedDelta = 0;
+				}
+
+				lastScrollY = currentScrollY;
+			}
+
+			// Throttle the Scroll Handler using requestAnimationFrame
+			let ticking = false;
+			window.addEventListener("scroll", function () {
+				if (!ticking) {
+					window.requestAnimationFrame(() => {
+						onScroll();
+						ticking = false;
+					});
+					ticking = true;
+				}
+			});
+		} else if (aethos.settings.theme == "club") {
+			aethos.navScrollTrigger = ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: ".club-header",
+			});
+		} else {
+			aethos.navScrollTrigger = ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: ".dest-header",
+			});
+		}
 	};
 
 	/* nav hide/show */
@@ -1431,7 +1517,7 @@ function main() {
 			showSubnavOnHover();
 			document.querySelector(".dest-nav").classList.add("is-ready");
 		} catch (error) {
-			console.error("Error setting up the destination navigation:", error);
+			// console.error("Error setting up the destination navigation:", error);
 		}
 	};
 
@@ -3987,9 +4073,10 @@ function main() {
 			timeout = setTimeout(() => func.apply(this, args), wait);
 		};
 	}
-
 	// Function to observe changes in the .nav_bg element
 	aethos.functions.observeNavGridChanges = function () {
+		if (!window.matchMedia("(max-width: 767px)").matches) return;
+
 		const navGrid = document.querySelector(".nav_bg");
 
 		if (!navGrid) {
@@ -4007,58 +4094,71 @@ function main() {
 			}, 500) // Adjust the debounce delay as necessary
 		);
 
-		// Observe the target for changes to attributes
-		observer.observe(navGrid, {
-			attributes: true, // Monitor attribute changes
-			attributeFilter: ["style"], // Only watch style changes
-		});
+		// Function to enable or disable the observer based on viewport size
+		const handleViewportChange = (e) => {
+			if (e.matches) {
+				// Mobile view (<= 767px)
+				observer.observe(navGrid, {
+					attributes: true,
+					attributeFilter: ["style"],
+				});
+				console.log("MutationObserver enabled for .nav_bg on mobile.");
+			} else {
+				// Disable observer on larger screens
+				observer.disconnect();
+				console.log("MutationObserver disconnected on desktop.");
+			}
+		};
 
-		console.log("MutationObserver set up for .nav_bg");
+		// Set up matchMedia for viewport changes
+		const mediaQuery = window.matchMedia("(max-width: 767px)");
+		mediaQuery.addEventListener("change", handleViewportChange);
+
+		// Initialize observer on load if already in mobile view
+		handleViewportChange(mediaQuery);
 	};
-
-	// Call the function
 	aethos.functions.observeNavGridChanges();
 
 	// watch body for nav open classes so we can toggle smoother
-	aethos.functions.observeBody = function () {
-		return;
-		const body = document.body;
+	// aethos.functions.observeBody = function () {
+	// 	return;
+	// 	const body = document.body;
 
-		const observer = new MutationObserver((mutationsList) => {
-			for (const mutation of mutationsList) {
-				if (
-					mutation.type === "attributes" &&
-					mutation.attributeName === "class"
-				) {
-					// Check if the specific class is present
-					if (
-						body.classList.contains("dest-nav-open") ||
-						body.classList.contains("nav-open") ||
-						body.classList.contains("club-nav-open")
-					) {
-						if (aethos.smoother) {
-							// aethos.smoother.paused(true);
-							// ScrollTrigger.normalizeScroll(false);
-							aethos.navScrollTrigger.disable();
-						}
-					} else {
-						if (aethos.smoother) {
-							// aethos.smoother.paused(false);
-							// ScrollTrigger.normalizeScroll(true);
-							aethos.navScrollTrigger.enable();
-						}
-					}
-				}
-			}
-		});
+	// 	const observer = new MutationObserver((mutationsList) => {
+	// 		for (const mutation of mutationsList) {
+	// 			if (
+	// 				mutation.type === "attributes" &&
+	// 				mutation.attributeName === "class"
+	// 			) {
+	// 				// Check if the specific class is present
+	// 				if (
+	// 					body.classList.contains("dest-nav-open") ||
+	// 					body.classList.contains("nav-open") ||
+	// 					body.classList.contains("club-nav-open")
+	// 				) {
+	// 					if (aethos.smoother) {
+	// 						// aethos.smoother.paused(true);
+	// 						// ScrollTrigger.normalizeScroll(false);
+	// 						aethos.navScrollTrigger.disable();
+	// 					}
+	// 				} else {
+	// 					if (aethos.smoother) {
+	// 						// aethos.smoother.paused(false);
+	// 						// ScrollTrigger.normalizeScroll(true);
+	// 						aethos.navScrollTrigger.enable();
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	});
 
-		observer.observe(body, {
-			attributes: true,
-			attributeFilter: ["class"],
-		});
-	};
+	// 	observer.observe(body, {
+	// 		attributes: true,
+	// 		attributeFilter: ["class"],
+	// 	});
+	// };
 
-	aethos.functions.observeBody();
+	// aethos.functions.observeBody();
 
 	/******/
 	/*** CALL FUNCTIONS ***/
@@ -4083,7 +4183,8 @@ function main() {
 	aethos.anim.arch_short();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
-	aethos.anim.navReveal();
+	// aethos.anim.navReveal();
+	aethos.anim.navReveal_alt();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
 	aethos.anim.journalSticky();
