@@ -895,8 +895,6 @@ function main() {
 	aethos.anim.navReveal_alt = function () {
 		const nav = document.querySelector(".header");
 
-		console.log(nav);
-
 		if (!nav) {
 			console.warn('Navigation element with class ".nav" not found.');
 			return;
@@ -910,7 +908,6 @@ function main() {
 				end: "max",
 				pin: true,
 				pinSpacing: false, // Prevents adding space below the pinned element
-				markers: false, // Enable for debugging
 			});
 
 			// GSAP Timeline for Navigation Animation
@@ -4183,8 +4180,8 @@ function main() {
 	aethos.anim.arch_short();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
-	// aethos.anim.navReveal();
-	aethos.anim.navReveal_alt();
+	aethos.anim.navReveal();
+	// aethos.anim.navReveal_alt();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
 	aethos.anim.journalSticky();
