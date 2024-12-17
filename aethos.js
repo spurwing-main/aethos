@@ -917,6 +917,7 @@ function main() {
 		// Add resize event listener to handle window resizing - for width only
 		var prevWidth = window.innerWidth;
 		window.addEventListener("resize", function () {
+			console.log("resize, width= " + window.innerWidth);
 			var width = window.innerWidth;
 			if (width !== prevWidth) {
 				prevWidth = width;
