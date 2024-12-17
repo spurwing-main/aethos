@@ -258,7 +258,6 @@ function main() {
 
 	/* Page transitions */
 	aethos.anim.pageTransition = function () {
-		return;
 		// clear localstorage - we use this to track whether we show second half of transition on a page load
 		localStorage.setItem("aethos_transition", "false");
 
@@ -2160,8 +2159,218 @@ function main() {
 	};
 
 	/* create sliders */
+	// aethos.anim.loadSliders = function () {
+	// 	/* splide defaults */
+	// 	Splide.defaults = {
+	// 		perMove: 1,
+	// 		gap: "0rem",
+	// 		arrows: false,
+	// 		pagination: false,
+	// 		focus: "center",
+	// 		flickPower: 400,
+	// 		speed: 600,
+	// 		dragAngleThreshold: 60,
+	// 		autoWidth: false,
+	// 		rewind: false,
+	// 		rewindSpeed: 400,
+	// 		waitForTransition: false,
+	// 		updateOnMove: true,
+	// 		trimSpace: "move" /* removes space at end */,
+	// 		type: "slide",
+	// 		drag: "free" /* required to disable snapping */,
+	// 		snap: false /* required to disable snapping */,
+	// 		autoWidth: false,
+	// 		autoplay: false,
+	// 	};
+
+	// 	function initializeSplide({
+	// 		selector,
+	// 		options,
+	// 		useExtensions = false,
+	// 		useProgressBar = false,
+	// 	}) {
+	// 		let targets = document.querySelectorAll(selector);
+	// 		let splides = [];
+
+	// 		const isMobile = () => window.innerWidth <= aethos.breakpoints.mbl;
+
+	// 		targets.forEach((target) => {
+	// 			let splide = new Splide(target, options);
+
+	// 			let list = target.querySelector(".splide__list");
+	// 			let track = target.querySelector(".splide__track");
+
+	// 			track.style.overscrollBehavior = "none";
+
+	// 			let progressWrapper, bar, observer;
+	// 			const enableProgressBar = () => {
+	// 				progressWrapper = target.querySelector(".progress");
+	// 				bar = target.querySelector(".progress_bar");
+
+	// 				if (!bar || !progressWrapper || !list) return;
+
+	// 				let lastTransform = "";
+
+	// 				// Helper function to calculate progress rate
+	// 				const getRate = () => {
+	// 					const { Layout, Move, Direction, Slides } = splide.Components;
+	// 					const position = Direction.orient(Move.getPosition());
+	// 					// const base = Layout.listSize(); // Visible size of the slider
+	// 					const base = Layout.sliderSize(); // Computed size of the slider
+	// 					const containerW = target.getBoundingClientRect().width;
+	// 					adjustedBase = base - containerW;
+
+	// 					let rate = 0;
+	// 					if (splide.options.type === "loop") {
+	// 						rate = Math.abs(
+	// 							Math.abs(position / adjustedBase) - 1 / Slides.get(true).length
+	// 						);
+	// 					} else {
+	// 						rate = position / adjustedBase + 0 / splide.length;
+	// 					}
+	// 					// console.log(
+	// 					// 	`Base: ${base}, Adusted base: ${adjustedBase}, Position: ${position}, Rate: ${rate},`
+	// 					// );
+	// 					return rate;
+	// 				};
+
+	// 				// Update the progress bar position
+	// 				const updateProgressBar = () => {
+	// 					const rate = getRate();
+
+	// 					// Calculate the maximum translation value
+	// 					const maxTranslateX = progressWrapper.offsetWidth - bar.offsetWidth;
+
+	// 					// Calculate the current position of the bar
+	// 					const translateX = rate * maxTranslateX;
+
+	// 					// Apply the transform
+	// 					bar.style.transform = `translateX(${translateX}px)`;
+	// 				};
+
+	// 				// Detect changes to the .splide__list element's transform
+	// 				const observer = new MutationObserver(() => {
+	// 					const currentTransform = list.style.transform;
+
+	// 					if (currentTransform !== lastTransform) {
+	// 						lastTransform = currentTransform;
+	// 						updateProgressBar();
+	// 					}
+	// 				});
+
+	// 				// Observe changes to the style attribute
+	// 				observer.observe(list, {
+	// 					attributes: true,
+	// 					attributeFilter: ["style"],
+	// 				});
+
+	// 				// Clean up when not needed
+	// 				splide.on("destroy", () => {
+	// 					observer.disconnect();
+	// 				});
+
+	// 				// Initial update
+	// 				splide.on("mounted", () => {
+	// 					updateProgressBar();
+	// 				});
+	// 			};
+
+	// 			const disableProgressBar = () => {
+	// 				if (observer) observer.disconnect();
+	// 				if (bar) bar.style.transform = ""; // Reset the bar position
+	// 			};
+
+	// 			// Handle mobile or desktop
+	// 			const handleResize = () => {
+	// 				if (isMobile()) {
+	// 					disableProgressBar();
+	// 				} else {
+	// 					enableProgressBar();
+	// 				}
+	// 			};
+
+	// 			// Initial check
+	// 			if (!isMobile() && useProgressBar) {
+	// 				enableProgressBar();
+	// 			}
+
+	// 			// Listen for window resize
+	// 			window.addEventListener("resize", handleResize);
+
+	// 			splide.on("destroy", () => {
+	// 				window.removeEventListener("resize", handleResize);
+	// 			});
+
+	// 			// Mount splide instance with or without extensions
+	// 			if (useExtensions) {
+	// 				splide.mount(window.splide.Extensions);
+	// 			} else {
+	// 				splide.mount();
+	// 			}
+
+	// 			splides.push(splide);
+	// 		});
+
+	// 		return splides;
+	// 	}
+
+	// 	/* declare slider selectors, options and any callback functions */
+	// 	const sliders = [
+	// 		{
+	// 			selector: ".carousel",
+	// 			options: {
+	// 				type: "slide",
+	// 				autoWidth: true,
+	// 				autoScroll: {
+	// 					autoStart: false,
+	// 				},
+	// 				focus: 0,
+	// 				trimSpace: "move",
+	// 			},
+	// 			useExtensions: false,
+	// 			useProgressBar: true,
+	// 		},
+	// 		{
+	// 			selector: ".carousel-square_inner",
+	// 			options: {
+	// 				type: "slide",
+	// 				autoWidth: true,
+	// 				autoScroll: {
+	// 					autoStart: false,
+	// 				},
+	// 				focus: 0,
+	// 				trimSpace: "move",
+	// 				arrows: true,
+	// 			},
+	// 			useExtensions: false,
+	// 			useProgressBar: false,
+	// 		},
+	// 		{
+	// 			selector: ".c-carousel-loose",
+	// 			options: {
+	// 				type: "slide",
+	// 				autoWidth: true,
+	// 				autoScroll: {
+	// 					autoStart: false,
+	// 				},
+	// 				focus: 0,
+	// 				trimSpace: "move",
+	// 				arrows: false,
+	// 			},
+	// 			useExtensions: false,
+	// 			useProgressBar: true,
+	// 		},
+	// 	];
+
+	// 	/* loop through and initialize each slider */
+	// 	sliders.forEach(initializeSplide);
+	// };
+
 	aethos.anim.loadSliders = function () {
-		/* splide defaults */
+		/* Global Splide instances array */
+		aethos.splides = [];
+
+		/* Splide defaults */
 		Splide.defaults = {
 			perMove: 1,
 			gap: "0rem",
@@ -2176,155 +2385,147 @@ function main() {
 			rewindSpeed: 400,
 			waitForTransition: false,
 			updateOnMove: true,
-			trimSpace: "move" /* removes space at end */,
+			trimSpace: "move",
 			type: "slide",
-			drag: "free" /* required to disable snapping */,
-			snap: false /* required to disable snapping */,
-			autoWidth: false,
+			drag: "free",
+			snap: false,
 			autoplay: false,
 		};
 
+		/* Helper: Check if an element is in the viewport */
+		function isElementInViewport(el) {
+			const rect = el.getBoundingClientRect();
+			return (
+				rect.top < window.innerHeight &&
+				rect.bottom > 0 &&
+				rect.left < window.innerWidth &&
+				rect.right > 0
+			);
+		}
+
+		/* Initialize Splide sliders */
 		function initializeSplide({
 			selector,
 			options,
 			useExtensions = false,
 			useProgressBar = false,
 		}) {
-			let targets = document.querySelectorAll(selector);
-			let splides = [];
-
-			const isMobile = () => window.innerWidth <= aethos.breakpoints.mbl;
+			const targets = document.querySelectorAll(selector);
 
 			targets.forEach((target) => {
-				let splide = new Splide(target, options);
+				const splide = new Splide(target, options);
 
+				// Progress Bar Logic
 				let list = target.querySelector(".splide__list");
-				let track = target.querySelector(".splide__track");
+				let progressWrapper = target.querySelector(".progress");
+				let bar = target.querySelector(".progress_bar");
+				let observer;
 
-				track.style.overscrollBehavior = "none";
+				const updateProgressBar = () => {
+					if (!list || !bar || !progressWrapper) return;
 
-				let progressWrapper, bar, observer;
+					const { Layout, Move, Direction, Slides } = splide.Components;
+					const position = Direction.orient(Move.getPosition());
+					const base = Layout.sliderSize();
+					const containerW = target.getBoundingClientRect().width;
+					const adjustedBase = base - containerW;
+
+					const rate = position / adjustedBase;
+					const maxTranslateX = progressWrapper.offsetWidth - bar.offsetWidth;
+					const translateX = rate * maxTranslateX;
+
+					bar.style.transform = `translateX(${translateX}px)`;
+				};
+
 				const enableProgressBar = () => {
-					progressWrapper = target.querySelector(".progress");
-					bar = target.querySelector(".progress_bar");
-
-					if (!bar || !progressWrapper || !list) return;
+					if (!bar || !progressWrapper) return;
 
 					let lastTransform = "";
-
-					// Helper function to calculate progress rate
-					const getRate = () => {
-						const { Layout, Move, Direction, Slides } = splide.Components;
-						const position = Direction.orient(Move.getPosition());
-						// const base = Layout.listSize(); // Visible size of the slider
-						const base = Layout.sliderSize(); // Computed size of the slider
-						const containerW = target.getBoundingClientRect().width;
-						adjustedBase = base - containerW;
-
-						let rate = 0;
-						if (splide.options.type === "loop") {
-							rate = Math.abs(
-								Math.abs(position / adjustedBase) - 1 / Slides.get(true).length
-							);
-						} else {
-							rate = position / adjustedBase + 0 / splide.length;
-						}
-						// console.log(
-						// 	`Base: ${base}, Adusted base: ${adjustedBase}, Position: ${position}, Rate: ${rate},`
-						// );
-						return rate;
-					};
-
-					// Update the progress bar position
-					const updateProgressBar = () => {
-						const rate = getRate();
-
-						// Calculate the maximum translation value
-						const maxTranslateX = progressWrapper.offsetWidth - bar.offsetWidth;
-
-						// Calculate the current position of the bar
-						const translateX = rate * maxTranslateX;
-
-						// Apply the transform
-						bar.style.transform = `translateX(${translateX}px)`;
-					};
-
-					// Detect changes to the .splide__list element's transform
-					const observer = new MutationObserver(() => {
+					observer = new MutationObserver(() => {
 						const currentTransform = list.style.transform;
-
 						if (currentTransform !== lastTransform) {
 							lastTransform = currentTransform;
 							updateProgressBar();
 						}
 					});
 
-					// Observe changes to the style attribute
 					observer.observe(list, {
 						attributes: true,
 						attributeFilter: ["style"],
 					});
 
-					// Clean up when not needed
-					splide.on("destroy", () => {
-						observer.disconnect();
-					});
-
-					// Initial update
-					splide.on("mounted", () => {
-						updateProgressBar();
-					});
+					splide.on("mounted move", updateProgressBar);
 				};
 
 				const disableProgressBar = () => {
 					if (observer) observer.disconnect();
-					if (bar) bar.style.transform = ""; // Reset the bar position
+					if (bar) bar.style.transform = "";
 				};
 
-				// Handle mobile or desktop
 				const handleResize = () => {
-					if (isMobile()) {
+					if (window.innerWidth <= aethos.breakpoints.mbl) {
 						disableProgressBar();
-					} else {
+					} else if (useProgressBar) {
 						enableProgressBar();
 					}
 				};
 
-				// Initial check
-				if (!isMobile() && useProgressBar) {
-					enableProgressBar();
-				}
+				// Initial progress bar setup
+				if (useProgressBar) enableProgressBar();
 
-				// Listen for window resize
 				window.addEventListener("resize", handleResize);
-
 				splide.on("destroy", () => {
 					window.removeEventListener("resize", handleResize);
+					disableProgressBar();
 				});
 
-				// Mount splide instance with or without extensions
+				// Disable dragging while scrolling
+				let isScrolling = false;
+				window.addEventListener("scroll", () => {
+					if (!isScrolling) {
+						isScrolling = true;
+						requestAnimationFrame(() => {
+							if (isElementInViewport(target)) {
+								splide.options.drag = false;
+							}
+							isScrolling = false;
+						});
+					}
+				});
+
+				window.addEventListener("scrollend", () => {
+					if (isElementInViewport(target)) {
+						splide.options.drag = "free";
+					}
+				});
+
+				// Fix mobile drag triggering clicks
+				target.addEventListener("click", (e) => {
+					if (splide.Components.Drag.isDragging()) {
+						e.preventDefault();
+						e.stopImmediatePropagation();
+					}
+				});
+
+				// Mount the Splide instance
 				if (useExtensions) {
 					splide.mount(window.splide.Extensions);
 				} else {
 					splide.mount();
 				}
 
-				splides.push(splide);
+				// Store instance in global array
+				aethos.splides.push(splide);
 			});
-
-			return splides;
 		}
 
-		/* declare slider selectors, options and any callback functions */
+		/* Declare sliders with selectors and options */
 		const sliders = [
 			{
 				selector: ".carousel",
 				options: {
 					type: "slide",
 					autoWidth: true,
-					autoScroll: {
-						autoStart: false,
-					},
 					focus: 0,
 					trimSpace: "move",
 				},
@@ -2336,9 +2537,6 @@ function main() {
 				options: {
 					type: "slide",
 					autoWidth: true,
-					autoScroll: {
-						autoStart: false,
-					},
 					focus: 0,
 					trimSpace: "move",
 					arrows: true,
@@ -2351,9 +2549,6 @@ function main() {
 				options: {
 					type: "slide",
 					autoWidth: true,
-					autoScroll: {
-						autoStart: false,
-					},
 					focus: 0,
 					trimSpace: "move",
 					arrows: false,
@@ -2363,7 +2558,7 @@ function main() {
 			},
 		];
 
-		/* loop through and initialize each slider */
+		/* Loop through and initialize sliders */
 		sliders.forEach(initializeSplide);
 	};
 
