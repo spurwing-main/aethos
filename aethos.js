@@ -11,6 +11,7 @@ function main() {
 	aethos.settings.dev.splide = getParam("splide") !== "off";
 	aethos.settings.dev.smooth = getParam("smooth") !== "off";
 	aethos.settings.dev.navReveal = getParam("navReveal") !== "off";
+	aethos.settings.dev.all = getParam("all") !== "off";
 	console.log("Updated aethos.settings.dev:", aethos.settings.dev);
 
 	/******/
@@ -1062,8 +1063,9 @@ function main() {
 		const navLinkImgDefault = document.querySelector(
 			".nav_img-wrap.is-default"
 		);
-
-		navLinkImgDefault.classList.add("is-active");
+		if (navLinkImgDefault) {
+			navLinkImgDefault.classList.add("is-active");
+		}
 
 		navLinkTriggers.forEach((link) => {
 			link.addEventListener("mouseenter", () => {
