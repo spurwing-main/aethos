@@ -1690,6 +1690,10 @@ function main() {
 			let arch_arch = gsap.utils.toArray(".anim-arch_arch", trigger); // the actual clip elements
 			let arch_logo = trigger.querySelector(".contact-hero_media-logo"); // logo - only exists on contact hero
 
+			if (!arch_path || !arch_path_bg || !arch_arch || !arch_logo) {
+				return;
+			}
+
 			gsap.set(arch_path, {
 				transformOrigin: "bottom left",
 			});
