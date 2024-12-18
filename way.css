@@ -1,0 +1,143 @@
+.experience-view__category-button {
+	display: none !important;
+}
+.header__back-button {
+	display: none !important;
+}
+h1 {
+	font-family: var(--fonts--primary) !important;
+	text-transform: uppercase !important;
+	font-size: 4.5rem !important;
+	line-height: 5rem !important;
+	font-weight: 400 !important;
+}
+h1 + p {
+	font-family: var(--fonts--secondary) !important;
+	font-size: 1.25rem !important;
+	line-height: 1.75rem !important;
+	font-weight: 400 !important;
+	color: var(--color--charcoal--dark) !important;
+}
+
+/* vibe tag */
+.experience-view__vibe {
+	font-family: var(--fonts--secondary) !important;
+	font-size: 0.75rem !important;
+	font-weight: 400 !important;
+	line-height: 1rem !important;
+	letter-spacing: 0.08em !important;
+	text-transform: uppercase !important;
+	padding: 0 !important;
+	background-color: transparent !important;
+}
+
+/* images */
+[class^="ExperienceView__MediaCarouselWrapper"] {
+	max-height: none !important;
+	aspect-ratio: unset !important;
+}
+/* hero */
+[class^="styles__ExperiencesWrapper"] > [class^="styles__ExperiencesHeader"] {
+	align-items: stretch !important;
+}
+[class^="styles__ExperiencesHeaderContent"] {
+	height: 100% !important;
+	display: grid !important;
+	grid-template-rows: 1fr auto;
+	grid-auto-rows: auto;
+}
+
+.experience-view__tag-buttons-container {
+	margin-bottom: 2rem;
+}
+
+/* subhead */
+.experience-view__experience-section-title {
+	color: var(--color--charcoal--dark) !important;
+	font-family: var(--fonts--secondary) !important;
+	font-size: 1.5rem !important;
+	font-weight: 600 !important;
+	line-height: 2rem !important;
+	text-transform: uppercase !important;
+}
+/* desc */
+.experience-view__html-block-description :is(p, li) {
+	color: var(--color--charcoal--dark) !important;
+	font-family: var(--fonts--secondary) !important;
+	font-size: 1rem !important;
+	line-height: 1.5rem !important;
+}
+.experience-view__html-block-description > * + * {
+	margin-top: 1em !important;
+}
+.experience-view__html-block-description li + li {
+	margin-top: 0.5em !important;
+}
+
+[class^="styles__ExperiencesBodyContent"] > :not(h2) {
+	padding-bottom: 4rem !important;
+	margin-bottom: 0 !important;
+}
+
+footer > [class^="Version__StyledVersion"] {
+	display: none;
+}
+
+button[class^="Button__PrimaryButton"] {
+	font-family: var(--fonts--secondary) !important;
+
+	min-width: var(--c--btn--width-lg);
+	border: 1px solid var(--color--accent-dark);
+	background-color: var(--color--transparent);
+	font-size: var(--font-size--fs-14);
+	line-height: var(--line-height--line-height-20);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+	border-radius: 0;
+	flex-flow: column;
+	justify-content: center;
+	align-items: center;
+	margin-left: 0;
+	margin-right: 0;
+	padding: 0;
+	font-weight: 400;
+	display: inline-flex;
+	padding: var(--padding--pad-sm) var(--padding--pad-md);
+	grid-column-gap: var(--gap--gap-md);
+	grid-row-gap: var(--gap--gap-md);
+	position: relative;
+	font-size: var(--font-size--fs-10);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	line-height: 1;
+}
+button[class^="Button__PrimaryButton"]:hover {
+	background-color: var(--color--accent-dark);
+	color: var(--color--white);
+}
+
+/* space above button */
+[class^="styles__BookingSpace"] {
+	margin-top: 2rem;
+}
+
+.way__radio-component__wrapper legend {
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	padding-inline: 0.5rem;
+	font-size: 0.65rem;
+	font-weight: 400 !important;
+	font-family: var(--fonts--secondary) !important;
+}
+
+@media (max-width: 767px) {
+	h1 {
+		font-size: 2.5rem !important;
+		line-height: 3rem !important;
+	}
+	h1 + p {
+		font-size: 1rem !important;
+		line-height: 1.5rem !important;
+	}
+}

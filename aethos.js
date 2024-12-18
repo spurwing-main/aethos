@@ -2769,7 +2769,12 @@ function main() {
 				let gsap_section = gsap.utils.selector(parent);
 
 				let child = gsap_section(".article-sticky:not(.w-condition-invisible)"); // exclude any sticky quotes/imgs that are unused/hidden
-
+				if (!child) {
+					return;
+				}
+				if (!child[0]) {
+					return;
+				}
 				ScrollTrigger.create({
 					trigger: parent,
 					start: "top 32px", // annoyingly doesn't seem possible to set this in rem
