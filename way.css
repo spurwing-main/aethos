@@ -35,16 +35,50 @@ h1 + p {
 [class^="ExperienceView__MediaCarouselWrapper"] {
 	max-height: none !important;
 	aspect-ratio: unset !important;
+	width: 100%;
+	min-height: 0 !important;
+	max-width: 100% !important;
+	height: 100% !important;
+	position: relative;
+}
+
+[class^="ExperienceView__MediaCarouselWrapper"] > * {
+	position: absolute !important;
+	inset: 0;
+}
+
+/* sidebar */
+[class^="styles__ExperiencesBodySidebar"] {
+	background: var(--color--accent-bg);
+	border: none !important;
+}
+
+/* container */
+div#experience-view > div {
+	width: 100% !important;
+	max-width: none !important;
+	padding-inline: var(--spacing--h-pad) !important;
+}
+
+.ExperienceView__MediaCarouselWrapper-sc-1ibnh3e-0.ktIBfT {
 }
 /* hero */
 [class^="styles__ExperiencesWrapper"] > [class^="styles__ExperiencesHeader"] {
 	align-items: stretch !important;
+	/* height: 50vh; */
+	/* display: grid; */
+	grid-template-columns: 1fr 2fr !important;
+	display: grid !important;
+	height: 100% !important;
+	min-height: min(80vh, 1200px) !important;
+	/* grid-template-rows: min-content; */
 }
 [class^="styles__ExperiencesHeaderContent"] {
 	height: 100% !important;
 	display: grid !important;
 	grid-template-rows: 1fr auto;
 	grid-auto-rows: auto;
+	/* justify-content: space-between; */
 }
 
 .experience-view__tag-buttons-container {
@@ -139,5 +173,26 @@ button[class^="Button__PrimaryButton"]:hover {
 	h1 + p {
 		font-size: 1rem !important;
 		line-height: 1.5rem !important;
+	}
+	.experience-view__experience-section-title {
+		font-size: 1.125rem !important;
+		line-height: 1.5rem !important;
+	}
+	.experience-view__html-block-description :is(p, li) {
+		font-size: 0.875rem !important;
+		line-height: 1.25rem !important;
+	}
+
+	[class^="styles__ExperiencesWrapper"] > [class^="styles__ExperiencesHeader"] {
+		grid-template-columns: 1fr !important;
+		min-height: 0 !important;
+	}
+	[class^="styles__ExperiencesHeaderContent"] {
+	}
+	[class^="ExperienceView__MediaCarouselWrapper"] {
+		min-height: 20rem !important;
+	}
+	[class^="styles__ExperiencesBodyContent"] > :not(h2) {
+		padding-bottom: 2rem !important;
 	}
 }
