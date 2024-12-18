@@ -3590,9 +3590,11 @@ function main() {
 		);
 		// apply function definition for each number
 		numbers.forEach((number) => {
+			console.log(number);
 			const suffix = suffixMe(Number(number.textContent));
 			// override original number with its newly return suffixed number
 			number.textContent = suffix;
+			number.setAttribute("data-date-suffix", "false");
 		});
 	};
 
