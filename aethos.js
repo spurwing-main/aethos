@@ -2640,31 +2640,33 @@ function main() {
 
 			// assemble the component
 			let values = list_dsk.querySelectorAll(".values_item");
-			values.forEach((value) => {
-				// clone the value
-				let value_clone = value.cloneNode(true);
-				// move clone to mbl list - this is the list we show on mbl only
-				list_mbl.append(value_clone);
+			if (values.length != 0) {
+				values.forEach((value) => {
+					// clone the value
+					let value_clone = value.cloneNode(true);
+					// move clone to mbl list - this is the list we show on mbl only
+					list_mbl.append(value_clone);
 
-				// // get id and set it on the title link
-				// let id = /[^/]*$/.exec(
-				// 	value.querySelector(".values_item-title").getAttribute("data-id")
-				// )[0];
-				// value.querySelector(".values_item-title").href = "#" + id;
+					// // get id and set it on the title link
+					// let id = /[^/]*$/.exec(
+					// 	value.querySelector(".values_item-title").getAttribute("data-id")
+					// )[0];
+					// value.querySelector(".values_item-title").href = "#" + id;
 
-				section
-					.querySelector(".values_title-list")
-					.append(value.querySelector(".values_item-title"));
-				section
-					.querySelector(".values_body-list")
-					.append(value.querySelector(".values_item-body"));
-				section
-					.querySelector(".values_img-list")
-					.append(value.querySelector(".values_item-img"));
-			});
+					section
+						.querySelector(".values_title-list")
+						.append(value.querySelector(".values_item-title"));
+					section
+						.querySelector(".values_body-list")
+						.append(value.querySelector(".values_item-body"));
+					section
+						.querySelector(".values_img-list")
+						.append(value.querySelector(".values_item-img"));
+				});
+			}
 
-			// check component has some values
-			if (values.length == 0) return;
+			// // check component has some values
+			// if (values.length == 0) return;
 
 			mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
 				// gsap selector fn
@@ -3590,7 +3592,6 @@ function main() {
 		);
 		// apply function definition for each number
 		numbers.forEach((number) => {
-			console.log(number);
 			const suffix = suffixMe(Number(number.textContent));
 			// override original number with its newly return suffixed number
 			number.textContent = suffix;
@@ -4087,7 +4088,18 @@ function main() {
 					partnerClubsRadioFieldset.style.display = "none";
 					selectedPlan = "Pioneer";
 				} else {
-					partnerClubsRadioFieldset.style.display = "block";
+					gsap.fromTo(
+						partnerClubsRadioFieldset,
+						{
+							display: "none",
+							opacity: 0,
+						},
+						{
+							display: "block",
+							opacity: 1,
+						}
+					);
+					// partnerClubsRadioFieldset.style.display = "block";
 				}
 				buttonEnabled();
 			});
