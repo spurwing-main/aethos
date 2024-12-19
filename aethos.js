@@ -456,7 +456,7 @@ function main() {
 		function getThemeAndDestinationFromUrl(pathname, searchParams) {
 			// Check for /club or /clubs at the start of the URL
 			if (pathname.startsWith("/club") || pathname.startsWith("/clubs")) {
-				return { targetTheme: "club", targetDestination: "club" };
+				return { targetTheme: "club", targetDestination: "default" };
 			}
 
 			// Check for /destinations/.../club
@@ -464,7 +464,7 @@ function main() {
 				/^\/destinations\/[^\/]+\/club/
 			);
 			if (clubInDestinationsMatch) {
-				return { targetTheme: "club", targetDestination: "club" };
+				return { targetTheme: "club", targetDestination: "default" };
 			}
 
 			// Check for /hotels/x or /destinations/x
@@ -928,7 +928,7 @@ function main() {
 		// Add resize event listener to handle window resizing - for width only
 		var prevWidth = window.innerWidth;
 		window.addEventListener("resize", function () {
-			console.log("resize, width= " + window.innerWidth);
+			// console.log("resize, width= " + window.innerWidth);
 			var width = window.innerWidth;
 			if (width !== prevWidth) {
 				prevWidth = width;
