@@ -1506,12 +1506,11 @@ function main() {
 
 							// Cleanup function for when the media query condition changes
 							return () => {
-								console.log("turning off subnav hover");
-
-								primaryItem.removeEventListener("mouseenter", openSubmenu);
-								primaryItem.removeEventListener("mouseleave", closeSubmenu);
-								subnav.removeEventListener("mouseenter", openSubmenu);
-								subnav.removeEventListener("mouseleave", closeSubmenu);
+								// console.log("turning off subnav hover");
+								// primaryItem.removeEventListener("mouseenter", openSubmenu);
+								// primaryItem.removeEventListener("mouseleave", closeSubmenu);
+								// subnav.removeEventListener("mouseenter", openSubmenu);
+								// subnav.removeEventListener("mouseleave", closeSubmenu);
 							};
 						});
 
