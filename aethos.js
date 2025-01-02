@@ -872,6 +872,10 @@ function main() {
 		aethos.helpers.destNavClass = "dest-nav-open";
 		aethos.helpers.clubNavClass = "club-nav-open";
 
+		// document.body.classList.remove(aethos.helpers.globalNavClass);
+		// document.body.classList.remove(aethos.helpers.destNavClass);
+		// document.body.classList.remove(aethos.helpers.clubNavClass);
+
 		function handleResize() {
 			// default - remove global nav class on mbl and smaller on close
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
@@ -1692,16 +1696,22 @@ function main() {
 
 	/* arch animation */
 	aethos.anim.arch = function () {
-		/* get all arch triggers on page */
+		// Get all arch triggers on the page
 		let arch_triggers = document.querySelectorAll(".anim-arch_trigger");
-		arch_triggers.forEach((trigger) => {
-			/* get the clip paths */
-			let arch_path = document.querySelector("#shape-arch path"); // front img SVG clip path
-			let arch_path_bg = document.querySelector("#shape-arch-bg path"); // bg image SVG clip path
-			let arch_arch = gsap.utils.toArray(".anim-arch_arch", trigger); // the actual clip elements
-			let arch_logo = trigger.querySelector(".contact-hero_media-logo"); // logo - only exists on contact hero
 
-			if (!arch_path || !arch_path_bg || !arch_arch || !arch_logo) {
+		arch_triggers.forEach((trigger) => {
+			// Get the clip paths and related elements
+			let arch_path = document.querySelector("#shape-arch path");
+			let arch_path_bg = document.querySelector("#shape-arch-bg path");
+			let arch_arch = trigger.querySelectorAll(".anim-arch_arch");
+			let arch_logo = trigger.querySelector(".contact-hero_media-logo");
+
+			if (
+				!arch_path ||
+				!arch_path_bg ||
+				arch_arch.length === 0 ||
+				(!arch_logo && trigger.querySelector(".contact-hero_media-logo"))
+			) {
 				return;
 			}
 
@@ -1709,17 +1719,16 @@ function main() {
 				transformOrigin: "bottom left",
 			});
 
-			// update arch path with a newer simplified string
 			let newPath_start =
 				"M 0 0.36 C 0 0.16 0.22 0 0.5 0 H 0.5 C 0.78 0 1 0.16 1 0.36 V 1 H 0 V 0.36";
-			// update end path with the origin set at the bottom
 			let newPath_end =
 				"M 0 0.56 C 0 0.36 0.22 0.2 0.5 0.2 H 0.5 C 0.78 0.2 1 0.36 1 0.56 V 0.8 H 0 V 0.56";
+
 			gsap.set([arch_path_bg, arch_path], {
 				attr: { d: newPath_start },
 			});
 
-			// timeline and scroll trigger. Trigger element is the default position of the img wrapper, the same as the top of the text
+			// Create the timeline
 			let tl = gsap.timeline({
 				scrollTrigger: {
 					trigger: trigger,
@@ -1727,27 +1736,20 @@ function main() {
 				},
 			});
 
-			/* slow it down */
-			tl.timeScale(0.75);
-
-			/* but speed it up on contact page */
-			if (aethos.settings.pageName == "contact") {
-				tl.timeScale(1.5);
+			let timeScale = 0.75;
+			if (aethos.settings.pageName === "contact") {
+				timeScale = 1.5;
 			}
+			tl.timeScale(timeScale);
 
-			// move whole element (incl bg image) up
+			// Animations
 			tl.from(arch_arch, {
 				y: "90%",
 				duration: 1.75,
 				ease: "power1.inOut",
 			});
 
-			// extend both fg & bg clipping paths to make arches 'taller'
-			// also apply a transform up on pages other than contact
 			let y = 0.2;
-			if (aethos.settings.pageName == "contact") {
-				y = 0.2;
-			}
 			tl.from(
 				[arch_path, arch_path_bg],
 				{
@@ -1758,10 +1760,8 @@ function main() {
 					duration: 1.5,
 					ease: "power1.inOut",
 				},
-				"<+=0.4" // start anim 0.4 after start of prev anim
+				"<+=0.4"
 			);
-
-			// scale fg path up
 
 			tl.from(
 				arch_path,
@@ -1770,7 +1770,7 @@ function main() {
 					duration: 1,
 					ease: "power1.inOut",
 				},
-				"<+=0.4" // start anim 0.4 after start of prev anim
+				"<+=0.4"
 			);
 
 			if (arch_logo) {
@@ -1781,7 +1781,7 @@ function main() {
 						duration: 1,
 						ease: "power1.inOut",
 					},
-					"<+=0.4" // start anim 0.4 after start of prev anim
+					"<+=0.4"
 				);
 			}
 		});
