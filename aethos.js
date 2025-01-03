@@ -1,4 +1,5 @@
 function main() {
+	console.log("main()");
 	aethos.settings.dev = aethos.settings.dev || {};
 
 	// Function to get URL parameters
@@ -12,7 +13,7 @@ function main() {
 	aethos.settings.dev.smooth = getParam("smooth") !== "off";
 	aethos.settings.dev.navReveal = getParam("navReveal") !== "off";
 	aethos.settings.dev.all = getParam("all") !== "off";
-	console.log("Updated aethos.settings.dev:", aethos.settings.dev);
+	aethos.log("Updated aethos.settings.dev:", aethos.settings.dev);
 
 	/******/
 	/***  INITIAL SET UP - SETTINGS AND LINKS ***/
@@ -866,22 +867,192 @@ function main() {
 	/***  FUNCTIONS - NAV ***/
 	/******/
 
-	/* add class to <body> when .nav is open. Used for animating nav burger icon */
+	// nav open/close animations
+	// replaces WF animation
 	aethos.functions.nav = function () {
-		aethos.helpers.globalNavClass = "nav-open";
-		aethos.helpers.destNavClass = "dest-nav-open";
-		aethos.helpers.clubNavClass = "club-nav-open";
+		// nav button
+		const navBtn = document.querySelector(".nav-btn");
+		if (!navBtn) return;
 
-		// document.body.classList.remove(aethos.helpers.globalNavClass);
-		// document.body.classList.remove(aethos.helpers.destNavClass);
-		// document.body.classList.remove(aethos.helpers.clubNavClass);
+		// Elements - main nav
+		const global_elements = {
+			nav: document.querySelector(".nav"),
+			bg: document.querySelector(".nav_bg"),
+			bar: document.querySelector(".header-bar"),
+			overlay: document.querySelector(".nav_links-overlay"),
+			content1: document.querySelector(".nav_grid"),
+			content2: document.querySelector(".nav_grid-secondary"),
+			textSelector: ".nav-btn_text",
+			barColor_closed: aethos.helpers.getProp("--color--page-bg"),
+			barColor_open: aethos.helpers.getProp("--color--cream--light"),
+		};
 
-		function handleResize() {
-			// default - remove global nav class on mbl and smaller on close
+		// Elements - dest nav
+		const dest_elements = {
+			nav: document.querySelector(".dest-nav"),
+			bg: document.querySelector(".dest-nav_bg"),
+			bar: document.querySelector(".header-bar"),
+			overlay: null,
+			content1: document.querySelector(".dest-nav_content"),
+			content2: null,
+			textSelector: ".nav-btn_text",
+			barColor_closed: aethos.helpers.getProp("--color--page-bg"),
+			barColor_open: aethos.helpers.getProp("--color--cream--light"),
+		};
+
+		// Classes
+		const classes = {
+			global: aethos.helpers.globalNavClass || "nav-open",
+			dest: aethos.helpers.destNavClass || "dest-nav-open",
+			club: aethos.helpers.clubNavClass || "club-nav-open",
+		};
+
+		// GSAP timeline defaults
+		const tlDefaults = { duration: 0.6, ease: "power4.inOut" };
+
+		// Initialize timelines with defaults
+		// GSAP Timelines
+		const timelines = {
+			open: gsap.timeline({ paused: true, defaults: tlDefaults }),
+			close: gsap.timeline({ paused: true, defaults: tlDefaults }),
+		};
+		aethos.nav.timelines = timelines; // For debugging
+
+		// Initial state setup
+		function setInitialStates(els) {
+			gsap.set([els.nav, els.content1, els.overlay], { display: "none" });
+			gsap.set(els.bar, { backgroundColor: els.barColor_closed });
+			gsap.set(els.bg, { display: "none", scaleY: 0, opacity: 0 });
+			gsap.set(els.content2, { opacity: 0 });
+			gsap.set(els.overlay, { y: 0 });
+			gsap.set(els.textSelector, { y: 0 });
+		}
+		setInitialStates(global_elements);
+
+		// Open nav animation
+		function animateOpenNav(tl, els, barColor_open) {
+			tl.clear();
+			tl.set([els.nav, els.bg, els.overlay], { display: "block" })
+				.to(els.textSelector, { y: "-100%" }, 0)
+				.to(els.bg, { scaleY: 1, opacity: 1 }, 0)
+				.to(els.bar, { backgroundColor: barColor_open }, 0)
+				.to(els.overlay, { y: "-200%", duration: 2, ease: "none" }, 0.6)
+				.to(
+					els.content2,
+					{ opacity: 1, duration: 1.2, ease: "power3.inOut" },
+					0.6
+				)
+				.set(els.content1, { display: "grid" }, 0.6);
+		}
+
+		// Close nav animation
+		function animateCloseNav(tl, els, barColor_closed) {
+			tl.clear();
+			tl.to(els.overlay, { y: 0, duration: 0.75, ease: "none" }, 0)
+				.to(els.content2, { opacity: 0 }, 0)
+				.to(els.textSelector, { y: 0 }, 0)
+				.to(els.bg, { scaleY: 0, duration: 0.8 }, 0.75)
+				.set(els.content1, { display: "none" }, 0.75)
+				.to(els.bg, { opacity: 0, duration: 0.8 }, 1.05)
+				.to(
+					els.bar,
+					{
+						backgroundColor: barColor_closed,
+						duration: 0.8,
+						ease: "power4.out",
+					},
+					1.05
+				)
+				.set([els.nav, els.bg], { display: "none" }, 1.85);
+		}
+
+		// Initialize animations
+		animateOpenNav(
+			aethos.nav.timelines.open,
+			global_elements,
+			global_elements.barColor_open
+		);
+		animateCloseNav(
+			aethos.nav.timelines.close,
+			global_elements,
+			global_elements.barColor_closed
+		);
+
+		// Track nav state
+		aethos.nav.isNavOpen = aethos.nav.isNavOpen || false;
+
+		// Close nav
+		aethos.nav.close = function () {
+			aethos.log("close nav");
+			// Play close animation
+			aethos.nav.timelines.close.play(0);
+			// remove class
+			document.body.classList.remove(classes.global);
+			// enable scroll
+			ScrollTrigger.refresh();
+			aethos.helpers.pauseScroll(false);
+			// update
+			aethos.nav.isNavOpen = false;
+		};
+
+		// Open nav
+		aethos.nav.open = function () {
+			aethos.log("open nav");
+			// Play open animation
+			aethos.nav.timelines.open.play(0);
+			// add class
+			document.body.classList.add(classes.global);
+			// disable scroll
+			ScrollTrigger.refresh();
+			aethos.helpers.pauseScroll(true);
+			// update
+			aethos.nav.isNavOpen = true;
+		};
+
+		// Toggle nav
+		aethos.nav.toggleNav = function () {
+			aethos.log("isNavOpen: " + aethos.nav.isNavOpen);
+
+			// if an animation is running, pause it
+			if (aethos.nav.timelines.close.isActive()) {
+				aethos.nav.timelines.close.pause();
+			}
+			if (aethos.nav.timelines.open.isActive()) {
+				aethos.nav.timelines.open.pause();
+			}
+
+			// open or close nav
+			if (aethos.nav.isNavOpen) {
+				aethos.nav.close();
+			} else {
+				aethos.nav.open();
+			}
+		};
+
+		// force close - used after back button
+		aethos.nav.forceClose = function () {
+			aethos.log("force close nav");
+			if (aethos.nav.timelines.open.isActive()) {
+				aethos.nav.timelines.open.pause();
+			}
+			aethos.nav.timelines.close.progress(1);
+			document.body.classList.remove(classes.global);
+			aethos.nav.isNavOpen = false;
+			aethos.helpers.pauseScroll(false);
+		};
+
+		// Remove existing event listener, if any
+		navBtn.removeEventListener("click", aethos.nav.toggleNav);
+
+		// Add event listener
+		navBtn.addEventListener("click", aethos.nav.toggleNav);
+
+		// close nav when window resized to mbl
+		function handleResize(width) {
+			// for default theme - mbl and smaller
 			if (aethos.settings.theme == "default" || !aethos.settings.theme) {
-				if (window.innerWidth <= aethos.breakpoints.mbl) {
-					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+				if (width <= aethos.breakpoints.mbl) {
+					aethos.nav.close();
 				}
 			}
 			// dest - remove dest nav class on tab and smaller on close
@@ -890,58 +1061,33 @@ function main() {
 				aethos.settings.theme !== "default" &&
 				aethos.settings.theme !== "club"
 			) {
-				if (window.innerWidth <= aethos.breakpoints.tab) {
-					document.body.classList.remove(aethos.helpers.destNavClass);
-					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on
+				if (width <= aethos.breakpoints.tab) {
+					document.body.classList.remove(classes.dest);
+					document.body.classList.remove(classes.global);
 				}
 			}
+			// club
 			if (aethos.settings.theme == "club") {
-				if (window.innerWidth <= aethos.breakpoints.tab) {
-					document.body.classList.remove(aethos.helpers.clubNavClass);
-					document.body.classList.remove(aethos.helpers.globalNavClass);
-					// ScrollTrigger.normalizeScroll(true); // Ensure normalization is back on x
+				if (width <= aethos.breakpoints.tab) {
+					document.body.classList.remove(classes.club);
+					document.body.classList.remove(classes.global);
 				}
 			}
-		}
-
-		// Check for nav buttons before adding event listeners
-		const navBtn = document.querySelector(".nav-btn");
-
-		if (navBtn) {
-			navBtn.addEventListener("click", () => {
-				const isNavOpen = document.body.classList.toggle(
-					aethos.helpers.globalNavClass
-				);
-				if (isNavOpen) {
-					console.log("normalise scroll off");
-					ScrollTrigger.refresh();
-					// Disable scrolling
-					aethos.helpers.pauseScroll(true);
-					// ScrollTrigger.normalizeScroll(false); // Turn off scroll normalization when nav is open
-				} else {
-					console.log("normalise scroll on");
-					ScrollTrigger.refresh();
-					// Disable scrolling
-					aethos.helpers.pauseScroll(false);
-					// ScrollTrigger.normalizeScroll(true); // Re-enable scroll normalization when nav is closed
-				}
-			});
 		}
 
 		// Add resize event listener to handle window resizing - for width only
 		var prevWidth = window.innerWidth;
 		window.addEventListener("resize", function () {
-			// console.log("resize, width= " + window.innerWidth);
 			var width = window.innerWidth;
 			if (width !== prevWidth) {
 				prevWidth = width;
-				handleResize();
+				handleResize(width);
 			}
 		});
 
 		// Initial check in case the page loads in mobile size
-		handleResize();
+		// currently disabled as this breaks back button/force close for some reason
+		// handleResize();
 	};
 
 	aethos.anim.navReveal_alt = function () {
