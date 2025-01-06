@@ -920,6 +920,7 @@ function main() {
 
 		// Initial state setup
 		function setInitialStates(els) {
+			aethos.log("Setting initial nav states");
 			gsap.set([els.nav, els.content1, els.overlay], { display: "none" });
 			gsap.set(els.bar, { backgroundColor: els.barColor_closed });
 			gsap.set(els.bg, { display: "none", scaleY: 0, opacity: 0 });
@@ -1032,12 +1033,19 @@ function main() {
 		// force close - used after back button
 		aethos.nav.forceClose = function () {
 			aethos.log("force close nav");
+			// pause open if running
 			if (aethos.nav.timelines.open.isActive()) {
 				aethos.nav.timelines.open.pause();
 			}
+			// run close immediately
 			aethos.nav.timelines.close.progress(1);
+			// reset everything back to initial state in case browser preserves some inline styles
+			setInitialStates(global_elements);
+			// remove class
 			document.body.classList.remove(classes.global);
+			// update bool
 			aethos.nav.isNavOpen = false;
+			// turn on scroll
 			aethos.helpers.pauseScroll(false);
 		};
 
