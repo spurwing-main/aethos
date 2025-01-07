@@ -2798,6 +2798,7 @@ function main() {
 					// move clone to mbl list - this is the list we show on mbl only
 					list_mbl.append(value_clone);
 
+					// move the title, body and img to the respective lists
 					section
 						.querySelector(".values_title-list")
 						.append(value.querySelector(".values_item-title"));
@@ -2810,24 +2811,19 @@ function main() {
 				});
 			}
 
-			// // check component has some values
-			// if (values.length == 0) return;
-
+			// only run for larger screen
 			mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
-				// gsap selector fn
-				let gsap_section = gsap.utils.selector(section);
-
 				// get elements to animate within this component
+				let gsap_section = gsap.utils.selector(section);
 				let titles = gsap_section(".values_item-title");
 				let bodies = gsap_section(".values_item-body");
 				let images = gsap_section(".values_item-img");
 
-				// resize last img so we can fine control end of pinning. We set last img to be the same height as the RHS content so the section unsticks when top of img is at same height as top of content.
+				// resize last img so we can fine control end of pinning.
+				// We set last img to be the same height as the RHS content so the section unsticks when top of img is at same height as top of content.
 				const values_pin = section.querySelector(".values_pin");
 				const values_pin_top = section.querySelector(".values_pin-top");
 				const values_pin_bottom = section.querySelector(".values_pin-bottom");
-
-				setLastImgHeight();
 
 				function setLastImgHeight() {
 					var h =
@@ -2839,10 +2835,14 @@ function main() {
 					});
 				}
 
+				setLastImgHeight();
+
 				// Track whether triggers have already been created
 				let scrollTriggersCreated = false;
 
+				// Check if the content is too tall for the viewport
 				const checkContentHeight = () => {
+					// Calculate the height of the pinned content and the viewport
 					let pinHeight =
 						values_pin_top.offsetHeight + values_pin_bottom.offsetHeight + 100;
 					let viewportHeight = window.innerHeight;
@@ -2917,7 +2917,7 @@ function main() {
 					}
 				};
 
-				// Call on load and resize
+				// Call on load and resize events
 				checkContentHeight();
 				window.addEventListener("resize", checkContentHeight);
 
