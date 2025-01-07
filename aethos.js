@@ -2784,7 +2784,7 @@ function main() {
 		// add a media query. When it matches, the associated function will run
 
 		// get all values components on page
-		let valuesSections = document.querySelectorAll(".s-values");
+		let valuesSections = document.querySelectorAll(".values_inner");
 		valuesSections.forEach((section) => {
 			// dsk list
 			let list_dsk = section.querySelector(".values_dsk .values_list");
@@ -2799,12 +2799,6 @@ function main() {
 					let value_clone = value.cloneNode(true);
 					// move clone to mbl list - this is the list we show on mbl only
 					list_mbl.append(value_clone);
-
-					// // get id and set it on the title link
-					// let id = /[^/]*$/.exec(
-					// 	value.querySelector(".values_item-title").getAttribute("data-id")
-					// )[0];
-					// value.querySelector(".values_item-title").href = "#" + id;
 
 					section
 						.querySelector(".values_title-list")
@@ -2830,12 +2824,10 @@ function main() {
 				let bodies = gsap_section(".values_item-body");
 				let images = gsap_section(".values_item-img");
 
-				// get first items
-				let title_first = titles[0];
-				let body_first = bodies[0];
-
 				// resize last img so we can fine control end of pinning. We set last img to be the same height as the RHS content so the section unsticks when top of img is at same height as top of content.
 				const values_pin = section.querySelector(".values_pin");
+				const values_pin_top = section.querySelector(".values_pin-top");
+				const values_pin_bottom = section.querySelector(".values_pin-bottom");
 				var h =
 					gsap.getProperty(values_pin, "height") -
 					gsap.getProperty(values_pin, "padding-top") -
@@ -2844,43 +2836,85 @@ function main() {
 					height: h,
 				});
 
-				// Set the parent component to be pinned
-				gsap.to(section, {
-					scrollTrigger: {
-						trigger: section, // trigger is the whole section
-						start: "top top",
-						end: "bottom bottom",
-						pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
-						pinSpacing: false,
-					},
-				});
+				// Track whether triggers have already been created
+				let scrollTriggersCreated = false;
 
-				// Set up scroll triggers for each value
-				values.forEach((value, index) => {
-					let title = titles[index];
-					let body = bodies[index];
-					let image = images[index];
+				const checkContentHeight = () => {
+					let pinHeight =
+						values_pin_top.offsetHeight + values_pin_bottom.offsetHeight + 100;
+					let viewportHeight = window.innerHeight;
 
-					let start = "top 70%";
-					let end = "bottom 70%";
-					let markers = false;
-					if (index == 0) {
-						start = "top 150%";
+					if (pinHeight > viewportHeight) {
+						console.log("too tall!");
+						if (scrollTriggersCreated) {
+							// Content too tall: kill scroll triggers and add class
+							ScrollTrigger.getAll().forEach((trigger) => {
+								if (
+									trigger.trigger === section ||
+									section.contains(trigger.trigger)
+								) {
+									trigger.kill();
+								}
+							});
+							scrollTriggersCreated = false;
+						}
+						section.classList.add("is-short");
+					} else {
+						// Normal behavior: remove the class and set up scroll triggers
+						section.classList.remove("is-short");
+
+						if (!scrollTriggersCreated) {
+							scrollTriggersCreated = true;
+
+							// Set the parent component to be pinned
+							gsap.to(section, {
+								scrollTrigger: {
+									trigger: section, // trigger is the whole section
+									id: "values",
+									start: "top top",
+									end: "bottom bottom",
+									pin: ".values_pin", // we want to pin the RHS of the section - ie make it sticky
+									pinSpacing: false,
+								},
+							});
+
+							// Set up scroll triggers for each value
+							values.forEach((value, index) => {
+								let title = titles[index];
+								let body = bodies[index];
+								let image = images[index];
+
+								let start = "top 70%";
+								let end = "bottom 70%";
+								let markers = false;
+								if (index == 0) {
+									start = "top 150%";
+								}
+								if (index == values.length - 1) {
+									end = "bottom top";
+								}
+
+								// add a scrolltrigger for each image that toggles an active class on/off the corresponding title and body elements
+								ScrollTrigger.create({
+									id: "values-img-" + index,
+									trigger: image,
+									start: start,
+									end: end,
+									toggleClass: {
+										targets: [title, body],
+										className: "is-active",
+									},
+									scrub: true,
+									markers: markers,
+								});
+							});
+						}
 					}
-					if (index == values.length - 1) {
-						end = "bottom top";
-					}
+				};
 
-					// add a scrolltrigger for each image that toggles an active class on/off the corresponding title and body elements
-					ScrollTrigger.create({
-						trigger: image,
-						start: start,
-						end: end,
-						toggleClass: { targets: [title, body], className: "is-active" },
-						scrub: true,
-						markers: markers,
-					});
-				});
+				// Call on load and resize
+				checkContentHeight();
+				window.addEventListener("resize", checkContentHeight);
 
 				// Account for the height of the header
 				const header = document.querySelector(".header");
