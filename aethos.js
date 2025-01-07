@@ -2781,8 +2781,6 @@ function main() {
 		// only run for larger screen
 		let mm = gsap.matchMedia();
 
-		// add a media query. When it matches, the associated function will run
-
 		// get all values components on page
 		let valuesSections = document.querySelectorAll(".values_inner");
 		valuesSections.forEach((section) => {
@@ -2828,13 +2826,18 @@ function main() {
 				const values_pin = section.querySelector(".values_pin");
 				const values_pin_top = section.querySelector(".values_pin-top");
 				const values_pin_bottom = section.querySelector(".values_pin-bottom");
-				var h =
-					gsap.getProperty(values_pin, "height") -
-					gsap.getProperty(values_pin, "padding-top") -
-					gsap.getProperty(values_pin, "padding-bottom");
-				gsap.set(images[images.length - 1], {
-					height: h,
-				});
+
+				setLastImgHeight();
+
+				function setLastImgHeight() {
+					var h =
+						gsap.getProperty(values_pin, "height") -
+						gsap.getProperty(values_pin, "padding-top") -
+						gsap.getProperty(values_pin, "padding-bottom");
+					gsap.set(images[images.length - 1], {
+						height: h,
+					});
+				}
 
 				// Track whether triggers have already been created
 				let scrollTriggersCreated = false;
@@ -2845,7 +2848,6 @@ function main() {
 					let viewportHeight = window.innerHeight;
 
 					if (pinHeight > viewportHeight) {
-						console.log("too tall!");
 						if (scrollTriggersCreated) {
 							// Content too tall: kill scroll triggers and add class
 							ScrollTrigger.getAll().forEach((trigger) => {
@@ -2859,12 +2861,15 @@ function main() {
 							scrollTriggersCreated = false;
 						}
 						section.classList.add("is-short");
+						gsap.set(images[images.length - 1], { clearProps: "height" }); // reset height of last image
 					} else {
 						// Normal behavior: remove the class and set up scroll triggers
 						section.classList.remove("is-short");
 
 						if (!scrollTriggersCreated) {
 							scrollTriggersCreated = true;
+
+							setLastImgHeight(); // reset height again
 
 							// Set the parent component to be pinned
 							gsap.to(section, {
