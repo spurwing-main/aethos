@@ -4010,13 +4010,12 @@ function main() {
 						faq.classList.add("is-open");
 
 						// Open content using GSAP
-						// gsap.set(content, { height: "auto" });
-						// const autoHeight = content.clientHeight;
+						const contentHeight = content.scrollHeight; // Get natural height
 						gsap.fromTo(
 							content,
 							{ height: 0 },
 							{
-								height: "auto",
+								height: contentHeight,
 								duration: 0.6,
 								ease: "power4.inOut",
 								onComplete: () => {
@@ -4024,8 +4023,30 @@ function main() {
 								},
 							}
 						);
+
+						// gsap.fromTo(
+						// 	content,
+						// 	{ height: 0 },
+						// 	{
+						// 		height: "auto",
+						// 		duration: 0.6,
+						// 		ease: "power4.inOut",
+						// 		onComplete: () => {
+						// 			ScrollTrigger.refresh();
+						// 		},
+						// 	}
+						// );
 					}
 				});
+			});
+
+			// on resize, update height of open items
+			window.addEventListener("resize", () => {
+				document
+					.querySelectorAll(".faq-item.is-open .faq_content")
+					.forEach((content) => {
+						content.style.height = "auto";
+					});
 			});
 		});
 	};
