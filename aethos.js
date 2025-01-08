@@ -3985,6 +3985,9 @@ function main() {
 								height: 0,
 								duration: 0.6,
 								// onComplete: () => other_faq.classList.remove("is-active"),
+								onComplete: () => {
+									ScrollTrigger.refresh();
+								},
 							});
 						}
 					});
@@ -3996,6 +3999,9 @@ function main() {
 							height: 0,
 							duration: 0.6,
 							ease: "power4.inOut",
+							onComplete: () => {
+								ScrollTrigger.refresh();
+							},
 							// onComplete: () => faq.classList.remove("is-active"),
 						});
 						faq.classList.remove("is-active", "is-open");
@@ -4009,7 +4015,14 @@ function main() {
 						gsap.fromTo(
 							content,
 							{ height: 0 },
-							{ height: "auto", duration: 0.6, ease: "power4.inOut" }
+							{
+								height: "auto",
+								duration: 0.6,
+								ease: "power4.inOut",
+								onComplete: () => {
+									ScrollTrigger.refresh();
+								},
+							}
 						);
 					}
 				});
