@@ -663,6 +663,10 @@ function main() {
 		const urlParams = new URLSearchParams(window.location.search);
 		const forceLoader = urlParams.has("forceLoader");
 
+		let loader = document.querySelector(".site-loader");
+		if (!loader) {
+			return;
+		}
 		if (
 			!forceLoader &&
 			(aethos.settings.siteLoader !== "enabled" || !isFirstVisitIn30Days())
@@ -670,6 +674,7 @@ function main() {
 			aethos.log("Page loader not running");
 			// Store current visit time
 			sessionStorage.setItem("aethos_last_visit", Date.now());
+			loader.style.display = "none";
 			return;
 		}
 
@@ -684,7 +689,6 @@ function main() {
 		});
 
 		let header = document.querySelector(".header");
-		let loader = document.querySelector(".site-loader");
 		let lottie_container = document.querySelector(".site-loader_lottie");
 		let pageBg = aethos.helpers.getProp("--color--page-bg");
 		let header_logo_wrap = header?.querySelector(".header-bar_logo-wrap");
@@ -2306,6 +2310,7 @@ function main() {
 		}
 
 		// CMS Carousels
+		// loads carousel elements from Components Block template page to (1) get around nesting limits and (2) improve performance
 		function loadCMSCarousels() {
 			document
 				.querySelectorAll("[aethos-cms-carousel='enabled']")
@@ -2367,214 +2372,6 @@ function main() {
 		roomCardCarousel();
 		loadCMSCarousels();
 	};
-
-	/* create sliders */
-	// aethos.anim.loadSliders = function () {
-	// 	/* splide defaults */
-	// 	Splide.defaults = {
-	// 		perMove: 1,
-	// 		gap: "0rem",
-	// 		arrows: false,
-	// 		pagination: false,
-	// 		focus: "center",
-	// 		flickPower: 400,
-	// 		speed: 600,
-	// 		dragAngleThreshold: 60,
-	// 		autoWidth: false,
-	// 		rewind: false,
-	// 		rewindSpeed: 400,
-	// 		waitForTransition: false,
-	// 		updateOnMove: true,
-	// 		trimSpace: "move" /* removes space at end */,
-	// 		type: "slide",
-	// 		drag: "free" /* required to disable snapping */,
-	// 		snap: false /* required to disable snapping */,
-	// 		autoWidth: false,
-	// 		autoplay: false,
-	// 	};
-
-	// 	function initializeSplide({
-	// 		selector,
-	// 		options,
-	// 		useExtensions = false,
-	// 		useProgressBar = false,
-	// 	}) {
-	// 		let targets = document.querySelectorAll(selector);
-	// 		let splides = [];
-
-	// 		const isMobile = () => window.innerWidth <= aethos.breakpoints.mbl;
-
-	// 		targets.forEach((target) => {
-	// 			let splide = new Splide(target, options);
-
-	// 			let list = target.querySelector(".splide__list");
-	// 			let track = target.querySelector(".splide__track");
-
-	// 			track.style.overscrollBehavior = "none";
-
-	// 			let progressWrapper, bar, observer;
-	// 			const enableProgressBar = () => {
-	// 				progressWrapper = target.querySelector(".progress");
-	// 				bar = target.querySelector(".progress_bar");
-
-	// 				if (!bar || !progressWrapper || !list) return;
-
-	// 				let lastTransform = "";
-
-	// 				// Helper function to calculate progress rate
-	// 				const getRate = () => {
-	// 					const { Layout, Move, Direction, Slides } = splide.Components;
-	// 					const position = Direction.orient(Move.getPosition());
-	// 					// const base = Layout.listSize(); // Visible size of the slider
-	// 					const base = Layout.sliderSize(); // Computed size of the slider
-	// 					const containerW = target.getBoundingClientRect().width;
-	// 					adjustedBase = base - containerW;
-
-	// 					let rate = 0;
-	// 					if (splide.options.type === "loop") {
-	// 						rate = Math.abs(
-	// 							Math.abs(position / adjustedBase) - 1 / Slides.get(true).length
-	// 						);
-	// 					} else {
-	// 						rate = position / adjustedBase + 0 / splide.length;
-	// 					}
-	// 					// console.log(
-	// 					// 	`Base: ${base}, Adusted base: ${adjustedBase}, Position: ${position}, Rate: ${rate},`
-	// 					// );
-	// 					return rate;
-	// 				};
-
-	// 				// Update the progress bar position
-	// 				const updateProgressBar = () => {
-	// 					const rate = getRate();
-
-	// 					// Calculate the maximum translation value
-	// 					const maxTranslateX = progressWrapper.offsetWidth - bar.offsetWidth;
-
-	// 					// Calculate the current position of the bar
-	// 					const translateX = rate * maxTranslateX;
-
-	// 					// Apply the transform
-	// 					bar.style.transform = `translateX(${translateX}px)`;
-	// 				};
-
-	// 				// Detect changes to the .splide__list element's transform
-	// 				const observer = new MutationObserver(() => {
-	// 					const currentTransform = list.style.transform;
-
-	// 					if (currentTransform !== lastTransform) {
-	// 						lastTransform = currentTransform;
-	// 						updateProgressBar();
-	// 					}
-	// 				});
-
-	// 				// Observe changes to the style attribute
-	// 				observer.observe(list, {
-	// 					attributes: true,
-	// 					attributeFilter: ["style"],
-	// 				});
-
-	// 				// Clean up when not needed
-	// 				splide.on("destroy", () => {
-	// 					observer.disconnect();
-	// 				});
-
-	// 				// Initial update
-	// 				splide.on("mounted", () => {
-	// 					updateProgressBar();
-	// 				});
-	// 			};
-
-	// 			const disableProgressBar = () => {
-	// 				if (observer) observer.disconnect();
-	// 				if (bar) bar.style.transform = ""; // Reset the bar position
-	// 			};
-
-	// 			// Handle mobile or desktop
-	// 			const handleResize = () => {
-	// 				if (isMobile()) {
-	// 					disableProgressBar();
-	// 				} else {
-	// 					enableProgressBar();
-	// 				}
-	// 			};
-
-	// 			// Initial check
-	// 			if (!isMobile() && useProgressBar) {
-	// 				enableProgressBar();
-	// 			}
-
-	// 			// Listen for window resize
-	// 			window.addEventListener("resize", handleResize);
-
-	// 			splide.on("destroy", () => {
-	// 				window.removeEventListener("resize", handleResize);
-	// 			});
-
-	// 			// Mount splide instance with or without extensions
-	// 			if (useExtensions) {
-	// 				splide.mount(window.splide.Extensions);
-	// 			} else {
-	// 				splide.mount();
-	// 			}
-
-	// 			splides.push(splide);
-	// 		});
-
-	// 		return splides;
-	// 	}
-
-	// 	/* declare slider selectors, options and any callback functions */
-	// 	const sliders = [
-	// 		{
-	// 			selector: ".carousel",
-	// 			options: {
-	// 				type: "slide",
-	// 				autoWidth: true,
-	// 				autoScroll: {
-	// 					autoStart: false,
-	// 				},
-	// 				focus: 0,
-	// 				trimSpace: "move",
-	// 			},
-	// 			useExtensions: false,
-	// 			useProgressBar: true,
-	// 		},
-	// 		{
-	// 			selector: ".carousel-square_inner",
-	// 			options: {
-	// 				type: "slide",
-	// 				autoWidth: true,
-	// 				autoScroll: {
-	// 					autoStart: false,
-	// 				},
-	// 				focus: 0,
-	// 				trimSpace: "move",
-	// 				arrows: true,
-	// 			},
-	// 			useExtensions: false,
-	// 			useProgressBar: false,
-	// 		},
-	// 		{
-	// 			selector: ".c-carousel-loose",
-	// 			options: {
-	// 				type: "slide",
-	// 				autoWidth: true,
-	// 				autoScroll: {
-	// 					autoStart: false,
-	// 				},
-	// 				focus: 0,
-	// 				trimSpace: "move",
-	// 				arrows: false,
-	// 			},
-	// 			useExtensions: false,
-	// 			useProgressBar: true,
-	// 		},
-	// 	];
-
-	// 	/* loop through and initialize each slider */
-	// 	sliders.forEach(initializeSplide);
-	// };
 
 	aethos.anim.loadSliders = function () {
 		if (!aethos.settings.dev.splide) {
