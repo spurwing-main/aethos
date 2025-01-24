@@ -99,8 +99,8 @@ function main() {
 		}
 	})();
 
-	/* load destination themes */
-	(function loadDestinationThemes() {
+	/* load destination data */
+	(function loadDestinationData() {
 		const destinations = document.querySelectorAll(".dest-data_item");
 
 		destinations.forEach((item) => {
@@ -108,13 +108,25 @@ function main() {
 			const theme = item.getAttribute("aethos-theme");
 			const name = item.getAttribute("aethos-destination-name") || slug;
 			const status = item.getAttribute("aethos-status") || "active";
+			const instagram = item.getAttribute("aethos-destination-ig");
+			const facebook = item.getAttribute("aethos-destination-fb");
 
 			aethos.destinations[slug] = {
 				name: name,
 				slug: slug,
 				theme: theme,
 				status: status,
+				instagram: instagram,
+				facebook: facebook,
 			};
+
+			if (slug == aethos.settings.destinationSlug) {
+				aethos.settings.destinationName = name;
+				aethos.settings.destinationTheme = theme;
+				aethos.settings.destinationStatus = status;
+				aethos.settings.destinationInstagram = instagram;
+				aethos.settings.destinationFacebook = facebook;
+			}
 		});
 
 		aethos.log("Destination data loaded");
@@ -1536,11 +1548,36 @@ function main() {
 			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
 
 			menus.forEach((menu) => {
-				// set offset to a reasonable starting pos
-				menu.style.setProperty(
-					underlineOffsetProp,
-					`${window.innerWidth * 0.5}px`
-				);
+				// Find the active link and set the underline position initially
+				const links = Array.from(menu.querySelectorAll("a"));
+				const currentPath = window.location.pathname;
+
+				const activeLink = links.find((link) => {
+					try {
+						const linkPath = new URL(link.href, window.location.origin)
+							.pathname;
+						console.log(linkPath);
+						return linkPath === currentPath; // Compare only the path
+					} catch (error) {
+						// Skip invalid or relative links
+						return false;
+					}
+				});
+
+				if (activeLink) {
+					activeLink.classList.add("active");
+				}
+
+				// Set underline for the active link
+				if (activeLink) {
+					menuHover(menu, activeLink, underlineWidthProp, underlineOffsetProp);
+				} else {
+					// set offset to a reasonable starting pos
+					menu.style.setProperty(
+						underlineOffsetProp,
+						`${window.innerWidth * 0.5}px`
+					);
+				}
 
 				menu.addEventListener("mouseover", (event) => {
 					if (
@@ -1574,7 +1611,16 @@ function main() {
 				});
 
 				menu.addEventListener("mouseleave", () => {
-					menu.style.setProperty(underlineWidthProp, "0");
+					if (activeLink) {
+						menuHover(
+							menu,
+							activeLink,
+							underlineWidthProp,
+							underlineOffsetProp
+						);
+					} else {
+						menu.style.setProperty(underlineWidthProp, "0");
+					}
 				});
 			});
 		}
@@ -2449,7 +2495,7 @@ function main() {
 				};
 
 				const enableProgressBar = () => {
-					if (!bar || !progressWrapper) return;
+					if (!list || !bar || !progressWrapper) return;
 
 					let lastTransform = "";
 					observer = new MutationObserver(() => {
@@ -4434,6 +4480,65 @@ function main() {
 		handleViewportChange(mediaQuery);
 	};
 
+	aethos.functions.updateDestinationSocials = function () {
+		var social_menu = document.querySelector(".footer_menu.is-socials");
+
+		// check menu exists
+		if (!social_menu) {
+			console.log("return 1");
+			return;
+		}
+
+		// check dest has socials
+		if (
+			!aethos.settings.destinationFacebook &&
+			!aethos.settings.destinationInstagram
+		) {
+			console.log("return 2");
+
+			return;
+		}
+
+		// remove existing items
+		var existingItems = social_menu.querySelectorAll(".footer_link");
+		var existingParent;
+		existingItems.forEach((item) => {
+			existingParent = item.parentElement; // get parent, so we know where to put new items
+			item.remove();
+			console.log("3");
+		});
+
+		// add new items
+		function createSocialLink(href, text) {
+			var link = document.createElement("a");
+			link.classList.add("footer_link");
+			link.href = href;
+			link.textContent = text;
+			link.target = "_blank";
+			link.rel = "noopener";
+			return link;
+		}
+
+		if (aethos.settings.destinationFacebook) {
+			console.log("4");
+			var fbLink = createSocialLink(
+				aethos.settings.destinationFacebook,
+				"Facebook"
+			);
+			existingParent.appendChild(fbLink);
+		}
+
+		if (aethos.settings.destinationInstagram) {
+			console.log("5");
+
+			var igLink = createSocialLink(
+				aethos.settings.destinationInstagram,
+				"Instagram"
+			);
+			existingParent.appendChild(igLink);
+		}
+	};
+
 	// watch body for nav open classes so we can toggle smoother
 	// aethos.functions.observeBody = function () {
 	// 	return;
@@ -4493,6 +4598,7 @@ function main() {
 	aethos.functions.handleCMSLoad();
 	aethos.functions.handleCMSFilter();
 	aethos.functions.hideEmptySections();
+	aethos.functions.updateDestinationSocials();
 	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
