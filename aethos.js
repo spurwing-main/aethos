@@ -2470,10 +2470,19 @@ function main() {
 			const targets = document.querySelectorAll(selector);
 
 			targets.forEach((target) => {
+				const track = target.querySelector(".splide__track");
+				const list = target.querySelector(".splide__list");
+				const slides = target.querySelectorAll(".splide__slide");
+
+				// Check if the required elements are present
+				if (!track || !list || slides.length === 0) {
+					console.warn(`Incomplete Splide structure for target:`, target);
+					return; // Skip this target if any required element is missing
+				}
+
 				const splide = new Splide(target, options);
 
 				// Progress Bar Logic
-				let list = target.querySelector(".splide__list");
 				let progressWrapper = target.querySelector(".progress");
 				let bar = target.querySelector(".progress_bar");
 				let observer;
