@@ -3558,6 +3558,32 @@ function main() {
 			});
 	};
 
+	// Update elements with a certain attribute to the current language code on Weglot language change
+	aethos.functions.langUpdate = function () {
+		// Check if Weglot is defined
+		if (!Weglot) {
+			console.warn("Weglot is not available.");
+			return;
+		}
+
+		// Get all elements with the attribute
+		const currentLangEls = document.querySelectorAll(
+			"[aethos-lang-current='true']"
+		);
+
+		// Listen for the Weglot language change event
+		Weglot.on("languageChanged", function (newLang, prevLang) {
+			console.log(
+				"The language on the page just changed to (code): " + newLang
+			);
+
+			// Update all elements with the attribute to the new language code
+			currentLangEls.forEach((el) => {
+				el.textContent = newLang;
+			});
+		});
+	};
+
 	/* update things when CMS load fires */
 	aethos.functions.handleCMSFilter = function () {
 		window.fsAttributes = window.fsAttributes || [];
@@ -4612,6 +4638,7 @@ function main() {
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
+	aethos.functions.langUpdate();
 
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
