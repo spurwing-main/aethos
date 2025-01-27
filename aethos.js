@@ -3105,16 +3105,8 @@ function main() {
 
 		targets.forEach((target) => {
 			const slug = target.getAttribute("aethos-item-slug");
-			const type = target.getAttribute("aethos-item-type");
-			let sourcePath;
-
-			if (type == "experience") {
-				sourcePath = "/experiences/" + slug;
-			} else if (type == "wellness") {
-				sourcePath = "/wellness/" + slug;
-			} else {
-				return; // If type is not recognized, exit the function for this target
-			}
+			// const type = target.getAttribute("aethos-item-type");
+			let sourcePath = "/listings/" + slug;
 
 			// Create a fetch promise for each target
 			const fetchPromise = fetch(sourcePath)
@@ -3479,11 +3471,7 @@ function main() {
 					const slug = currentHref.split("/").pop();
 
 					// Check if the link is for experiences, happenings, or wellness
-					if (
-						currentHref.startsWith("/experiences/") ||
-						currentHref.startsWith("/happenings/") ||
-						currentHref.startsWith("/wellness/")
-					) {
+					if (currentHref.startsWith("/listings/")) {
 						const updatedHref = `/listing?slug=${slug}&dest=${destinationSlug}`;
 						link.setAttribute("href", updatedHref);
 					} else {
