@@ -3152,7 +3152,7 @@ function main() {
 			});
 	};
 
-	/* add direct links to experiene filters */
+	/* Add direct links to experience filters */
 	aethos.functions.addExperienceFilterLinks = function () {
 		const blocks = document.querySelectorAll("[aethos-experience-category]");
 
@@ -3178,7 +3178,12 @@ function main() {
 
 			// Set the button href with the correct link
 			try {
-				button.href = `/destination-all-experiences/${destinationSlug}?category=${experienceCategory}`;
+				// Encode the experience category to handle special characters and spaces
+				const encodedCategory = encodeURIComponent(experienceCategory).replace(
+					/%20/g,
+					"+"
+				);
+				button.href = `/destination-all-experiences/${destinationSlug}?category=${encodedCategory}`;
 			} catch (error) {
 				console.error("Error setting href for button:", error);
 			}
