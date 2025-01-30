@@ -1,5 +1,4 @@
 function main() {
-	console.log("main()");
 	aethos.settings.dev = aethos.settings.dev || {};
 
 	// Function to get URL parameters
@@ -11,7 +10,7 @@ function main() {
 	// Update settings based on parameters, default to true
 	aethos.settings.dev.splide = getParam("splide") !== "off";
 	aethos.settings.dev.smooth = getParam("smooth") !== "off";
-	aethos.settings.dev.navReveal = getParam("navReveal") !== "off";
+	aethos.settings.dev.headerReveal = getParam("headerReveal") !== "off";
 	aethos.settings.dev.all = getParam("all") !== "off";
 	aethos.log("Updated aethos.settings.dev:", aethos.settings.dev);
 
@@ -313,7 +312,7 @@ function main() {
 		localStorage.setItem("aethos_transition", "false");
 
 		aethos.transition = {};
-		console.log("Running page transition setup");
+		aethos.log("Running page transition setup");
 
 		aethos.transition.themes = {
 			city: {
@@ -1010,11 +1009,14 @@ function main() {
 			aethos.helpers.pauseScroll(false);
 			// update
 			aethos.nav.isNavOpen = false;
+			// aethos.nav.forceShowHeaderOff();
 		};
 
 		// Open nav
 		aethos.nav.open = function () {
 			aethos.log("open nav");
+			// force open header
+			// aethos.nav.forceShowHeaderOn();
 			// Play open animation
 			aethos.nav.timelines.open.play(0);
 			// add class
@@ -1114,92 +1116,17 @@ function main() {
 		// handleResize();
 	};
 
-	aethos.anim.navReveal_alt = function () {
-		const nav = document.querySelector(".header");
-
-		if (!nav) {
-			console.warn('Navigation element with class ".nav" not found.');
+	/* Header hide/show */
+	aethos.anim.headerReveal = function () {
+		if (!aethos.settings.dev.headerReveal) {
 			return;
 		}
 
-		if (!aethos.settings.theme || aethos.settings.theme == "default") {
-			// Pin the navigation bar using ScrollTrigger
-			ScrollTrigger.create({
-				trigger: nav,
-				start: "top top",
-				end: "max",
-				pin: true,
-				pinSpacing: false, // Prevents adding space below the pinned element
-			});
-
-			// GSAP Timeline for Navigation Animation
-			const navAnim = gsap.timeline({ paused: true }).to(nav, {
-				yPercent: -100, // Moves nav out of view
-				duration: 0.5,
-				ease: "power2.inOut",
-			});
-
-			// Scroll State Management
-			let lastScrollY = window.scrollY;
-			const deadzone = 20;
-			let accumulatedDelta = 0;
-
-			// Scroll Event Handler
-			function onScroll() {
-				const currentScrollY = window.scrollY;
-				const deltaY = currentScrollY - lastScrollY;
-
-				accumulatedDelta += deltaY;
-
-				if (Math.abs(accumulatedDelta) >= deadzone) {
-					if (accumulatedDelta > 0 && !navAnim.isActive()) {
-						// Scroll Down: Hide Nav
-						navAnim.play();
-					} else if (accumulatedDelta < 0 && !navAnim.isActive()) {
-						// Scroll Up: Show Nav
-						navAnim.reverse();
-					}
-					accumulatedDelta = 0;
-				}
-
-				lastScrollY = currentScrollY;
-			}
-
-			// Throttle the Scroll Handler using requestAnimationFrame
-			let ticking = false;
-			window.addEventListener("scroll", function () {
-				if (!ticking) {
-					window.requestAnimationFrame(() => {
-						onScroll();
-						ticking = false;
-					});
-					ticking = true;
-				}
-			});
-		} else if (aethos.settings.theme == "club") {
-			aethos.navScrollTrigger = ScrollTrigger.create({
-				start: "top -1px",
-				end: "max",
-				pin: ".club-header",
-			});
-		} else {
-			aethos.navScrollTrigger = ScrollTrigger.create({
-				start: "top -1px",
-				end: "max",
-				pin: ".dest-header",
-			});
-		}
-	};
-
-	/* nav hide/show */
-	aethos.anim.navReveal = function () {
-		if (!aethos.settings.dev.navReveal) {
-			return;
-		}
+		aethos.nav.headerForcedShown = false;
 
 		// if we are on a non-destination page...
 		if (!aethos.settings.theme || aethos.settings.theme == "default") {
-			const navReveal = gsap
+			aethos.nav.headerRevealAnim = gsap
 				.from(".header", {
 					yPercent: -100,
 					paused: true,
@@ -1208,27 +1135,32 @@ function main() {
 				.progress(1);
 
 			let lastScrollY = window.scrollY; // Store the last scroll position
-			const scrollThreshold = 50; // Pixel distance to trigger nav reveal
+			const scrollThreshold = 50; // Pixel distance to trigger header reveal
 			let scrollBuffer = 0; // Accumulated scroll-up distance
 
-			aethos.navScrollTrigger = ScrollTrigger.create({
+			aethos.headerScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".header",
 				onUpdate: (self) => {
+					// prevent header from hiding if it was forced to show
+					if (aethos.nav.headerForcedShown) {
+						return;
+					}
+
 					const currentScrollY = window.scrollY;
 					const deltaY = currentScrollY - lastScrollY;
 
 					if (deltaY > 0) {
-						// Scrolling Down: Hide the nav and reset buffer
-						navReveal.reverse();
+						// Scrolling Down: Hide the header and reset buffer
+						aethos.nav.headerRevealAnim.reverse();
 						scrollBuffer = 0;
 					} else if (deltaY < 0) {
-						// Scrolling Up: Accumulate buffer and show nav after threshold
+						// Scrolling Up: Accumulate buffer and show header after threshold
 						scrollBuffer -= deltaY; // deltaY is negative, so subtracting increases the buffer
 						if (scrollBuffer >= scrollThreshold) {
-							navReveal.play();
-							scrollBuffer = 0; // Reset buffer after showing nav
+							aethos.nav.headerRevealAnim.play();
+							scrollBuffer = 0; // Reset buffer after showing header
 						}
 					}
 
@@ -1236,18 +1168,39 @@ function main() {
 				},
 			});
 		} else if (aethos.settings.theme == "club") {
-			aethos.navScrollTrigger = ScrollTrigger.create({
+			aethos.headerScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".club-header",
 			});
 		} else {
-			aethos.navScrollTrigger = ScrollTrigger.create({
+			aethos.headerScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".dest-header",
 			});
 		}
+	};
+
+	// function to force show header
+	aethos.nav.forceShowHeaderOn = function () {
+		console.log("force show header ON");
+		aethos.nav.headerForcedShown = true;
+		// Ensure animation exists before playing
+		if (aethos.nav.headerRevealAnim) {
+			gsap.set(".header", { clearProps: "yPercent" });
+		}
+	};
+
+	// function to force hide header
+	aethos.nav.forceShowHeaderOff = function () {
+		console.log("force show header OFF");
+
+		aethos.nav.headerForcedShown = false;
+		// // Ensure animation exists before reversing
+		// if (aethos.nav.headerRevealAnim) {
+		// 	gsap.set(".header", { clearProps: "yPercent" });
+		// }
 	};
 
 	/* Show nav images on nav link hover */
@@ -1524,17 +1477,6 @@ function main() {
 			}
 		}
 
-		function menuHover(menu, target, underlineWidthProp, underlineOffsetProp) {
-			const menuRect = menu.getBoundingClientRect();
-			const targetRect = target.getBoundingClientRect();
-			// Calculate the offset relative to the menu
-			const offsetX = targetRect.left - menuRect.left;
-
-			// Set underline width and position properties
-			menu.style.setProperty(underlineWidthProp, `${target.offsetWidth}px`);
-			menu.style.setProperty(underlineOffsetProp, `${offsetX}px`);
-		}
-
 		function addNavigationHover(
 			menuSelector,
 			underlineWidthProp,
@@ -1546,23 +1488,24 @@ function main() {
 			const topNav_selector = ".dest-nav_top";
 			const topNav_underlineWidthProp = "--dest-nav-underline-width";
 			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+			const listClass = ".dest-nav_list";
+			const currentPath = window.location.pathname;
 
 			menus.forEach((menu) => {
 				// Find the active link and set the underline position initially
-				const links = Array.from(menu.querySelectorAll("a"));
-				const currentPath = window.location.pathname;
 
-				const activeLink = links.find((link) => {
-					try {
-						const linkPath = new URL(link.href, window.location.origin)
-							.pathname;
-						console.log(linkPath);
-						return linkPath === currentPath; // Compare only the path
-					} catch (error) {
-						// Skip invalid or relative links
-						return false;
-					}
-				});
+				let links;
+				let activeLink;
+
+				if (menu.classList.contains("dest-nav_top")) {
+					links = Array.from(
+						menu.querySelectorAll(
+							":not(.w-condition-invisible) > a:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href='']):not(.is-child)" // Exclude invisible links and brand link, and empty hrefs, and child links
+						)
+					);
+
+					activeLink = getActiveLink(links, currentPath);
+				}
 
 				if (activeLink) {
 					activeLink.classList.add("active");
@@ -1570,7 +1513,14 @@ function main() {
 
 				// Set underline for the active link
 				if (activeLink) {
-					menuHover(menu, activeLink, underlineWidthProp, underlineOffsetProp);
+					menuHover(
+						menu,
+						activeLink,
+						underlineWidthProp,
+						underlineOffsetProp,
+						listClass,
+						false // no transition for active link initially
+					);
 				} else {
 					// set offset to a reasonable starting pos
 					menu.style.setProperty(
@@ -1620,6 +1570,20 @@ function main() {
 						);
 					} else {
 						menu.style.setProperty(underlineWidthProp, "0");
+					}
+				});
+
+				// on window resize, update the underline position
+				window.addEventListener("resize", () => {
+					if (activeLink) {
+						menuHover(
+							menu,
+							activeLink,
+							underlineWidthProp,
+							underlineOffsetProp,
+							listClass,
+							false
+						);
 					}
 				});
 			});
@@ -2982,7 +2946,6 @@ function main() {
 
 		// fit map to markers
 		if (aethos.map.primaryLatLong) {
-			console.log(aethos.map.primaryLatLong);
 			aethos.map.map.setView(aethos.map.primaryLatLong, 11);
 		} else {
 			aethos.map.map.fitBounds(markerLayer.getBounds());
@@ -4250,49 +4213,72 @@ function main() {
 	};
 
 	/* underline effect on hover for club nav */
+	/* simplified version of the destination nav hover code */
 	aethos.anim.addClubNavHover = function () {
 		const menus = document.querySelectorAll(".club-nav");
+		const underlineWidthProp = "--club-nav-underline-width";
+		const underlineOffsetProp = "--club-nav-underline-offset-x";
+		const listClass = ".club-nav_list";
 
 		menus.forEach((menu) => {
-			/* on load, set offset to a reasonable midway number to avoid underline sliding in from 0px on first hover */
-			const menuRect = menu.getBoundingClientRect();
-			menu.style.setProperty(
-				"--club-nav-underline-offset-x",
-				`${menuRect.right / 2}px`
-			);
+			// Find the active link and set the underline position initially
+			const links = Array.from(menu.querySelectorAll(".club-nav_item a"));
+			const currentPath = window.location.pathname;
+			let activeLink = getActiveLink(links, currentPath);
+
+			if (activeLink) {
+				activeLink.classList.add("active");
+			}
+
+			// Set underline for the active link
+			if (activeLink) {
+				menuHover(
+					menu,
+					activeLink,
+					underlineWidthProp,
+					underlineOffsetProp,
+					listClass,
+					false // no transition for active link initially
+				);
+			} else {
+				// set offset to a reasonable starting pos
+				menu.style.setProperty(
+					underlineOffsetProp,
+					`${window.innerWidth * 0.5}px`
+				);
+			}
+
 			menu.addEventListener("mouseover", (event) => {
-				// Check if screen width is 992px or above
-				if (
-					window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
-						.matches
-				) {
-					if (event.target.classList.contains("club-nav_link-text")) {
-						const targetRect = event.target.getBoundingClientRect();
-
-						// Calculate the offset relative to the menu
-						const offsetX = targetRect.left - menuRect.left;
-
-						// Set underline width and position properties
-						menu.style.setProperty(
-							"--club-nav-underline-width",
-							`${event.target.offsetWidth}px`
-						);
-
-						menu.style.setProperty(
-							"--club-nav-underline-offset-x",
-							`${offsetX}px`
-						);
-					}
+				if (event.target.classList.contains("club-nav_link-text")) {
+					// trigger hover on this item
+					menuHover(
+						menu,
+						event.target,
+						underlineWidthProp,
+						underlineOffsetProp
+					);
 				}
 			});
 
 			menu.addEventListener("mouseleave", () => {
-				// Only reset underline if screen width is 992px or above
-				if (
-					window.matchMedia(`(min-width: ${aethos.breakpoints.tab + 1}px)`)
-						.matches
-				) {
-					menu.style.setProperty("--club-nav-underline-width", "0");
+				if (activeLink) {
+					menuHover(menu, activeLink, underlineWidthProp, underlineOffsetProp);
+				} else {
+					menu.style.setProperty(underlineWidthProp, "0");
+				}
+			});
+
+			// on window resize, update the underline position
+			window.addEventListener("resize", () => {
+				if (activeLink) {
+					menuHover(
+						menu,
+						activeLink,
+						underlineWidthProp,
+						underlineOffsetProp,
+						listClass,
+						false
+					);
 				}
 			});
 		});
@@ -4361,100 +4347,6 @@ function main() {
 		});
 	};
 
-	// /* toggle normalise and smooth scroll depending on whether nav is open */
-	// aethos.functions.toggleNormaliseScroll = function () {
-	// 	aethos.smoother = null;
-
-	// 	// Check if any navigation menu is open
-	// 	const isNavOpen = () =>
-	// 		document.body.classList.contains("nav-open") ||
-	// 		document.body.classList.contains("dest-nav-open") ||
-	// 		document.body.classList.contains("loader-playing") ||
-	// 		document.body.classList.contains("club-nav-open");
-
-	// 	// Initialize smooth scroll
-	// 	const initSmoothScroll = () => {
-	// 		if (!aethos.smoother) {
-	// 			aethos.smoother = ScrollSmoother.create({
-	// 				smooth: 1,
-	// 				effects: true,
-	// 				content: "#smooth-content",
-	// 				wrapper: "#smooth-wrapper",
-	// 				onUpdate: () => {},
-	// 				onRefresh: () => {
-	// 					ScrollTrigger.refresh();
-	// 				},
-	// 			});
-	// 			console.log("Smooth Scroll initialized.");
-	// 		}
-	// 	};
-
-	// 	// Kill smooth scroll
-	// 	const killSmoothScroll = () => {
-	// 		if (aethos.smoother) {
-	// 			aethos.smoother.paused(true);
-	// 		}
-	// 	};
-
-	// 	// Toggle GSAP's normalizeScroll and smoothScroll based on the nav state
-	// 	const toggleScrollFeatures = () => {
-	// 		const scrollEnabled = !isNavOpen();
-
-	// 		// Toggle normalizeScroll
-	// 		ScrollTrigger.normalizeScroll(scrollEnabled);
-	// 		console.log(`Normalize Scroll is now ${scrollEnabled ? "ON" : "OFF"}`);
-
-	// 		// Toggle smoothScroll
-	// 		if (scrollEnabled) {
-	// 			initSmoothScroll();
-	// 		} else {
-	// 			killSmoothScroll();
-	// 		}
-	// 	};
-
-	// 	// Observe changes to the body's class list
-	// 	const observer = new MutationObserver(() => toggleScrollFeatures());
-
-	// 	// Start observing the body for attribute changes (class additions/removals)
-	// 	observer.observe(document.body, {
-	// 		attributes: true,
-	// 		attributeFilter: ["class"],
-	// 	});
-
-	// 	// Initialize the correct state on load
-	// 	toggleScrollFeatures();
-	// };
-
-	// // Function to observe changes in the .nav_grid element
-	// aethos.functions.observeNavGridChanges = function () {
-	// 	const navGrid = document.querySelector(".nav_bg");
-
-	// 	if (!navGrid) {
-	// 		console.error(".nav_bg element not found");
-	// 		return;
-	// 	}
-
-	// 	// Create a MutationObserver instance
-	// 	const observer = new MutationObserver(() => {
-	// 		// Use a small delay to ensure layout recalculations are complete
-
-	// 		setTimeout(() => {
-	// 			requestAnimationFrame(() => {
-	// 				console.log("Refreshing ScrollTrigger");
-	// 				ScrollTrigger.refresh();
-	// 			});
-	// 		}, 500); // Adjust delay as necessary for your animations
-	// 	});
-
-	// 	// Observe the target for changes to attributes
-	// 	observer.observe(navGrid, {
-	// 		attributes: true, // Monitor attribute changes
-	// 		attributeFilter: ["style"], // Only watch style changes
-	// 	});
-
-	// 	console.log("MutationObserver set up for .nav_bg");
-	// };
-
 	// Debounce utility function
 	function debounce(func, wait) {
 		let timeout;
@@ -4513,7 +4405,6 @@ function main() {
 
 		// check menu exists
 		if (!social_menu) {
-			console.log("return 1");
 			return;
 		}
 
@@ -4522,8 +4413,6 @@ function main() {
 			!aethos.settings.destinationFacebook &&
 			!aethos.settings.destinationInstagram
 		) {
-			console.log("return 2");
-
 			return;
 		}
 
@@ -4533,7 +4422,6 @@ function main() {
 		existingItems.forEach((item) => {
 			existingParent = item.parentElement; // get parent, so we know where to put new items
 			item.remove();
-			console.log("3");
 		});
 
 		// add new items
@@ -4548,7 +4436,6 @@ function main() {
 		}
 
 		if (aethos.settings.destinationFacebook) {
-			console.log("4");
 			var fbLink = createSocialLink(
 				aethos.settings.destinationFacebook,
 				"Facebook"
@@ -4557,8 +4444,6 @@ function main() {
 		}
 
 		if (aethos.settings.destinationInstagram) {
-			console.log("5");
-
 			var igLink = createSocialLink(
 				aethos.settings.destinationInstagram,
 				"Instagram"
@@ -4567,46 +4452,55 @@ function main() {
 		}
 	};
 
-	// watch body for nav open classes so we can toggle smoother
-	// aethos.functions.observeBody = function () {
-	// 	return;
-	// 	const body = document.body;
+	function getActiveLink(links, currentPath) {
+		if (!links || !currentPath) return;
+		let activeLink = links.find((link) => {
+			try {
+				const linkPath = new URL(link.href, window.location.origin).pathname;
+				return linkPath === currentPath; // Compare only the path
+			} catch (error) {
+				// Skip invalid or relative links
+				return false;
+			}
+		});
+		return activeLink;
+	}
 
-	// 	const observer = new MutationObserver((mutationsList) => {
-	// 		for (const mutation of mutationsList) {
-	// 			if (
-	// 				mutation.type === "attributes" &&
-	// 				mutation.attributeName === "class"
-	// 			) {
-	// 				// Check if the specific class is present
-	// 				if (
-	// 					body.classList.contains("dest-nav-open") ||
-	// 					body.classList.contains("nav-open") ||
-	// 					body.classList.contains("club-nav-open")
-	// 				) {
-	// 					if (aethos.smoother) {
-	// 						// aethos.smoother.paused(true);
-	// 						// ScrollTrigger.normalizeScroll(false);
-	// 						aethos.navScrollTrigger.disable();
-	// 					}
-	// 				} else {
-	// 					if (aethos.smoother) {
-	// 						// aethos.smoother.paused(false);
-	// 						// ScrollTrigger.normalizeScroll(true);
-	// 						aethos.navScrollTrigger.enable();
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	});
+	function menuHover(
+		menu,
+		target,
+		underlineWidthProp,
+		underlineOffsetProp,
+		listClass = "", // class of the list element, needed to disable transitioning
+		withTransition = true // if false, we don't transition
+	) {
+		const menuRect = menu.getBoundingClientRect();
+		const targetRect = target.getBoundingClientRect();
+		// Calculate the offset relative to the menu
+		const offsetX = targetRect.left - menuRect.left;
 
-	// 	observer.observe(body, {
-	// 		attributes: true,
-	// 		attributeFilter: ["class"],
-	// 	});
-	// };
+		// if we are NOT transitioning, disable transition
+		// https://medium.com/building-blocks/how-to-skip-css-transitions-with-jquery-e0155d06e82e
+		if (!withTransition) {
+			const list = menu.querySelector(listClass);
+			if (list) {
+				list.classList.add("no-transition");
+				update();
+				list.offsetHeight; // trigger reflow
+				list.classList.remove("no-transition");
+			} else {
+				console.warn("listClass element not found in", menu);
+			}
+		} else {
+			update();
+		}
 
-	// aethos.functions.observeBody();
+		function update() {
+			// Set underline width and position properties
+			menu.style.setProperty(underlineWidthProp, `${target.offsetWidth}px`);
+			menu.style.setProperty(underlineOffsetProp, `${offsetX}px`);
+		}
+	}
 
 	/******/
 	/*** CALL FUNCTIONS ***/
@@ -4639,8 +4533,7 @@ function main() {
 	aethos.anim.arch_short();
 	aethos.anim.NavImage();
 	aethos.anim.loadSliders();
-	aethos.anim.navReveal();
-	// aethos.anim.navReveal_alt();
+	aethos.anim.headerReveal();
 	aethos.anim.values();
 	aethos.anim.articleSticky();
 	aethos.anim.journalSticky();
