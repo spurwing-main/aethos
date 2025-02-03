@@ -147,23 +147,6 @@ function main() {
 		}
 	})();
 
-	// Open all external links in a new tab
-	(function openExternalLinksInNewTab() {
-		const links = document.querySelectorAll(
-			"a[href^='https://'], a[href^='http://']"
-		);
-		const host = window.location.hostname;
-
-		const isInternalLink = (link) => new URL(link).hostname === host;
-
-		links.forEach((link) => {
-			if (isInternalLink(link)) return;
-
-			link.setAttribute("target", "_blank");
-			link.setAttribute("rel", "noopener");
-		});
-	})();
-
 	/* update any relative destination links - links of the form ./something on a destination page will be updated to /destinations/destination-name/something */
 	(function updateRelativeLinks() {
 		if (!aethos || !aethos.settings) {
@@ -219,6 +202,25 @@ function main() {
 
 			// Log success message for each updated link
 			aethos.log(`Link updated successfully: ${originalHref} ➔ ${newHref}`);
+		});
+	})();
+
+	// Open all external links in a new tab
+	// NB we need to do this after updateRelativeLinks() because we need to have processed relative links first
+	(function openExternalLinksInNewTab() {
+		const links = document.querySelectorAll(
+			"a[href^='https://'], a[href^='http://']"
+		);
+		const host = window.location.hostname;
+
+		const isInternalLink = (link) => new URL(link).hostname === host;
+
+		links.forEach((link) => {
+			if (isInternalLink(link)) return;
+			console.log(link.href);
+
+			link.setAttribute("target", "_blank");
+			link.setAttribute("rel", "noopener");
 		});
 	})();
 
