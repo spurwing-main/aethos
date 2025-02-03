@@ -288,18 +288,6 @@ function main() {
 				}
 			};
 		});
-
-		// // disable normalise on mobile
-		// let mm = gsap.matchMedia();
-		// mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
-		// 	console.log("normalise scroll disabled on mobile");
-		// 	ScrollTrigger.normalizeScroll(false);
-
-		// 	return () => {
-		// 		console.log("normalise scroll enabled on desktop");
-		// 		ScrollTrigger.normalizeScroll(true);
-		// 	};
-		// });
 	};
 
 	/******/
@@ -1009,14 +997,14 @@ function main() {
 			aethos.helpers.pauseScroll(false);
 			// update
 			aethos.nav.isNavOpen = false;
-			// aethos.nav.forceShowHeaderOff();
+			aethos.nav.forceShowHeader(false);
 		};
 
 		// Open nav
 		aethos.nav.open = function () {
 			aethos.log("open nav");
 			// force open header
-			// aethos.nav.forceShowHeaderOn();
+			aethos.nav.forceShowHeader(true);
 			// Play open animation
 			aethos.nav.timelines.open.play(0);
 			// add class
@@ -1127,7 +1115,7 @@ function main() {
 		// if we are on a non-destination page...
 		if (!aethos.settings.theme || aethos.settings.theme == "default") {
 			aethos.nav.headerRevealAnim = gsap
-				.from(".header", {
+				.from(".header-bar", {
 					yPercent: -100,
 					paused: true,
 					duration: 0.5,
@@ -1183,24 +1171,23 @@ function main() {
 	};
 
 	// function to force show header
-	aethos.nav.forceShowHeaderOn = function () {
-		console.log("force show header ON");
-		aethos.nav.headerForcedShown = true;
-		// Ensure animation exists before playing
-		if (aethos.nav.headerRevealAnim) {
-			gsap.set(".header", { clearProps: "yPercent" });
+	aethos.nav.forceShowHeader = function (bool) {
+		if (bool) {
+			console.log("force show header ON");
+			aethos.nav.headerForcedShown = true;
+			// Ensure animation exists before playing
+			if (aethos.nav.headerRevealAnim) {
+				gsap.set(".header-bar", { clearProps: "transform" });
+				ScrollTrigger.refresh();
+			}
+		} else {
+			console.log("force show header OFF");
+			aethos.nav.headerForcedShown = false;
+			if (aethos.nav.headerRevealAnim) {
+				gsap.set(".header-bar", { clearProps: "transform" });
+				ScrollTrigger.refresh();
+			}
 		}
-	};
-
-	// function to force hide header
-	aethos.nav.forceShowHeaderOff = function () {
-		console.log("force show header OFF");
-
-		aethos.nav.headerForcedShown = false;
-		// // Ensure animation exists before reversing
-		// if (aethos.nav.headerRevealAnim) {
-		// 	gsap.set(".header", { clearProps: "yPercent" });
-		// }
 	};
 
 	/* Show nav images on nav link hover */
