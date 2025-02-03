@@ -2974,7 +2974,7 @@ function main() {
 	aethos.functions.updateCopyrightYear = function () {
 		const year = new Date().getFullYear().toString();
 		document
-			.querySelectorAll('[copyright="year"]')
+			.querySelectorAll(".u-current-year")
 			.forEach((el) => (el.textContent = year));
 	};
 
@@ -4547,6 +4547,7 @@ function main() {
 	aethos.anim.wellTabsUnderline();
 	aethos.functions.clubNav();
 	aethos.anim.pageTransition();
+	aethos.functions.updateCopyrightYear();
 
 	aethos.functions.observeNavGridChanges();
 }
