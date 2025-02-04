@@ -1,0 +1,19 @@
+.wg-li,
+.wg-li a {
+	color: var(--color--charcoal--medium) !important;
+	font-size: var(--font-size--fs-14) !important;
+	line-height: var(--line-height--line-height-20) !important;
+	text-transform: uppercase !important;
+	font-weight: 500 !important;
+	text-decoration: none !important;
+}
+
+.country-selector.wg-list {
+	margin-top: var(--gap--gap-2xl);
+	grid-column-gap: var(--gap--gap-3xl);
+	grid-row-gap: var(--gap--gap-3xl);
+	grid-template-rows: auto;
+	grid-template-columns: 1fr 1fr;
+	grid-auto-columns: 1fr;
+	display: grid;
+}

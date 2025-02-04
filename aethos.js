@@ -3483,24 +3483,35 @@ function main() {
 		// }
 	};
 
-	// lang selector close button
-	aethos.functions.langSwitcherClose = function () {
-		document
-			.querySelector(".lang-switcher_close")
-			.addEventListener("click", function () {
-				const langSwitcherDD = document.querySelector(
-					".lang-switcher_dd-toggle"
-				);
-				if (langSwitcherDD) {
-					// langSwitcherDD.click(); // Simulates a click on the .lang-switcher_dd element
-					console.log("click");
+	// modal close button
+	aethos.functions.modalClose = function (closeClass) {
+		const closeButtons = document.querySelectorAll(closeClass);
 
-					langSwitcherDD.dispatchEvent(new Event("mousedown"));
-					setTimeout(() => {
-						langSwitcherDD.dispatchEvent(new Event("mouseup"));
-					}, 10); // A short delay ensures that events are distinguished
+		closeButtons.forEach((button) => {
+			button.addEventListener("click", function () {
+				let currentElement = button;
+
+				// Traverse up the DOM to find the nearest .w-dropdown element
+				while (
+					currentElement &&
+					!currentElement.classList.contains("w-dropdown")
+				) {
+					currentElement = currentElement.parentElement;
+				}
+
+				if (currentElement) {
+					// Find the descendant .w-dropdown-toggle element
+					const ddToggle = currentElement.querySelector(".w-dropdown-toggle");
+
+					if (ddToggle) {
+						ddToggle.dispatchEvent(new Event("mousedown"));
+						setTimeout(() => {
+							ddToggle.dispatchEvent(new Event("mouseup"));
+						}, 10); // A short delay ensures that events are distinguished
+					}
 				}
 			});
+		});
 	};
 
 	// Update elements with a certain attribute to the current language code on Weglot language change
@@ -4543,7 +4554,8 @@ function main() {
 	aethos.functions.retreatOutline();
 	aethos.functions.calc();
 	aethos.anim.addClubNavHover();
-	aethos.functions.langSwitcherClose();
+	aethos.functions.modalClose(".lang-switcher_close");
+	aethos.functions.modalClose(".booking_close");
 	aethos.anim.mblLangSlider();
 	aethos.functions.formSubmissionStyling();
 	aethos.anim.wellTabsUnderline();
