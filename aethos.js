@@ -663,18 +663,29 @@ function main() {
 		// or if a specific URL parameter forces the loader.
 		const urlParams = new URLSearchParams(window.location.search);
 		const forceLoader = urlParams.has("forceLoader");
+		const suppressLoader = urlParams.has("suppressLoader");
 
 		let loader = document.querySelector(".site-loader");
 		if (!loader) {
 			return;
 		}
+
+		// Check last visit time (30-minute window)
+		function hasRecentVisit() {
+			const lastVisit = localStorage.getItem("aethos_last_visit");
+			if (!lastVisit) return false;
+			return Date.now() - parseInt(lastVisit, 10) < 30 * 60 * 1000; // 30 minutes in ms
+		}
+
 		if (
 			!forceLoader &&
-			(aethos.settings.siteLoader !== "enabled" || !isFirstVisitIn30Days())
+			(suppressLoader ||
+				aethos.settings.siteLoader !== "enabled" ||
+				hasRecentVisit())
 		) {
 			aethos.log("Page loader not running");
 			// Store current visit time
-			sessionStorage.setItem("aethos_last_visit", Date.now());
+			localStorage.setItem("aethos_last_visit", Date.now().toString());
 			loader.style.display = "none";
 			return;
 		}
@@ -682,7 +693,7 @@ function main() {
 		aethos.log("Page loader running");
 
 		// Store current visit time
-		sessionStorage.setItem("aethos_last_visit", Date.now());
+		localStorage.setItem("aethos_last_visit", Date.now().toString());
 
 		requestAnimationFrame(() => {
 			// Disable scrolling
@@ -768,24 +779,24 @@ function main() {
 			tl.to(
 				".hero-home_media-wrap",
 				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
-				6.55
+				5.25
 			);
 
 			// shrink the clip elements. top clip stays bigger to allow for larger logo
 			tl.to(
 				".site-loader_img-clip.left, .site-loader_img-clip.right",
 				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
-				6.55
+				5.55
 			);
 			tl.to(
 				".site-loader_img-clip.bottom",
 				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
-				6.55
+				5.55
 			);
 			tl.to(
 				".site-loader_img-clip.top",
 				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
-				6.55
+				5.55
 			);
 
 			// delete clip elements to avoid weirdness on resize
@@ -797,18 +808,18 @@ function main() {
 			tl.to(
 				".site-loader_lottie-spacer",
 				{ height: "100%", duration: 2, ease: "power4.inOut" },
-				6.55
+				5.55
 			);
 
 			// show content
 			tl.to(
 				".hero-home_content",
 				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
-				7
+				6
 			);
 
 			// bring in header buttons
-			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" });
+			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, 6.5);
 
 			// get rid of extra space at top
 			tl.to(
@@ -857,14 +868,6 @@ function main() {
 				// Disable scrolling
 				aethos.helpers.pauseScroll(false);
 			});
-		}
-
-		function isFirstVisitIn30Days() {
-			const lastVisit = sessionStorage.getItem("aethos_last_visit");
-			if (!lastVisit) return true; // No visit recorded
-			const daysSinceLastVisit =
-				(Date.now() - parseInt(lastVisit, 10)) / (1000 * 60 * 60 * 24);
-			return daysSinceLastVisit >= 30;
 		}
 	};
 
