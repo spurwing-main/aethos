@@ -4564,4 +4564,6 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 
 	aethos.functions.observeNavGridChanges();
+
+	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
