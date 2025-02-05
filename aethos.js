@@ -761,7 +761,7 @@ function main() {
 			// play lottie
 			tl.to(playhead, {
 				frame: loader_lottie.totalFrames - 1,
-				duration: 5,
+				duration: 3.5,
 				ease: "none",
 				onUpdate: () => {
 					loader_lottie.goToAndStop(playhead.frame, true);
@@ -769,37 +769,37 @@ function main() {
 			});
 
 			// change bg color
-			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 4.5);
+			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
 
 			// show hero (only img is visible at first)
 			tl.to(
 				".section-hero-home",
 				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
-				4.5
+				3
 			);
 
 			// Scale image up
 			tl.to(
 				".hero-home_media-wrap",
 				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
-				5.25
+				3.75
 			);
 
 			// shrink the clip elements. top clip stays bigger to allow for larger logo
 			tl.to(
 				".site-loader_img-clip.left, .site-loader_img-clip.right",
 				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
-				5.55
+				4.05
 			);
 			tl.to(
 				".site-loader_img-clip.bottom",
 				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
-				5.55
+				4.05
 			);
 			tl.to(
 				".site-loader_img-clip.top",
 				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
-				5.55
+				4.05
 			);
 
 			// delete clip elements to avoid weirdness on resize
@@ -811,18 +811,18 @@ function main() {
 			tl.to(
 				".site-loader_lottie-spacer",
 				{ height: "100%", duration: 2, ease: "power4.inOut" },
-				5.55
+				4.05
 			);
 
 			// show content
 			tl.to(
 				".hero-home_content",
 				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
-				6
+				4.5
 			);
 
 			// bring in header buttons
-			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, 6.5);
+			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, 5);
 
 			// get rid of extra space at top
 			tl.to(
