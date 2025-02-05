@@ -686,7 +686,10 @@ function main() {
 			aethos.log("Page loader not running");
 			// Store current visit time
 			localStorage.setItem("aethos_last_visit", Date.now().toString());
-			loader.style.display = "none";
+			gsap.to(loader, { autoAlpha: 0, duration: 0.4, delay: 0.2 });
+			// var tl_hide = gsap.timeline();
+			// tl_hide.to(loader, { autoAlpha: 0, duration: 0.3 });
+			// tl_hide.set(loader, { display: "none" });
 			return;
 		}
 
@@ -726,7 +729,7 @@ function main() {
 			renderer: "svg",
 			loop: false,
 			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/6756d53724c7926c071f524d_aethoslogo_Siteloader_v3.json",
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67a389b78b1e2fe99b624193_aethoslogo_Siteloader_v4.json",
 		});
 
 		gsap.set(loader, { display: "flex" }); // show loader
