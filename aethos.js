@@ -3520,6 +3520,35 @@ function main() {
 		});
 	};
 
+	// disable scroll when booking modal is open
+	aethos.functions.observeBookingToggle = function () {
+		const targetElement = document.querySelector(".booking_dd-toggle");
+
+		if (!targetElement) return;
+
+		const observer = new MutationObserver((mutationsList) => {
+			mutationsList.forEach((mutation) => {
+				if (mutation.attributeName === "class") {
+					const isOpen = targetElement.classList.contains("w--open");
+
+					if (window.innerWidth > 767) {
+						// Pause GSAP Smooth Scroll on Desktop
+						aethos.helpers.pauseScroll(isOpen);
+					} else {
+						// Disable Scrolling on Mobile
+						document.body.style.overflow = isOpen ? "hidden" : "";
+						document.body.style.touchAction = isOpen ? "none" : "";
+					}
+				}
+			});
+		});
+
+		observer.observe(targetElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+	};
+
 	// Update elements with a certain attribute to the current language code on Weglot language change
 	aethos.functions.langUpdate = function () {
 		// Check if Weglot is defined
@@ -4517,9 +4546,7 @@ function main() {
 	}
 
 	aethos.anim.smoothScroll();
-
 	aethos.anim.loader();
-
 	aethos.functions.nav();
 	aethos.functions.buildDestinationNav();
 	aethos.functions.hiddenFormFields();
@@ -4532,7 +4559,6 @@ function main() {
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
 	aethos.functions.langUpdate();
-
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
@@ -4568,8 +4594,8 @@ function main() {
 	aethos.functions.clubNav();
 	aethos.anim.pageTransition();
 	aethos.functions.updateCopyrightYear();
-
 	aethos.functions.observeNavGridChanges();
+	aethos.functions.observeBookingToggle();
 
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
