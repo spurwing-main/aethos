@@ -1036,7 +1036,7 @@ function main() {
 			// Play close animation
 			aethos.nav.timelines.close.play(0);
 			// remove class
-			aethos.nav.timelines.burger.reverse();
+			// aethos.nav.timelines.burger.reverse();
 			document.body.classList.remove(classes.global);
 			// enable scroll
 			ScrollTrigger.refresh();
@@ -1054,7 +1054,7 @@ function main() {
 			// Play open animation
 			aethos.nav.timelines.open.play(0);
 			// add class
-			aethos.nav.timelines.burger.play(0);
+			// aethos.nav.timelines.burger.play(0);
 			document.body.classList.add(classes.global);
 			// disable scroll
 			ScrollTrigger.refresh();
@@ -2267,7 +2267,7 @@ function main() {
 				type: "loop",
 				perPage: 1,
 				perMove: 1,
-				autoplay: false,
+				autoplay: true,
 				pagination: false,
 				arrows: false,
 				drag: true,
