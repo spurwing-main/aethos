@@ -926,6 +926,7 @@ function main() {
 		const timelines = {
 			open: gsap.timeline({ paused: true, defaults: tlDefaults }),
 			close: gsap.timeline({ paused: true, defaults: tlDefaults }),
+			burger: gsap.timeline({ paused: true, defaults: tlDefaults }),
 		};
 		aethos.nav.timelines = timelines; // For debugging
 
@@ -990,6 +991,42 @@ function main() {
 			global_elements.barColor_closed
 		);
 
+		// burger timeline - this was just a CSS animation but this fails for some reason on Masterbrand pages
+		function setUpBurgerTimeline() {
+			aethos.nav.timelines.burger.to(
+				".nav-btn_icon-wrap > svg path:nth-child(1)",
+				{
+					rotate: 45,
+					y: 7,
+					duration: 0.4,
+					ease: "easeInOut",
+				},
+				0
+			);
+
+			aethos.nav.timelines.burger.to(
+				".nav-btn_icon-wrap > svg path:nth-child(2)",
+				{
+					opacity: 0,
+					duration: 0.2,
+					ease: "easeInOut",
+				},
+				0
+			); // Fade out slightly earlier
+
+			aethos.nav.timelines.burger.to(
+				".nav-btn_icon-wrap > svg path:nth-child(3)",
+				{
+					rotate: -45,
+					y: -7,
+					duration: 0.4,
+					ease: "easeInOut",
+				},
+				0
+			);
+		}
+		setUpBurgerTimeline();
+
 		// Track nav state
 		aethos.nav.isNavOpen = aethos.nav.isNavOpen || false;
 
@@ -999,6 +1036,7 @@ function main() {
 			// Play close animation
 			aethos.nav.timelines.close.play(0);
 			// remove class
+			aethos.nav.timelines.burger.reverse();
 			document.body.classList.remove(classes.global);
 			// enable scroll
 			ScrollTrigger.refresh();
@@ -1016,6 +1054,7 @@ function main() {
 			// Play open animation
 			aethos.nav.timelines.open.play(0);
 			// add class
+			aethos.nav.timelines.burger.play(0);
 			document.body.classList.add(classes.global);
 			// disable scroll
 			ScrollTrigger.refresh();
@@ -3115,14 +3154,14 @@ function main() {
 		const blocks = document.querySelectorAll("[aethos-experience-category]");
 
 		blocks.forEach((block) => {
-			// Get the filter slug and destination slug
-			const experienceCategory = block.getAttribute(
+			// Get the filter slug(s) and destination slug
+			let experienceCategories = block.getAttribute(
 				"aethos-experience-category"
 			);
 			const destinationSlug = block.getAttribute("aethos-destination-slug");
 
 			// Check if the filter slug or destination slug are missing or empty
-			if (!experienceCategory || !destinationSlug) {
+			if (!experienceCategories || !destinationSlug) {
 				console.warn("Missing filter or destination slug for block:", block);
 				return; // Skip this block if either attribute is missing
 			}
@@ -3134,14 +3173,20 @@ function main() {
 				return; // Skip if no button is found
 			}
 
+			// Process categories - split by comma, trim, and limit to 3 categories
+			let categoriesArray = experienceCategories
+				.split(",")
+				.map((cat) => cat.trim())
+				.slice(0, 3);
+
+			// Encode each category for URL and join with commas
+			const encodedCategories = categoriesArray
+				.map((cat) => encodeURIComponent(cat))
+				.join("%2C");
+
 			// Set the button href with the correct link
 			try {
-				// Encode the experience category to handle special characters and spaces
-				const encodedCategory = encodeURIComponent(experienceCategory).replace(
-					/%20/g,
-					"+"
-				);
-				button.href = `/destination-all-experiences/${destinationSlug}?category=${encodedCategory}`;
+				button.href = `/destinations/${destinationSlug}/all-experiences?category=${encodedCategories}`;
 			} catch (error) {
 				console.error("Error setting href for button:", error);
 			}
