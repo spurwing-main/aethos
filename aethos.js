@@ -2267,9 +2267,9 @@ function main() {
 				type: "loop",
 				perPage: 1,
 				perMove: 1,
-				autoplay: true,
+				autoplay: false,
 				pagination: false,
-				arrows: false,
+				arrows: true,
 				drag: true,
 			}).mount();
 
