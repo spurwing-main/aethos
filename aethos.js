@@ -141,6 +141,26 @@ function main() {
 		aethos.log("Destination data loaded");
 	})();
 
+	/* load destination data if we have a destination param - e.g. on a listing page */
+	(function loadDestinationDataFromParam() {
+		const destinationParam = getParam("dest");
+		// if we don't have a destination slug in settings but we have a destination param, use the param to get the destination data
+		if (!aethos.settings.destinationSlug && destinationParam) {
+			const destination = aethos.destinations[destinationParam];
+			if (destination) {
+				aethos.settings.destinationSlug = destination.slug;
+				aethos.settings.destinationName = destination.name;
+				aethos.settings.destinationTheme = destination.theme;
+				aethos.settings.destinationStatus = destination.status;
+				aethos.settings.destinationInstagram = destination.instagram;
+				aethos.settings.destinationFacebook = destination.facebook;
+				aethos.settings.destinationMewsId = destination.mewsId;
+				aethos.settings.destinationCityId = destination.cityId;
+				aethos.log("Destination data loaded from destination param");
+			}
+		}
+	})();
+
 	/* redirect if destination is coming soon */
 	(function checkIfComingSoon() {
 		// Construct the destination homepage URL
