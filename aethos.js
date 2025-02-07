@@ -4608,27 +4608,61 @@ function main() {
 		window.addEventListener("resize", adjustHeight);
 	};
 
+	// aethos.functions.mews = function () {
+	// 	// if we are on a destination-specific page
+	// 	if (aethos.settings.destinationMewsId) {
+	// 		Mews.Distributor({
+	// 			configurationIds: [aethos.settings.destinationMewsId],
+	// 			openElements: ".reservenow",
+	// 		});
+	// 	}
+	// 	// else masterbrand
+	// 	else {
+	// 		const configurationIds = [];
+	// 		// loop through aethos.destination objects and build an array of configuration ids - NB not all destinations have a mews id
+	// 		Object.values(aethos.destinations).forEach((destination) => {
+	// 			if (destination.mewsId) {
+	// 				configurationIds.push(destination.mewsId);
+	// 			}
+	// 		});
+	// 		console.log("Mews configuration ids", configurationIds);
+	// 		Mews.Distributor({
+	// 			configurationIds: configurationIds,
+	// 			openElements: ".reservenow",
+	// 		});
+	// 	}
+	// };
+
 	aethos.functions.mews = function () {
-		// if we are on a destination-specific page
+		// If on a destination-specific page, open Mews for that destination
 		if (aethos.settings.destinationMewsId) {
+			console.log(
+				"Opening Mews for destination",
+				aethos.settings.destinationMewsId
+			);
 			Mews.Distributor({
 				configurationIds: [aethos.settings.destinationMewsId],
 				openElements: ".reservenow",
 			});
-		}
-		// else masterbrand
-		else {
-			const configurationIds = [];
-			// loop through aethos.destination objects and build an array of configuration ids - NB not all destinations have a mews id
-			Object.values(aethos.destinations).forEach((destination) => {
-				if (destination.mewsId) {
-					configurationIds.push(destination.mewsId);
-				}
-			});
-			console.log("Mews configuration ids", configurationIds);
-			Mews.Distributor({
-				configurationIds: configurationIds,
-				openElements: ".reservenow",
+		} else {
+			console.log("Opening Mews for all destinations");
+			// On the masterbrand page, listen for clicks on hotels in the booking modal
+			document.querySelectorAll(".booking_link").forEach((el) => {
+				el.addEventListener("click", function () {
+					const mewsId = this.getAttribute("aethos-destination-mews-id");
+
+					// Only proceed if a valid mewsId is found
+					if (mewsId) {
+						Mews.Distributor(
+							{
+								configurationIds: [mewsId],
+							},
+							function (distributor) {
+								distributor.open();
+							}
+						);
+					}
+				});
 			});
 		}
 	};
