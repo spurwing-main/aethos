@@ -84,6 +84,10 @@ function main() {
 				pageWrap.getAttribute("aethos-destination-slug") || "";
 			aethos.settings.destinationStatus =
 				pageWrap.getAttribute("aethos-destination-status") || "";
+			// aethos.settings.destinationMewsId =
+			// 	pageWrap.getAttribute("aethos-destination-mews-id") || "";
+			// aethos.settings.destinationCityId =
+			// 	pageWrap.getAttribute("aethos-destination-city-id") || "";
 			const themeAttribute = pageWrap.getAttribute("aethos-theme");
 			aethos.settings.theme = themeAttribute
 				? themeAttribute.toLowerCase()
@@ -109,6 +113,8 @@ function main() {
 			const status = item.getAttribute("aethos-status") || "active";
 			const instagram = item.getAttribute("aethos-destination-ig");
 			const facebook = item.getAttribute("aethos-destination-fb");
+			const mewsId = item.getAttribute("aethos-destination-mews-id");
+			const cityId = item.getAttribute("aethos-destination-city-id");
 
 			aethos.destinations[slug] = {
 				name: name,
@@ -117,6 +123,8 @@ function main() {
 				status: status,
 				instagram: instagram,
 				facebook: facebook,
+				mewsId: mewsId,
+				cityId: cityId,
 			};
 
 			if (slug == aethos.settings.destinationSlug) {
@@ -125,6 +133,8 @@ function main() {
 				aethos.settings.destinationStatus = status;
 				aethos.settings.destinationInstagram = instagram;
 				aethos.settings.destinationFacebook = facebook;
+				aethos.settings.destinationMewsId = mewsId;
+				aethos.settings.destinationCityId = cityId;
 			}
 		});
 
@@ -4582,6 +4592,47 @@ function main() {
 		}
 	}
 
+	aethos.functions.adjustDestinationGridHeight = function () {
+		function adjustHeight() {
+			const grid = document.querySelector(".c-destinations-grid");
+			if (!grid) return; // Exit if element is not found
+			console.log("Adjusting grid height");
+			// Check if the grid content overflows
+			if (grid.scrollHeight > grid.clientHeight) {
+				grid.style.minHeight = `${grid.scrollHeight}px`; // Set minHeight dynamically
+			}
+		}
+
+		adjustHeight();
+
+		window.addEventListener("resize", adjustHeight);
+	};
+
+	aethos.functions.mews = function () {
+		// if we are on a destination-specific page
+		if (aethos.settings.destinationMewsId) {
+			Mews.Distributor({
+				configurationIds: [aethos.settings.destinationMewsId],
+				openElements: ".reservenow",
+			});
+		}
+		// else masterbrand
+		else {
+			const configurationIds = [];
+			// loop through aethos.destination objects and build an array of configuration ids - NB not all destinations have a mews id
+			Object.values(aethos.destinations).forEach((destination) => {
+				if (destination.mewsId) {
+					configurationIds.push(destination.mewsId);
+				}
+			});
+			console.log("Mews configuration ids", configurationIds);
+			Mews.Distributor({
+				configurationIds: configurationIds,
+				openElements: ".reservenow",
+			});
+		}
+	};
+
 	/******/
 	/*** CALL FUNCTIONS ***/
 	/******/
@@ -4641,6 +4692,7 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
-
+	// aethos.functions.adjustDestinationGridHeight();
+	aethos.functions.mews();
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
