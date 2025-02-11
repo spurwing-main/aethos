@@ -247,6 +247,7 @@ function main() {
 
 		links.forEach((link) => {
 			if (isInternalLink(link)) return;
+			console.log(link.href);
 
 			link.setAttribute("target", "_blank");
 			link.setAttribute("rel", "noopener");
@@ -1246,6 +1247,121 @@ function main() {
 		}
 	};
 
+	/* Header hide/show */
+	aethos.anim.headerReveal_v2 = function () {
+		if (!aethos.settings.dev.headerReveal) {
+			return;
+		}
+
+		aethos.nav.headerForcedShown = false;
+
+		// Create a GSAP matchMedia instance.
+		const mm = gsap.matchMedia();
+
+		// Helper: creates a hide/show animation on the given elements.
+		// animateTarget: the element to animate (e.g. sliding in/out)
+		// pinTarget: the element to pin with ScrollTrigger
+		function createHideShowAnimation(
+			animateTarget = ".header-bar",
+			pinTarget = ".header"
+		) {
+			// Create the hide/show animation (starts hidden)
+			const animation = gsap
+				.from(animateTarget, {
+					yPercent: -100,
+					paused: true,
+					duration: 0.5,
+				})
+				.progress(1);
+
+			let lastScrollY = window.scrollY;
+			const scrollThreshold = 50; // pixels to trigger reveal
+			let scrollBuffer = 0;
+
+			// Create the ScrollTrigger instance
+			const trigger = ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: pinTarget,
+				onUpdate: () => {
+					// Do not change header state if it was forced open
+					if (aethos.nav.headerForcedShown) return;
+
+					const currentScrollY = window.scrollY;
+					const deltaY = currentScrollY - lastScrollY;
+
+					if (deltaY > 0) {
+						// Scrolling down: hide header and reset buffer.
+						animation.reverse();
+						scrollBuffer = 0;
+					} else if (deltaY < 0) {
+						// Scrolling up: accumulate scroll-up distance.
+						scrollBuffer -= deltaY; // subtract negative value
+						if (scrollBuffer >= scrollThreshold) {
+							animation.play();
+							scrollBuffer = 0;
+						}
+					}
+					lastScrollY = currentScrollY;
+				},
+			});
+
+			// Save the animation and trigger for later reference/control.
+			aethos.nav.headerRevealAnim = animation;
+			aethos.headerScrollTrigger = trigger;
+		}
+
+		function pinHeader(className) {
+			aethos.headerScrollTrigger = ScrollTrigger.create({
+				start: "top -1px",
+				end: "max",
+				pin: className,
+			});
+		}
+
+		/*
+	  Now, based on the theme and viewport size, we set up the header behavior:
+	  
+	  1. Masterbrand pages (no theme or theme === "default"):
+		 - Both desktop and mobile animate hide/show.
+		 - Note: masterbrand pages animate ".header-bar" while pinning ".header".
+	  
+	  2. Club pages (theme === "club"):
+		 - Mobile: animate hide/show on ".club-header" (and pin it).
+		 - Desktop: simply pin ".club-header" (no hide/show animation).
+	  
+	  3. Destination pages (all other themes):
+		 - Mobile: animate hide/show on ".dest-header" (and pin it).
+		 - Desktop: simply pin ".dest-header" (no hide/show animation).
+	*/
+
+		if (!aethos.settings.theme || aethos.settings.theme === "default") {
+			// For masterbrand pages, we always use the animation.
+			mm.add("(min-width: 0px)", () => {
+				createHideShowAnimation();
+			});
+		} else if (aethos.settings.theme === "club") {
+			// Club pages
+			mm.add("(max-width: 767px)", () => {
+				// On mobile: animate hide/show for the club header.
+				createHideShowAnimation();
+			});
+			mm.add("(min-width: 1px)", () => {
+				pinHeader(".club-header");
+			});
+		} else {
+			// Destination pages (all other themes)
+			mm.add("(max-width: 767px)", () => {
+				// On mobile: animate hide/show for the destination header.
+				createHideShowAnimation();
+			});
+			mm.add("(min-width: 1px)", () => {
+				// On desktop: only pin the destination header (no animation).
+				pinHeader(".dest-header");
+			});
+		}
+	};
+
 	// function to force show header
 	aethos.nav.forceShowHeader = function (bool) {
 		if (bool) {
@@ -1308,6 +1424,14 @@ function main() {
 
 	// Fetch the destination-specific nav
 	aethos.functions.buildDestinationNav = async function () {
+		// set some constants
+		const topNav_selector = ".dest-nav_top";
+		const bottomNav_selector = ".dest-nav_bottom";
+		const topNav_underlineWidthProp = "--dest-nav-underline-width";
+		const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+		const bottomNav_underlineWidthProp = "--dest-nav-underline-width-bot";
+		const bottomNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
+
 		async function fetchDestinationNav(destinationSlug) {
 			try {
 				aethos.log(`Fetching navigation for destination: ${destinationSlug}`);
@@ -1540,65 +1664,258 @@ function main() {
 			}
 		}
 
-		function addNavigationHover(
-			menuSelector,
-			underlineWidthProp,
-			underlineOffsetProp,
-			isChildCheck = false
-		) {
-			const menus = document.querySelectorAll(menuSelector);
+		// function addNavigationHover(
+		// 	menuSelector,
+		// 	underlineWidthProp,
+		// 	underlineOffsetProp,
+		// 	isChildCheck = false
+		// ) {
+		// 	const menus = document.querySelectorAll(menuSelector);
 
-			const topNav_selector = ".dest-nav_top";
-			const topNav_underlineWidthProp = "--dest-nav-underline-width";
-			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
-			const listClass = ".dest-nav_list";
+		// 	const topNav_selector = ".dest-nav_top";
+		// 	const topNav_underlineWidthProp = "--dest-nav-underline-width";
+		// 	const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+		// 	const listSelector = ".dest-nav_list";
+		// 	const currentPath = window.location.pathname;
+
+		// 	menus.forEach((menu) => {
+		// 		// Find the active link and set the underline position initially
+
+		// 		let links;
+		// 		let activeLink;
+
+		// 		if (menu.classList.contains("dest-nav_top")) {
+		// 			links = Array.from(
+		// 				menu.querySelectorAll(
+		// 					":not(.w-condition-invisible) > a:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href='']):not(.is-child)" // Exclude invisible links and brand link, and empty hrefs, and child links
+		// 				)
+		// 			);
+
+		// 			activeLink = getActiveLink(links, currentPath);
+		// 		}
+
+		// 		if (activeLink) {
+		// 			activeLink.classList.add("active");
+		// 		}
+
+		// 		// Set underline for the active link
+		// 		if (activeLink) {
+		// 			addMenuHoverLine(
+		// 				menu,
+		// 				activeLink,
+		// 				underlineWidthProp,
+		// 				underlineOffsetProp,
+		// 				listSelector,
+		// 				false // no transition for active link initially
+		// 			);
+		// 		} else {
+		// 			// set offset to a reasonable starting pos
+		// 			menu.style.setProperty(
+		// 				underlineOffsetProp,
+		// 				`${window.innerWidth * 0.5}px`
+		// 			);
+		// 		}
+
+		// 		menu.addEventListener("mouseover", (event) => {
+		// 			if (
+		// 				event.target.classList.contains("link-cover") &&
+		// 				(!isChildCheck || !event.target.classList.contains("is-child"))
+		// 			) {
+		// 				// trigger hover on this item
+		// 				addMenuHoverLine(
+		// 					menu,
+		// 					event.target,
+		// 					underlineWidthProp,
+		// 					underlineOffsetProp
+		// 				);
+
+		// 				// if we are on a child item, trigger the parent item hover to be safe
+		// 				if (event.target.classList.contains("is-child")) {
+		// 					const parentItem = event.target.closest(
+		// 						"[aethos-nav-children='true']"
+		// 					);
+		// 					const parentMenu = parentItem.closest(topNav_selector);
+
+		// 					console.log(parentItem, parentMenu);
+		// 					addMenuHoverLine(
+		// 						parentMenu,
+		// 						parentItem,
+		// 						topNav_underlineWidthProp,
+		// 						topNav_underlineOffsetProp
+		// 					);
+		// 				}
+		// 			}
+		// 		});
+
+		// 		menu.addEventListener("mouseleave", () => {
+		// 			if (activeLink) {
+		// 				addMenuHoverLine(
+		// 					menu,
+		// 					activeLink,
+		// 					underlineWidthProp,
+		// 					underlineOffsetProp
+		// 				);
+		// 			} else {
+		// 				menu.style.setProperty(underlineWidthProp, "0");
+		// 			}
+		// 		});
+
+		// 		// on window resize, update the underline position
+		// 		window.addEventListener("resize", () => {
+		// 			if (activeLink) {
+		// 				addMenuHoverLine(
+		// 					menu,
+		// 					activeLink,
+		// 					underlineWidthProp,
+		// 					underlineOffsetProp,
+		// 					listSelector,
+		// 					false
+		// 				);
+		// 			}
+		// 		});
+		// 	});
+		// }
+
+		/* overview of what we want to do
+
+	TOP MENU
+
+	- get all links in the menu, excluding invisible links, brand link, empty hrefs, and child links
+	- find the active link
+
+	if active link is found:
+	- set the underline position for the active link
+	- on hover, set the underline position for the hovered link
+	- on mouseleave, set the underline position back to the active link
+
+	if active link is not found:
+	- set the underline offset to a reasonable starting position
+	- on hover, set the underline position for the hovered link
+	- on mouseleave, set the underline position back to the starting position
+
+	BOTTOM MENU
+
+	- get all links in the menu, excluding invisible links
+	- find the active link
+
+	if active link is found:
+	- set the underline position for the active link
+	- on hover, set the underline position for the hovered link
+	- on mouseleave, set the underline position back to the active link
+
+	AND
+	- if the hovered link is a child link, find the parent link and set it as active
+
+	if active link is not found:
+	- set the underline offset to a reasonable starting position
+	- on hover, set the underline position for the hovered link
+	- on mouseleave, set the underline position back to the starting position
+
+
+
+
+
+
+
+	*/
+
+		function addNavigationHover() {
+			const menu_top = document.querySelector(topNav_selector);
+			const menus_bottom = document.querySelectorAll(bottomNav_selector);
+			const listSelector_top = ".dest-nav_list";
+			const listSelector_bottom = ".dest-nav_child-list"
 			const currentPath = window.location.pathname;
+			const topLinkMatchString =
+				":not(.w-condition-invisible) > a:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href='']):not(.is-child)"; //Exclude invisible links and brand link, and empty hrefs, and child links
+			const bottomLinkMatchString = ":not(.w-condition-invisible) > a:not(.w-condition-invisible)"; // Exclude invisible links
+			let topActiveLink;
+			let bottomActiveLink;
+			let bottomMenu;
 
-			menus.forEach((menu) => {
-				// Find the active link and set the underline position initially
+			// look for active link in top menu
+			const links_top = Array.from(menu_top.querySelectorAll(topLinkMatchString));
+			topActiveLink = getActiveLink(links_top, currentPath);
+			if(topActiveLink) {
+				topActiveLink.classList.add("active");
+				addMenuHoverLine(
+					menu_top,
+					topActiveLink,
+					topNav_underlineWidthProp,
+					topNav_underlineOffsetProp,
+					listSelector_top,
+					false
+				);
+			}
+			else {
+				// set offset to a reasonable starting pos
+				menu_top.style.setProperty(
+					topNav_underlineOffsetProp,
+					`${window.innerWidth * 0.5}px`
+				);
+			}
 
-				let links;
-				let activeLink;
-
-				if (menu.classList.contains("dest-nav_top")) {
-					links = Array.from(
-						menu.querySelectorAll(
-							":not(.w-condition-invisible) > a:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href='']):not(.is-child)" // Exclude invisible links and brand link, and empty hrefs, and child links
-						)
-					);
-
-					activeLink = getActiveLink(links, currentPath);
+			// look for active link in bottom menus
+			menus_bottom.forEach((menu) => {
+				// if we already have a bottom active link, skip
+				if (bottomActiveLink) {
+					return;
 				}
+				let links = Array.from(menu.querySelectorAll(bottomLinkMatchString));
+				let activeLink = getActiveLink(links, currentPath);
 
 				if (activeLink) {
 					activeLink.classList.add("active");
-				}
-
-				// Set underline for the active link
-				if (activeLink) {
-					menuHover(
+					bottomActiveLink = activeLink;
+					bottomMenu = menu;
+					addMenuHoverLine(
 						menu,
 						activeLink,
-						underlineWidthProp,
-						underlineOffsetProp,
-						listClass,
-						false // no transition for active link initially
+						bottomNav_underlineWidthProp,
+						bottomNav_underlineOffsetProp,
+						listSelector_bottom,
+						false
 					);
-				} else {
-					// set offset to a reasonable starting pos
+
+					// AND find parent and make that active
+					
+						let parentItem = activeLink.closest(".dest-nav_item[aethos-nav-children='true']");
+						if(!parentItem) {
+							return;
+						}
+						let parentMenu = parentItem.closest(topNav_selector); // should be same as menu_top
+						if(!parentMenu) {
+							return;
+						}
+						let topActiveLink = parentItem.querySelector(topLinkMatchString);
+
+						if (topActiveLink) {
+							topActiveLink.classList.add("active");
+							addMenuHoverLine(
+								parentMenu,
+								topActiveLink,
+								topNav_underlineWidthProp,
+								topNav_underlineOffsetProp,
+								listSelector_top,
+								false
+							);
+						}
+					}
+
+					else{
 					menu.style.setProperty(
-						underlineOffsetProp,
+						bottomNav_underlineOffsetProp,
 						`${window.innerWidth * 0.5}px`
 					);
 				}
+			}
 
-				menu.addEventListener("mouseover", (event) => {
+			menu_top.addEventListener("mouseover", (event) => {
 					if (
 						event.target.classList.contains("link-cover") &&
 						(!isChildCheck || !event.target.classList.contains("is-child"))
 					) {
 						// trigger hover on this item
-						menuHover(
+						addMenuHoverLine(
 							menu,
 							event.target,
 							underlineWidthProp,
@@ -1613,7 +1930,7 @@ function main() {
 							const parentMenu = parentItem.closest(topNav_selector);
 
 							console.log(parentItem, parentMenu);
-							menuHover(
+							addMenuHoverLine(
 								parentMenu,
 								parentItem,
 								topNav_underlineWidthProp,
@@ -1624,14 +1941,24 @@ function main() {
 				});
 
 				menu.addEventListener("mouseleave", () => {
+					if (parentActiveLink) {
+						addMenuHoverLine(
+							parentMenu,
+							parentActiveLink,
+							topNav_underlineWidthProp,
+							topNav_underlineOffsetProp
+						);
+					}
+
 					if (activeLink) {
-						menuHover(
+						addMenuHoverLine(
 							menu,
 							activeLink,
 							underlineWidthProp,
 							underlineOffsetProp
 						);
-					} else {
+					}
+					if (!activeLink) {
 						menu.style.setProperty(underlineWidthProp, "0");
 					}
 				});
@@ -1639,17 +1966,17 @@ function main() {
 				// on window resize, update the underline position
 				window.addEventListener("resize", () => {
 					if (activeLink) {
-						menuHover(
+						addMenuHoverLine(
 							menu,
 							activeLink,
 							underlineWidthProp,
 							underlineOffsetProp,
-							listClass,
+							listSelector,
 							false
 						);
 					}
 				});
-			});
+			};
 		}
 
 		function showSubnavOnHover() {
@@ -1783,6 +2110,47 @@ function main() {
 			});
 		}
 
+		// // Run the setup and animation functions sequentially
+		// try {
+		// 	// Wait for the navigation setup to complete
+		// 	await setupNavigation();
+
+		// 	// refresh scrolltrigger pagewide
+		// 	ScrollTrigger.refresh();
+
+		// 	// Add navigation hover effects for top and bottom menus
+		// 	$(".dest-nav_bottom .link-cover").addClass("is-child"); // Patch to distinguish top and bottom items
+
+		// 	const topNav_selector = ".dest-nav_top";
+		// 	const topNav_underlineWidthProp = "--dest-nav-underline-width";
+		// 	const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
+
+		// 	const botNav_selector = ".dest-nav_bottom";
+		// 	const botNav_underlineWidthProp = "--dest-nav-underline-width-bot";
+		// 	const botNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
+
+		// 	// top
+		// 	addNavigationHover(
+		// 		topNav_selector,
+		// 		topNav_underlineWidthProp,
+		// 		topNav_underlineOffsetProp,
+		// 		true
+		// 	);
+
+		// 	// bottom
+		// 	addNavigationHover(
+		// 		botNav_selector,
+		// 		botNav_underlineWidthProp,
+		// 		botNav_underlineOffsetProp,
+		// 		false
+		// 	);
+
+		// 	showSubnavOnHover();
+		// 	document.querySelector(".dest-nav").classList.add("is-ready");
+		// } catch (error) {
+		// 	// console.error("Error setting up the destination navigation:", error);
+		// }
+
 		// Run the setup and animation functions sequentially
 		try {
 			// Wait for the navigation setup to complete
@@ -1794,29 +2162,8 @@ function main() {
 			// Add navigation hover effects for top and bottom menus
 			$(".dest-nav_bottom .link-cover").addClass("is-child"); // Patch to distinguish top and bottom items
 
-			const topNav_selector = ".dest-nav_top";
-			const topNav_underlineWidthProp = "--dest-nav-underline-width";
-			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
-
-			const botNav_selector = ".dest-nav_bottom";
-			const botNav_underlineWidthProp = "--dest-nav-underline-width-bot";
-			const botNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
-
 			// top
-			addNavigationHover(
-				topNav_selector,
-				topNav_underlineWidthProp,
-				topNav_underlineOffsetProp,
-				true
-			);
-
-			// bottom
-			addNavigationHover(
-				botNav_selector,
-				botNav_underlineWidthProp,
-				botNav_underlineOffsetProp,
-				false
-			);
+			addNavigationHover();
 
 			showSubnavOnHover();
 			document.querySelector(".dest-nav").classList.add("is-ready");
@@ -2148,12 +2495,6 @@ function main() {
 		const maskClass = "anim-split_line-mask";
 
 		function runSplit() {
-			// only run on desktop
-			if (window.innerWidth < 768) {
-				if (typeSplit) typeSplit.revert(); // Ensure no instance remains
-				return;
-			}
-
 			// Revert any previous SplitText instance
 			if (typeSplit) {
 				typeSplit.revert();
@@ -3574,7 +3915,7 @@ function main() {
 		const closeButtons = document.querySelectorAll(closeClass);
 
 		closeButtons.forEach((button) => {
-			const closeHandler = function () {
+			button.addEventListener("click", function () {
 				let currentElement = button;
 
 				// Traverse up the DOM to find the nearest .w-dropdown element
@@ -3593,15 +3934,10 @@ function main() {
 						ddToggle.dispatchEvent(new Event("mousedown"));
 						setTimeout(() => {
 							ddToggle.dispatchEvent(new Event("mouseup"));
-							ddToggle.dispatchEvent(new Event("click"));
-						}, 10);
+						}, 10); // A short delay ensures that events are distinguished
 					}
 				}
-			};
-
-			// Attach both click and touchstart events
-			button.addEventListener("click", closeHandler);
-			button.addEventListener("touchstart", closeHandler);
+			});
 		});
 	};
 
@@ -3746,30 +4082,29 @@ function main() {
 	};
 
 	/* handle destination subscribe form names */
-	/* no longer using this as we capture destination in a hidden field */
-	// aethos.functions.updateSubscribeFormName = function () {
-	// 	return;
-	// 	// Find all forms with a data-destination attribute
-	// 	const forms = document.querySelectorAll("form[data-destination]");
+	aethos.functions.updateSubscribeFormName = function () {
+		return;
+		// Find all forms with a data-destination attribute
+		const forms = document.querySelectorAll("form[data-destination]");
 
-	// 	// Helper function to capitalize the first letter of a word
-	// 	function capitalizeFirstLetter(string) {
-	// 		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
-	// 	}
+		// Helper function to capitalize the first letter of a word
+		function capitalizeFirstLetter(string) {
+			return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+		}
 
-	// 	forms.forEach(function (form) {
-	// 		let destinationName = form.getAttribute("data-destination");
+		forms.forEach(function (form) {
+			let destinationName = form.getAttribute("data-destination");
 
-	// 		// Capitalize the destination name
-	// 		destinationName = capitalizeFirstLetter(destinationName);
+			// Capitalize the destination name
+			destinationName = capitalizeFirstLetter(destinationName);
 
-	// 		// Update data-name attribute in the required format
-	// 		form.setAttribute(
-	// 			"data-name",
-	// 			`Destination Subscribe - ${destinationName}`
-	// 		);
-	// 	});
-	// };
+			// Update data-name attribute in the required format
+			form.setAttribute(
+				"data-name",
+				`Destination Subscribe - ${destinationName}`
+			);
+		});
+	};
 
 	/* hide empty sections */
 	aethos.functions.hideEmptySections = function () {
@@ -3785,6 +4120,15 @@ function main() {
 			$(this).closest(".nav-link_dd-content").removeClass("w--open");
 			$(this).closest(".nav-link_dd .w-dropdown-toggle").removeClass("w--open");
 		});
+
+		/* patch for date input fields to show date when one is selected instead of placeholder */
+		// $("input[type='date']").on("input", function () {
+		// 	if ($(this).val().length > 0) {
+		// 		$(this).removeClass("is-date-placeholder");
+		// 	} else {
+		// 		$(this).addClass("is-date-placeholder");
+		// 	}
+		// });
 
 		// add placeholders to date fields
 		const dateFields = document.querySelectorAll(
@@ -3816,19 +4160,6 @@ function main() {
 					dateField.placeholder = placeholder;
 				}
 			});
-		});
-
-		// convert any capitalised block IDs to lowercase - since we are using the Heading field of destination blocks to power section IDs
-		document.querySelectorAll(".s-dest-block[id]").forEach((el) => {
-			let originalId = el.id;
-			let snakeCaseId = originalId
-				.replace(/\s+/g, "_") // Replace spaces with underscores
-				.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`) // Convert capitals to _lowercase
-				.replace(/^_/, ""); // Remove leading underscore if necessary
-
-			if (originalId !== snakeCaseId) {
-				el.id = snakeCaseId;
-			}
 		});
 	};
 
@@ -4343,7 +4674,7 @@ function main() {
 		const menus = document.querySelectorAll(".club-nav");
 		const underlineWidthProp = "--club-nav-underline-width";
 		const underlineOffsetProp = "--club-nav-underline-offset-x";
-		const listClass = ".club-nav_list";
+		const listSelector = ".club-nav_list";
 
 		menus.forEach((menu) => {
 			// Find the active link and set the underline position initially
@@ -4357,12 +4688,12 @@ function main() {
 
 			// Set underline for the active link
 			if (activeLink) {
-				menuHover(
+				addMenuHoverLine(
 					menu,
 					activeLink,
 					underlineWidthProp,
 					underlineOffsetProp,
-					listClass,
+					listSelector,
 					false // no transition for active link initially
 				);
 			} else {
@@ -4376,7 +4707,7 @@ function main() {
 			menu.addEventListener("mouseover", (event) => {
 				if (event.target.classList.contains("club-nav_link-text")) {
 					// trigger hover on this item
-					menuHover(
+					addMenuHoverLine(
 						menu,
 						event.target,
 						underlineWidthProp,
@@ -4387,7 +4718,7 @@ function main() {
 
 			menu.addEventListener("mouseleave", () => {
 				if (activeLink) {
-					menuHover(menu, activeLink, underlineWidthProp, underlineOffsetProp);
+					addMenuHoverLine(menu, activeLink, underlineWidthProp, underlineOffsetProp);
 				} else {
 					menu.style.setProperty(underlineWidthProp, "0");
 				}
@@ -4396,12 +4727,12 @@ function main() {
 			// on window resize, update the underline position
 			window.addEventListener("resize", () => {
 				if (activeLink) {
-					menuHover(
+					addMenuHoverLine(
 						menu,
 						activeLink,
 						underlineWidthProp,
 						underlineOffsetProp,
-						listClass,
+						listSelector,
 						false
 					);
 				}
@@ -4591,12 +4922,12 @@ function main() {
 		return activeLink;
 	}
 
-	function menuHover(
+	function addMenuHoverLine(
 		menu,
 		target,
 		underlineWidthProp,
 		underlineOffsetProp,
-		listClass = "", // class of the list element, needed to disable transitioning
+		listSelector = "", // class of the list element, needed to disable transitioning
 		withTransition = true // if false, we don't transition
 	) {
 		const menuRect = menu.getBoundingClientRect();
@@ -4607,14 +4938,14 @@ function main() {
 		// if we are NOT transitioning, disable transition
 		// https://medium.com/building-blocks/how-to-skip-css-transitions-with-jquery-e0155d06e82e
 		if (!withTransition) {
-			const list = menu.querySelector(listClass);
+			const list = menu.querySelector(listSelector);
 			if (list) {
 				list.classList.add("no-transition");
 				update();
 				list.offsetHeight; // trigger reflow
 				list.classList.remove("no-transition");
 			} else {
-				console.warn("listClass element not found in", menu);
+				console.warn("listSelector element not found in", menu);
 			}
 		} else {
 			update();
@@ -4642,6 +4973,31 @@ function main() {
 
 		window.addEventListener("resize", adjustHeight);
 	};
+
+	// aethos.functions.mews = function () {
+	// 	// if we are on a destination-specific page
+	// 	if (aethos.settings.destinationMewsId) {
+	// 		Mews.Distributor({
+	// 			configurationIds: [aethos.settings.destinationMewsId],
+	// 			openElements: ".reservenow",
+	// 		});
+	// 	}
+	// 	// else masterbrand
+	// 	else {
+	// 		const configurationIds = [];
+	// 		// loop through aethos.destination objects and build an array of configuration ids - NB not all destinations have a mews id
+	// 		Object.values(aethos.destinations).forEach((destination) => {
+	// 			if (destination.mewsId) {
+	// 				configurationIds.push(destination.mewsId);
+	// 			}
+	// 		});
+	// 		console.log("Mews configuration ids", configurationIds);
+	// 		Mews.Distributor({
+	// 			configurationIds: configurationIds,
+	// 			openElements: ".reservenow",
+	// 		});
+	// 	}
+	// };
 
 	aethos.functions.mews = function () {
 		// If on a destination-specific page, open Mews for that destination
@@ -4719,6 +5075,7 @@ function main() {
 	aethos.anim.faq();
 	aethos.anim.benefits();
 	aethos.functions.listingLinks();
+	aethos.functions.updateSubscribeFormName();
 	aethos.functions.loadVideos();
 	aethos.anim.carousel();
 	aethos.functions.patches();
@@ -4735,6 +5092,7 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
+	// aethos.functions.adjustDestinationGridHeight();
 	aethos.functions.mews();
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
