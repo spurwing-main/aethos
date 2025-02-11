@@ -4704,7 +4704,7 @@ function main() {
 	aethos.functions.handleCMSFilter();
 	aethos.functions.hideEmptySections();
 	aethos.functions.updateDestinationSocials();
-	aethos.anim.splitText();
+	// aethos.anim.splitText(); // disabled for launch
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
