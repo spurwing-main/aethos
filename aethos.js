@@ -3593,6 +3593,7 @@ function main() {
 						ddToggle.dispatchEvent(new Event("mousedown", { bubbles: true }));
 						setTimeout(() => {
 							ddToggle.dispatchEvent(new Event("mouseup", { bubbles: true }));
+							ddToggle.dispatchEvent(new Event("click", { bubbles: true }));
 						}, 10);
 					}
 				}
