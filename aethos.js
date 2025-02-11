@@ -247,7 +247,6 @@ function main() {
 
 		links.forEach((link) => {
 			if (isInternalLink(link)) return;
-			console.log(link.href);
 
 			link.setAttribute("target", "_blank");
 			link.setAttribute("rel", "noopener");
@@ -3575,7 +3574,7 @@ function main() {
 		const closeButtons = document.querySelectorAll(closeClass);
 
 		closeButtons.forEach((button) => {
-			button.addEventListener("click", function () {
+			const closeHandler = function () {
 				let currentElement = button;
 
 				// Traverse up the DOM to find the nearest .w-dropdown element
@@ -3591,13 +3590,17 @@ function main() {
 					const ddToggle = currentElement.querySelector(".w-dropdown-toggle");
 
 					if (ddToggle) {
-						ddToggle.dispatchEvent(new Event("mousedown"));
+						ddToggle.dispatchEvent(new Event("mousedown", { bubbles: true }));
 						setTimeout(() => {
-							ddToggle.dispatchEvent(new Event("mouseup"));
-						}, 10); // A short delay ensures that events are distinguished
+							ddToggle.dispatchEvent(new Event("mouseup", { bubbles: true }));
+						}, 10);
 					}
 				}
-			});
+			};
+
+			// Attach both click and touchstart events
+			button.addEventListener("click", closeHandler);
+			button.addEventListener("touchstart", closeHandler);
 		});
 	};
 
@@ -3742,29 +3745,30 @@ function main() {
 	};
 
 	/* handle destination subscribe form names */
-	aethos.functions.updateSubscribeFormName = function () {
-		return;
-		// Find all forms with a data-destination attribute
-		const forms = document.querySelectorAll("form[data-destination]");
+	/* no longer using this as we capture destination in a hidden field */
+	// aethos.functions.updateSubscribeFormName = function () {
+	// 	return;
+	// 	// Find all forms with a data-destination attribute
+	// 	const forms = document.querySelectorAll("form[data-destination]");
 
-		// Helper function to capitalize the first letter of a word
-		function capitalizeFirstLetter(string) {
-			return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
-		}
+	// 	// Helper function to capitalize the first letter of a word
+	// 	function capitalizeFirstLetter(string) {
+	// 		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+	// 	}
 
-		forms.forEach(function (form) {
-			let destinationName = form.getAttribute("data-destination");
+	// 	forms.forEach(function (form) {
+	// 		let destinationName = form.getAttribute("data-destination");
 
-			// Capitalize the destination name
-			destinationName = capitalizeFirstLetter(destinationName);
+	// 		// Capitalize the destination name
+	// 		destinationName = capitalizeFirstLetter(destinationName);
 
-			// Update data-name attribute in the required format
-			form.setAttribute(
-				"data-name",
-				`Destination Subscribe - ${destinationName}`
-			);
-		});
-	};
+	// 		// Update data-name attribute in the required format
+	// 		form.setAttribute(
+	// 			"data-name",
+	// 			`Destination Subscribe - ${destinationName}`
+	// 		);
+	// 	});
+	// };
 
 	/* hide empty sections */
 	aethos.functions.hideEmptySections = function () {
@@ -3822,7 +3826,6 @@ function main() {
 				.replace(/^_/, ""); // Remove leading underscore if necessary
 
 			if (originalId !== snakeCaseId) {
-				console.log(`Changing ID: ${originalId} -> ${snakeCaseId}`);
 				el.id = snakeCaseId;
 			}
 		});
@@ -4715,7 +4718,6 @@ function main() {
 	aethos.anim.faq();
 	aethos.anim.benefits();
 	aethos.functions.listingLinks();
-	aethos.functions.updateSubscribeFormName();
 	aethos.functions.loadVideos();
 	aethos.anim.carousel();
 	aethos.functions.patches();
@@ -4732,7 +4734,6 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
-	// aethos.functions.adjustDestinationGridHeight();
 	aethos.functions.mews();
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
