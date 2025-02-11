@@ -3585,25 +3585,15 @@ function main() {
 					currentElement = currentElement.parentElement;
 				}
 
-				let dd = currentElement;
-				dd.trigger("w-close");
-
-				// if (currentElement) {
-				// 	// Find the descendant .w-dropdown-toggle element
-				// 	const ddToggle = currentElement.querySelector(".w-dropdown-toggle");
-
-				// 	if (ddToggle) {
-				// 		ddToggle.dispatchEvent(new Event("mousedown"));
-				// 		setTimeout(() => {
-				// 			ddToggle.dispatchEvent(new Event("mouseup"));
-				// 		}, 10);
-				// 	}
-				// }
+				if (currentElement) {
+					// Trigger the Webflow 'w-close' event on the dropdown
+					currentElement.dispatchEvent(new Event("w-close", { bubbles: true }));
+				}
 			};
 
 			// Attach both click and touchstart events
 			button.addEventListener("click", closeHandler);
-			button.addEventListener("touchstart", closeHandler);
+			button.addEventListener("touchstart", closeHandler, { passive: true });
 		});
 	};
 
