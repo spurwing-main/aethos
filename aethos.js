@@ -3585,17 +3585,20 @@ function main() {
 					currentElement = currentElement.parentElement;
 				}
 
-				if (currentElement) {
-					// Find the descendant .w-dropdown-toggle element
-					const ddToggle = currentElement.querySelector(".w-dropdown-toggle");
+				let dd = currentElement;
+				dd.trigger("w-close");
 
-					if (ddToggle) {
-						ddToggle.dispatchEvent(new Event("mousedown"));
-						setTimeout(() => {
-							ddToggle.dispatchEvent(new Event("mouseup"));
-						}, 10);
-					}
-				}
+				// if (currentElement) {
+				// 	// Find the descendant .w-dropdown-toggle element
+				// 	const ddToggle = currentElement.querySelector(".w-dropdown-toggle");
+
+				// 	if (ddToggle) {
+				// 		ddToggle.dispatchEvent(new Event("mousedown"));
+				// 		setTimeout(() => {
+				// 			ddToggle.dispatchEvent(new Event("mouseup"));
+				// 		}, 10);
+				// 	}
+				// }
 			};
 
 			// Attach both click and touchstart events
