@@ -3593,7 +3593,6 @@ function main() {
 						ddToggle.dispatchEvent(new Event("mousedown"));
 						setTimeout(() => {
 							ddToggle.dispatchEvent(new Event("mouseup"));
-							ddToggle.dispatchEvent(new Event("click"));
 						}, 10);
 					}
 				}
