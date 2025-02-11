@@ -3775,15 +3775,6 @@ function main() {
 			$(this).closest(".nav-link_dd .w-dropdown-toggle").removeClass("w--open");
 		});
 
-		/* patch for date input fields to show date when one is selected instead of placeholder */
-		// $("input[type='date']").on("input", function () {
-		// 	if ($(this).val().length > 0) {
-		// 		$(this).removeClass("is-date-placeholder");
-		// 	} else {
-		// 		$(this).addClass("is-date-placeholder");
-		// 	}
-		// });
-
 		// add placeholders to date fields
 		const dateFields = document.querySelectorAll(
 			".proposal-form_field.is-date-placeholder"
@@ -3814,6 +3805,20 @@ function main() {
 					dateField.placeholder = placeholder;
 				}
 			});
+		});
+
+		// convert any capitalised block IDs to lowercase - since we are using the Heading field of destination blocks to power section IDs
+		document.querySelectorAll(".s-dest-block[id]").forEach((el) => {
+			let originalId = el.id;
+			let snakeCaseId = originalId
+				.replace(/\s+/g, "_") // Replace spaces with underscores
+				.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`) // Convert capitals to _lowercase
+				.replace(/^_/, ""); // Remove leading underscore if necessary
+
+			if (originalId !== snakeCaseId) {
+				console.log(`Changing ID: ${originalId} -> ${snakeCaseId}`);
+				el.id = snakeCaseId;
+			}
 		});
 	};
 
@@ -4627,31 +4632,6 @@ function main() {
 
 		window.addEventListener("resize", adjustHeight);
 	};
-
-	// aethos.functions.mews = function () {
-	// 	// if we are on a destination-specific page
-	// 	if (aethos.settings.destinationMewsId) {
-	// 		Mews.Distributor({
-	// 			configurationIds: [aethos.settings.destinationMewsId],
-	// 			openElements: ".reservenow",
-	// 		});
-	// 	}
-	// 	// else masterbrand
-	// 	else {
-	// 		const configurationIds = [];
-	// 		// loop through aethos.destination objects and build an array of configuration ids - NB not all destinations have a mews id
-	// 		Object.values(aethos.destinations).forEach((destination) => {
-	// 			if (destination.mewsId) {
-	// 				configurationIds.push(destination.mewsId);
-	// 			}
-	// 		});
-	// 		console.log("Mews configuration ids", configurationIds);
-	// 		Mews.Distributor({
-	// 			configurationIds: configurationIds,
-	// 			openElements: ".reservenow",
-	// 		});
-	// 	}
-	// };
 
 	aethos.functions.mews = function () {
 		// If on a destination-specific page, open Mews for that destination
