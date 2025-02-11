@@ -2149,6 +2149,12 @@ function main() {
 		const maskClass = "anim-split_line-mask";
 
 		function runSplit() {
+			// only run on desktop
+			if (window.innerWidth < 768) {
+				if (typeSplit) typeSplit.revert(); // Ensure no instance remains
+				return;
+			}
+
 			// Revert any previous SplitText instance
 			if (typeSplit) {
 				typeSplit.revert();
@@ -4684,7 +4690,7 @@ function main() {
 	aethos.functions.handleCMSFilter();
 	aethos.functions.hideEmptySections();
 	aethos.functions.updateDestinationSocials();
-	// aethos.anim.splitText(); // disabled for launch
+	aethos.anim.splitText();
 	aethos.anim.splitTextBasic();
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
