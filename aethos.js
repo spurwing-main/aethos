@@ -84,10 +84,6 @@ function main() {
 				pageWrap.getAttribute("aethos-destination-slug") || "";
 			aethos.settings.destinationStatus =
 				pageWrap.getAttribute("aethos-destination-status") || "";
-			// aethos.settings.destinationMewsId =
-			// 	pageWrap.getAttribute("aethos-destination-mews-id") || "";
-			// aethos.settings.destinationCityId =
-			// 	pageWrap.getAttribute("aethos-destination-city-id") || "";
 			const themeAttribute = pageWrap.getAttribute("aethos-theme");
 			aethos.settings.theme = themeAttribute
 				? themeAttribute.toLowerCase()
@@ -286,6 +282,12 @@ function main() {
 	/* register GSAP plugins */
 	gsap.registerPlugin(SplitText, ScrollTrigger, ScrollSmoother, ScrollToPlugin);
 
+	/* hide empty target warnings */
+	gsap.config({ nullTargetWarn: false });
+
+	// gsap.registerPlugin(GSDevTools);
+	// gsap.registerPlugin(Flip);
+
 	/* set up GSAP smooth scroll */
 	aethos.anim.smoothScroll = function () {
 		gsap.registerPlugin(ScrollSmoother);
@@ -381,7 +383,7 @@ function main() {
 				link.setAttribute("href", href);
 				document.head.appendChild(link);
 				prefetchedLinks.add(href);
-				console.log("Prefetching:", href);
+				aethos.log("Prefetching: " + href);
 			}
 		}
 
@@ -392,7 +394,7 @@ function main() {
 				link.setAttribute("href", href);
 				document.head.appendChild(link);
 				prefetchedLinks.add(href);
-				console.log("Prerendering:", href);
+				aethos.log("Prerendering: " + href);
 			}
 		}
 
@@ -539,8 +541,6 @@ function main() {
 		}
 
 		function playPageTransition(theme1, theme2, onComplete) {
-			console.log("Initializing Lottie animation...");
-
 			// Hide the Lottie container initially
 			gsap.set(aethos.transition.container, { display: "none" });
 
@@ -556,15 +556,12 @@ function main() {
 				aethos.transition.lottie.currentFrame
 			);
 			aethos.transition.lottie.goToAndStop(0, true);
-			console.log(`Lottie colors updated: ${theme1} -> ${theme2}`);
 
 			// Once colors are updated, start the animation
 			startLottieAnimation(theme1, theme2, onComplete);
 		}
 
 		function startLottieAnimation(theme1, theme2, onComplete) {
-			console.log("Starting Lottie animation...");
-
 			// Display the transition overlay
 			gsap.set(aethos.transition.element, { display: "flex" });
 
@@ -580,7 +577,7 @@ function main() {
 				paused: true,
 				delay: 0,
 				onComplete: () => {
-					console.log("Transition complete.");
+					aethos.log("Transition complete.");
 					onComplete();
 				},
 			});
@@ -596,8 +593,8 @@ function main() {
 					onUpdate: () => {
 						aethos.transition.lottie.goToAndStop(playhead.frame, true);
 					},
-					onStart: () => console.log("Lottie animation started."),
-					onComplete: () => console.log("Lottie animation completed."),
+					onStart: () => aethos.log("Lottie animation started."),
+					onComplete: () => aethos.log("Lottie animation completed."),
 				},
 				0.6
 			);
@@ -621,7 +618,6 @@ function main() {
 			);
 
 			// Play the timeline
-			console.log("Starting GSAP timeline...");
 			tl.play();
 		}
 
@@ -634,8 +630,6 @@ function main() {
 				aethos.transition.themes[destinationTheme].foreground ||
 				aethos.transition.themes.default.foreground;
 
-			console.log(destinationTheme);
-
 			const elements = animation.renderer.elements;
 
 			// Recursive function to traverse shapes
@@ -643,13 +637,11 @@ function main() {
 				shapes.forEach((shape) => {
 					// If the shape is a group, recursively process its items
 					if (shape.ty === "gr") {
-						// console.log("Processing group:", shape.nm);
 						processShapes(shape.it); // Process the group's items
 					}
 
 					// Handle animated fills
 					else if (shape.ty === "fl" && shape.c && shape.c.a === 1) {
-						// console.log("Updating animated fill for shape:", shape.nm);
 						const keyframes = shape.c.k;
 
 						if (keyframes[0]) keyframes[0].s = startColor; // Start color
@@ -659,19 +651,16 @@ function main() {
 
 					// Handle static fills
 					else if (shape.ty === "fl" && shape.c && shape.c.a === 0) {
-						// console.log("Updating static fill for shape:", shape.nm);
 						shape.c.k = startColor; // Update static color directly
 					}
 
 					// Handle strokes
 					else if (shape.ty === "st" && shape.c && shape.c.a === 0) {
-						// console.log("Updating static stroke for shape:", shape.nm);
 						shape.c.k = startColor; // Update static stroke color
 					}
 
 					// Log unhandled shapes
 					else {
-						// console.log("Unhandled shape type or missing properties:", shape);
 					}
 				});
 			}
@@ -737,6 +726,7 @@ function main() {
 		let pageBg = aethos.helpers.getProp("--color--page-bg");
 		let header_logo_wrap = header?.querySelector(".header-bar_logo-wrap");
 		let header_logo = header?.querySelector(".header-bar_middle svg.logo");
+		let header_bar_inner = header?.querySelector(".header-bar_inner");
 
 		// Check if any required element is missing
 		if (
@@ -752,6 +742,14 @@ function main() {
 
 		// get height of header logo
 		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
+
+		// apply a tiny tweak to this to try to get Lottie logo to line up with header logo
+		let logo_marginTop = "0.1rem";
+		let adjusted_logo_h = "2.13rem";
+		if (window.innerWidth < 768) {
+			adjusted_logo_h = "1.563rem";
+			adjusted_logo_h = header_bar_inner.offsetHeight + "px";
+		}
 
 		let loader_lottie = lottie.loadAnimation({
 			container: lottie_container,
@@ -867,7 +865,12 @@ function main() {
 			// shrink lottie to match real logo
 			tl.to(
 				lottie_container,
-				{ height: logo_h, duration: 1.5, ease: "power4.inOut" },
+				{
+					height: adjusted_logo_h,
+					marginTop: logo_marginTop,
+					duration: 1.5,
+					ease: "power4.inOut",
+				},
 				"<"
 			);
 
@@ -893,7 +896,256 @@ function main() {
 		function loaderEnds() {
 			//move lottie to header and hide original logo
 			header_logo_wrap.prepend(lottie_container);
-			header_logo.style.display = "none";
+			// header_logo.style.display = "none";
+			// gsap.set(header_logo, { opacity: 1 }); // show actual header logo
+			gsap.set(loader, { display: "none" }); // hide loader
+
+			// resume scroll
+			requestAnimationFrame(() => {
+				// Disable scrolling
+				aethos.helpers.pauseScroll(false);
+			});
+		}
+	};
+
+	/* site loader */
+	aethos.anim.loader_v2 = function () {
+		// Check if loader is enabled, if this is the user's first visit in 30 days,
+		// or if a specific URL parameter forces the loader.
+		const urlParams = new URLSearchParams(window.location.search);
+		const forceLoader = urlParams.has("forceLoader");
+		const suppressLoader = urlParams.has("suppressLoader");
+
+		let loader = document.querySelector(".site-loader");
+		if (!loader) {
+			return;
+		}
+
+		// Check last visit time (30-minute window)
+		function hasRecentVisit() {
+			const lastVisit = localStorage.getItem("aethos_last_visit");
+			if (!lastVisit) return false;
+			return Date.now() - parseInt(lastVisit, 10) < 30 * 60 * 1000; // 30 minutes in ms
+		}
+
+		if (
+			!forceLoader &&
+			(suppressLoader ||
+				aethos.settings.siteLoader !== "enabled" ||
+				hasRecentVisit())
+		) {
+			aethos.log("Page loader not running");
+			// Store current visit time
+			localStorage.setItem("aethos_last_visit", Date.now().toString());
+			gsap.to(loader, { autoAlpha: 0, duration: 0.4, delay: 0.2 });
+			// var tl_hide = gsap.timeline();
+			// tl_hide.to(loader, { autoAlpha: 0, duration: 0.3 });
+			// tl_hide.set(loader, { display: "none" });
+			return;
+		}
+
+		aethos.log("Page loader running");
+
+		// Store current visit time
+		localStorage.setItem("aethos_last_visit", Date.now().toString());
+
+		requestAnimationFrame(() => {
+			// Disable scrolling
+			aethos.helpers.pauseScroll(true);
+		});
+
+		let header = document.querySelector(".header");
+		let lottie_container = document.querySelector(".site-loader_lottie");
+		let pageBg = aethos.helpers.getProp("--color--page-bg");
+		let header_logo_wrap = header?.querySelector(".header-bar_logo-wrap");
+		let header_logo = header?.querySelector(".header-bar_middle svg.logo");
+
+		// Check if any required element is missing
+		if (
+			!header ||
+			!loader ||
+			!lottie_container ||
+			!header_logo_wrap ||
+			!header_logo
+		) {
+			console.warn("One or more required elements are missing. Exiting...");
+			return; // Exit early
+		}
+
+		// get height of header logo
+		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
+
+		// apply a tiny tweak to this to try to get Lottie logo to line up with header logo
+		let logo_marginTop = "0.1rem";
+		let adjusted_logo_h = "2.13rem";
+		if (window.innerWidth < 768) {
+			adjusted_logo_h = "1.563rem";
+		}
+
+		let loader_lottie = lottie.loadAnimation({
+			container: lottie_container,
+			renderer: "svg",
+			loop: false,
+			autoplay: false,
+			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67a389b78b1e2fe99b624193_aethoslogo_Siteloader_v4.json",
+		});
+
+		gsap.set(loader, { display: "flex" }); // show loader
+		gsap.set([".header-bar_left", ".header-bar_right"], { y: "-200%" }); // hide header buttons offscreen at first
+		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
+		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
+		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
+		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
+		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
+
+		// when lottie loads
+		loader_lottie.addEventListener("DOMLoaded", () => {
+			// Calculate clip block sizes
+			let lottie_rect = lottie_container.getBoundingClientRect();
+			const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
+			let lottie_w = lottie_rect.height / logoRatio;
+			let screen_w = window.innerWidth;
+			let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
+			gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
+				width: clip_w + "%",
+			});
+
+			gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+
+			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
+
+			let playhead = { frame: 0 };
+
+			// play lottie
+			tl.to(playhead, {
+				frame: loader_lottie.totalFrames - 1,
+				duration: 3.5,
+				ease: "none",
+				onUpdate: () => {
+					loader_lottie.goToAndStop(playhead.frame, true);
+				},
+			});
+
+			// change bg color
+			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
+
+			// show hero (only img is visible at first)
+			tl.to(
+				".section-hero-home",
+				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
+				3
+			);
+
+			// Scale image up
+			tl.to(
+				".hero-home_media-wrap",
+				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
+				3.75
+			);
+
+			// shrink the clip elements. top clip stays bigger to allow for larger logo
+			tl.to(
+				".site-loader_img-clip.left, .site-loader_img-clip.right",
+				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
+				4.05
+			);
+			tl.to(
+				".site-loader_img-clip.bottom",
+				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
+				4.05
+			);
+			tl.to(
+				".site-loader_img-clip.top",
+				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
+				4.05
+			);
+
+			// delete clip elements to avoid weirdness on resize
+			tl.call(removeElement(".site-loader_img-clip.left"));
+			tl.call(removeElement(".site-loader_img-clip.right"));
+			tl.call(removeElement(".site-loader_img-clip.bottom"));
+
+			// scale up the lottie spacer to force lottie up to header position
+			tl.to(
+				".site-loader_lottie-spacer",
+				{ height: "100%", duration: 2, ease: "power4.inOut" },
+				4.05
+			);
+
+			tl.add(() => {
+				const state = Flip.getState(lottie_container);
+				header_logo_wrap.prepend(lottie_container);
+				Flip.from(state, {
+					duration: 2,
+					ease: "power4.inOut",
+				});
+			}, 4.05);
+
+			// show content
+			tl.to(
+				".hero-home_content",
+				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
+				4.5
+			);
+
+			// bring in header buttons
+			tl.to(
+				[".header-bar_left", ".header-bar_right"],
+				{ y: 0, duration: 1.5, ease: "power4.inOut" },
+				5
+			);
+
+			// get rid of extra space at top
+			tl.to(
+				".site-loader_img-clip.top",
+				{
+					height: 0,
+					duration: 1.5,
+					ease: "power4.inOut",
+				},
+				"<"
+			);
+
+			// gsap.set(lottie_container, { transformOrigin: "top center" });
+
+			//shrink lottie to match real logo
+			// tl.to(
+			// 	lottie_container,
+			// 	{
+			// 		height: adjusted_logo_h,
+			// 		duration: 1.5,
+			// 		ease: "power4.inOut",
+			// 	},
+			// 	"<"
+			// );
+
+			// delete clip elements to avoid weirdness on resize
+			tl.call(removeElement(".site-loader_img-clip.top"));
+
+			// Play the timeline
+			tl.play();
+			// GSDevTools.create(tl);
+		});
+
+		function removeElement(element) {
+			if (typeof element === "string") {
+				element = document.querySelector(element);
+			}
+			return function () {
+				if (element) {
+					element.parentNode.removeChild(element);
+				}
+			};
+		}
+
+		// enable scrolling
+		function loaderEnds() {
+			//move lottie to header and hide original logo
+			// header_logo_wrap.prepend(lottie_container);
+			// header_logo.style.display = "none";
+			// gsap.set(header_logo, { opacity: 1 }); // show actual header logo
+			gsap.set(loader, { display: "none" }); // hide loader
+			// gsap.set(lottie_container, { display: "none" }); // hide loader
 
 			// resume scroll
 			requestAnimationFrame(() => {
@@ -1249,7 +1501,7 @@ function main() {
 	// function to force show header
 	aethos.nav.forceShowHeader = function (bool) {
 		if (bool) {
-			console.log("force show header ON");
+			aethos.log("force show header ON");
 			aethos.nav.headerForcedShown = true;
 			// Ensure animation exists before playing
 			if (aethos.nav.headerRevealAnim) {
@@ -1257,7 +1509,7 @@ function main() {
 				ScrollTrigger.refresh();
 			}
 		} else {
-			console.log("force show header OFF");
+			aethos.log("force show header OFF");
 			aethos.nav.headerForcedShown = false;
 			if (aethos.nav.headerRevealAnim) {
 				gsap.set(".header-bar", { clearProps: "transform" });
@@ -1308,6 +1560,25 @@ function main() {
 
 	// Fetch the destination-specific nav
 	aethos.functions.buildDestinationNav = async function () {
+		// only run if this is a destination page
+		if (!aethos.settings.destinationSlug) {
+			return;
+		}
+
+		// set some constants
+		const topMenu_selector = ".dest-nav_top";
+		const bottomMenu_selector = ".dest-nav_bottom";
+		const topMenu_underlineWidthProp = "--dest-nav-underline-width";
+		const topMenu_underlineOffsetProp = "--dest-nav-underline-offset-x";
+		const bottomMenu_underlineWidthProp = "--dest-nav-underline-width-bot";
+		const bottomMenu_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
+		const topMenu_listSelector = ".dest-nav_list"; // selector for the list of links in top
+		const bottomMenu_listSelector = ".dest-nav_child-list"; // selector for the list of links in bottom
+		const topLinkMatchString =
+			":not(.w-condition-invisible) > .link-cover:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href='']):not(.is-child)"; //Exclude invisible links and brand link, and empty hrefs, and child links
+		const bottomLinkMatchString =
+			":not(.w-condition-invisible) > .link-cover:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href=''])"; // Exclude invisible links, brand link, and empty hrefs
+
 		async function fetchDestinationNav(destinationSlug) {
 			try {
 				aethos.log(`Fetching navigation for destination: ${destinationSlug}`);
@@ -1540,116 +1811,177 @@ function main() {
 			}
 		}
 
-		function addNavigationHover(
-			menuSelector,
-			underlineWidthProp,
-			underlineOffsetProp,
-			isChildCheck = false
-		) {
-			const menus = document.querySelectorAll(menuSelector);
+		function setupUnderlines() {
+			const menu_top = document.querySelector(topMenu_selector); // top menu
+			const menus_bottom = Array.from(
+				document.querySelectorAll(bottomMenu_selector)
+			).filter((menu) => menu.querySelector(".dest-nav_item")); // all bottom menus that actually have links in
+			const currentPath = window.location.pathname; // current page path
+			let topActiveLink; // active link in top menu
 
-			const topNav_selector = ".dest-nav_top";
-			const topNav_underlineWidthProp = "--dest-nav-underline-width";
-			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
-			const listClass = ".dest-nav_list";
-			const currentPath = window.location.pathname;
+			// Find the active link in the top menu
+			const links_top = Array.from(
+				menu_top.querySelectorAll(topLinkMatchString)
+			);
+			topActiveLink = getActiveLink(links_top, currentPath);
+			if (topActiveLink) {
+				topActiveLink.classList.add("active");
+				menuUnderline(
+					menu_top,
+					topActiveLink,
+					topMenu_underlineWidthProp,
+					topMenu_underlineOffsetProp,
+					topMenu_listSelector,
+					false
+				);
+			} else {
+				// set offset to a reasonable starting pos
+				hoverFallback(menu_top, topMenu_underlineOffsetProp);
+			}
 
-			menus.forEach((menu) => {
-				// Find the active link and set the underline position initially
+			// look for active links in bottom menu
+			menus_bottom.forEach((menu) => {
+				let links = Array.from(menu.querySelectorAll(bottomLinkMatchString));
+				let activeLink = getActiveLink(links, currentPath);
 
-				let links;
-				let activeLink;
-
-				if (menu.classList.contains("dest-nav_top")) {
-					links = Array.from(
-						menu.querySelectorAll(
-							":not(.w-condition-invisible) > a:not(.w-condition-invisible):not(.dest-nav_brand-link):not([href='']):not(.is-child)" // Exclude invisible links and brand link, and empty hrefs, and child links
-						)
-					);
-
-					activeLink = getActiveLink(links, currentPath);
-				}
-
+				// if there is an active link in this bottom menu...
 				if (activeLink) {
 					activeLink.classList.add("active");
+
+					// temporarily show bottom menu so we can add underline correctly
+					gsap.set(menu, { display: "grid", autoAlpha: 1 });
+
+					menuUnderline(
+						menu,
+						activeLink,
+						bottomMenu_underlineWidthProp,
+						bottomMenu_underlineOffsetProp,
+						bottomMenu_listSelector,
+						false
+					);
+
+					// rehide bottom menu
+					gsap.set(menu, { display: "none", autoAlpha: 0 });
+
+					// Also update the parent active link for the top menu, if available.
+					const parentData = getParent(menu);
+					if (parentData && parentData.link) {
+						topActiveLink = parentData.link;
+						topActiveLink.classList.add("active");
+						menuUnderline(
+							menu_top,
+							topActiveLink,
+							topMenu_underlineWidthProp,
+							topMenu_underlineOffsetProp,
+							topMenu_listSelector,
+							false
+						);
+					}
+				}
+				// if not, set fallback
+				else {
+					hoverFallback(menu, bottomMenu_underlineOffsetProp);
 				}
 
-				// Set underline for the active link
+				// **Add event listeners for this bottom menu using its own active link**
+				addUnderlineEventListeners(menu, activeLink, "bottom", getParent(menu));
+
+				// }
+			});
+
+			// now add underline hover behaviour
+			addUnderlineEventListeners(menu_top, topActiveLink, "top");
+		}
+
+		function getParent(link_or_menu) {
+			let parentItem = link_or_menu.closest(
+				".dest-nav_item[aethos-nav-children='true']"
+			);
+			if (!parentItem) {
+				return;
+			}
+			let parentMenu = parentItem.closest(topMenu_selector); // should be same as menu_top
+			if (!parentMenu) {
+				return;
+			}
+			let parentLink = parentItem.querySelector(topLinkMatchString);
+			let parent = { link: parentLink, menu: parentMenu };
+			return parent;
+		}
+
+		function addUnderlineEventListeners(
+			menu,
+			activeLink,
+			type,
+			parent = false
+		) {
+			let underlineWidthProp, underlineOffsetProp, listClass;
+
+			if (type === "top") {
+				underlineWidthProp = topMenu_underlineWidthProp;
+				underlineOffsetProp = topMenu_underlineOffsetProp;
+				listClass = topMenu_listSelector;
+			} else {
+				underlineWidthProp = bottomMenu_underlineWidthProp;
+				underlineOffsetProp = bottomMenu_underlineOffsetProp;
+				listClass = bottomMenu_listSelector;
+			}
+			menu.addEventListener("mouseover", (event) => {
+				// Only handle events on elements with the class 'link-cover'
+				// and for the parent's menu, ignore child items.
+				if (
+					event.target.classList.contains("link-cover") &&
+					!(type === "top" && event.target.classList.contains("is-child"))
+				) {
+					menuUnderline(
+						menu,
+						event.target,
+						underlineWidthProp,
+						underlineOffsetProp
+					);
+				}
+
+				// if we are hovering over a bottom menu, trigger the parent item hover
+				if (type === "bottom" && parent && parent.link) {
+					menuUnderline(
+						parent.menu,
+						parent.link,
+						topMenu_underlineWidthProp,
+						topMenu_underlineOffsetProp
+					);
+				}
+			});
+
+			menu.addEventListener("mouseleave", () => {
 				if (activeLink) {
-					menuHover(
+					menuUnderline(
+						menu,
+						activeLink,
+						underlineWidthProp,
+						underlineOffsetProp
+					);
+				} else {
+					menu.style.setProperty(underlineWidthProp, "0");
+				}
+			});
+
+			// on window resize, update the underline position
+			window.addEventListener("resize", () => {
+				if (activeLink) {
+					menuUnderline(
 						menu,
 						activeLink,
 						underlineWidthProp,
 						underlineOffsetProp,
 						listClass,
-						false // no transition for active link initially
-					);
-				} else {
-					// set offset to a reasonable starting pos
-					menu.style.setProperty(
-						underlineOffsetProp,
-						`${window.innerWidth * 0.5}px`
+						false
 					);
 				}
-
-				menu.addEventListener("mouseover", (event) => {
-					if (
-						event.target.classList.contains("link-cover") &&
-						(!isChildCheck || !event.target.classList.contains("is-child"))
-					) {
-						// trigger hover on this item
-						menuHover(
-							menu,
-							event.target,
-							underlineWidthProp,
-							underlineOffsetProp
-						);
-
-						// if we are on a child item, trigger the parent item hover to be safe
-						if (event.target.classList.contains("is-child")) {
-							const parentItem = event.target.closest(
-								"[aethos-nav-children='true']"
-							);
-							const parentMenu = parentItem.closest(topNav_selector);
-
-							console.log(parentItem, parentMenu);
-							menuHover(
-								parentMenu,
-								parentItem,
-								topNav_underlineWidthProp,
-								topNav_underlineOffsetProp
-							);
-						}
-					}
-				});
-
-				menu.addEventListener("mouseleave", () => {
-					if (activeLink) {
-						menuHover(
-							menu,
-							activeLink,
-							underlineWidthProp,
-							underlineOffsetProp
-						);
-					} else {
-						menu.style.setProperty(underlineWidthProp, "0");
-					}
-				});
-
-				// on window resize, update the underline position
-				window.addEventListener("resize", () => {
-					if (activeLink) {
-						menuHover(
-							menu,
-							activeLink,
-							underlineWidthProp,
-							underlineOffsetProp,
-							listClass,
-							false
-						);
-					}
-				});
 			});
+		}
+
+		function hoverFallback(menu, prop) {
+			menu.style.setProperty(prop, `${window.innerWidth * 0.5}px`);
 		}
 
 		function showSubnavOnHover() {
@@ -1675,10 +2007,10 @@ function main() {
 							paused: true,
 							// reversed: true,
 							onReverseComplete: function () {
-								gsap.set(subnav_wrapper, { display: "none" });
+								gsap.set(subnav_wrapper, { autoAlpha: 0 });
 							},
 						})
-						.set(subnav_wrapper, { display: "grid" })
+						.set(subnav_wrapper, { display: "grid", autoAlpha: 1 })
 						.fromTo(
 							subnav,
 							{ autoAlpha: 0, height: 0 },
@@ -1706,7 +2038,7 @@ function main() {
 					gsap
 						.matchMedia()
 						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
-							console.log("setting up subnav hover");
+							aethos.log("setting up subnav hover");
 							const tl = setupSubnavTimeline();
 
 							// Desktop: toggle timeline on hover
@@ -1741,11 +2073,7 @@ function main() {
 
 							// Cleanup function for when the media query condition changes
 							return () => {
-								// console.log("turning off subnav hover");
-								// primaryItem.removeEventListener("mouseenter", openSubmenu);
-								// primaryItem.removeEventListener("mouseleave", closeSubmenu);
-								// subnav.removeEventListener("mouseenter", openSubmenu);
-								// subnav.removeEventListener("mouseleave", closeSubmenu);
+								aethos.log("turning off subnav hover");
 							};
 						});
 
@@ -1772,12 +2100,7 @@ function main() {
 							}
 
 							// Cleanup function for when the media query condition changes
-							return () => {
-								primaryItem.removeEventListener("click", onClick);
-								if (backBtn) {
-									backBtn.removeEventListener("click", onClick);
-								}
-							};
+							return () => {};
 						});
 				}
 			});
@@ -1794,34 +2117,14 @@ function main() {
 			// Add navigation hover effects for top and bottom menus
 			$(".dest-nav_bottom .link-cover").addClass("is-child"); // Patch to distinguish top and bottom items
 
-			const topNav_selector = ".dest-nav_top";
-			const topNav_underlineWidthProp = "--dest-nav-underline-width";
-			const topNav_underlineOffsetProp = "--dest-nav-underline-offset-x";
-
-			const botNav_selector = ".dest-nav_bottom";
-			const botNav_underlineWidthProp = "--dest-nav-underline-width-bot";
-			const botNav_underlineOffsetProp = "--dest-nav-underline-offset-x-bot";
-
-			// top
-			addNavigationHover(
-				topNav_selector,
-				topNav_underlineWidthProp,
-				topNav_underlineOffsetProp,
-				true
-			);
-
-			// bottom
-			addNavigationHover(
-				botNav_selector,
-				botNav_underlineWidthProp,
-				botNav_underlineOffsetProp,
-				false
-			);
+			setupUnderlines();
 
 			showSubnavOnHover();
+
 			document.querySelector(".dest-nav").classList.add("is-ready");
+			aethos.log("Destination nav setup complete");
 		} catch (error) {
-			// console.error("Error setting up the destination navigation:", error);
+			console.error("Error setting up the destination navigation:", error);
 		}
 	};
 
@@ -2201,7 +2504,9 @@ function main() {
 		window.addEventListener("resize", () => {
 			if (windowWidth !== $(window).innerWidth()) {
 				windowWidth = $(window).innerWidth();
-				typeSplit.revert();
+				if (typeSplit) {
+					typeSplit.revert();
+				}
 			}
 		});
 	};
@@ -3556,17 +3861,21 @@ function main() {
 			field.value = location.href;
 		});
 
-		// /* current destination */ /* EDIT - this is now set manually in component overrides so we can control on a page by page basis, e.g. setting a destination on club pages */
-		// const destinationFields = document.querySelectorAll(
-		// 	'input[name="PAGEDESTINATION"]'
-		// );
+		// /* current destination */
+		// /* EDIT - this is now set manually in component overrides so we can control on a page by page basis, e.g. setting a destination on club pages */
+		// /* EDIT 2 - we were not manually setting this for footer forms, and there's no easy for a client to do this for static destination forms, so we are reverting to auto-setting this for empty fields */
+		const destinationFields = document.querySelectorAll(
+			'input[name="PAGEDESTINATION"]'
+		);
 
-		// // if we know the current destination
-		// if (aethos.settings.destinationSlug) {
-		// 	destinationFields.forEach((field) => {
-		// 		field.value = aethos.settings.destinationSlug;
-		// 	});
-		// }
+		// if we know the current destination
+		if (aethos.settings.destinationSlug) {
+			destinationFields.forEach((field) => {
+				if (field.value == "") {
+					field.value = aethos.settings.destinationSlug;
+				}
+			});
+		}
 	};
 
 	// modal close button
@@ -3641,9 +3950,7 @@ function main() {
 
 		// Listen for the Weglot language change event
 		Weglot.on("languageChanged", function (newLang, prevLang) {
-			console.log(
-				"The language on the page just changed to (code): " + newLang
-			);
+			aethos.log("The language on the page just changed to (code): " + newLang);
 
 			// Update all elements with the attribute to the new language code
 			currentLangEls.forEach((el) => {
@@ -4349,7 +4656,7 @@ function main() {
 
 			// Set underline for the active link
 			if (activeLink) {
-				menuHover(
+				menuUnderline(
 					menu,
 					activeLink,
 					underlineWidthProp,
@@ -4368,7 +4675,7 @@ function main() {
 			menu.addEventListener("mouseover", (event) => {
 				if (event.target.classList.contains("club-nav_link-text")) {
 					// trigger hover on this item
-					menuHover(
+					menuUnderline(
 						menu,
 						event.target,
 						underlineWidthProp,
@@ -4379,7 +4686,12 @@ function main() {
 
 			menu.addEventListener("mouseleave", () => {
 				if (activeLink) {
-					menuHover(menu, activeLink, underlineWidthProp, underlineOffsetProp);
+					menuUnderline(
+						menu,
+						activeLink,
+						underlineWidthProp,
+						underlineOffsetProp
+					);
 				} else {
 					menu.style.setProperty(underlineWidthProp, "0");
 				}
@@ -4388,7 +4700,7 @@ function main() {
 			// on window resize, update the underline position
 			window.addEventListener("resize", () => {
 				if (activeLink) {
-					menuHover(
+					menuUnderline(
 						menu,
 						activeLink,
 						underlineWidthProp,
@@ -4487,7 +4799,7 @@ function main() {
 		const observer = new MutationObserver(
 			debounce(() => {
 				requestAnimationFrame(() => {
-					console.log("Refreshing ScrollTrigger");
+					aethos.log("Refreshing ScrollTrigger");
 					ScrollTrigger.refresh();
 				});
 			}, 500) // Adjust the debounce delay as necessary
@@ -4501,11 +4813,11 @@ function main() {
 					attributes: true,
 					attributeFilter: ["style"],
 				});
-				console.log("MutationObserver enabled for .nav_bg on mobile.");
+				aethos.log("MutationObserver enabled for .nav_bg on mobile.");
 			} else {
 				// Disable observer on larger screens
 				observer.disconnect();
-				console.log("MutationObserver disconnected on desktop.");
+				aethos.log("MutationObserver disconnected on desktop.");
 			}
 		};
 
@@ -4571,19 +4883,62 @@ function main() {
 
 	function getActiveLink(links, currentPath) {
 		if (!links || !currentPath) return;
-		let activeLink = links.find((link) => {
+
+		// Helper to normalize a path by removing a trailing slash (unless the path is just "/")
+		function normalizePath(path) {
+			if (!path) return path;
+			return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+		}
+
+		const normalizedCurrentPath = normalizePath(currentPath);
+
+		return links.find((link) => {
+			let linkPath;
 			try {
-				const linkPath = new URL(link.href, window.location.origin).pathname;
-				return linkPath === currentPath; // Compare only the path
+				linkPath = new URL(link.href, window.location.origin).pathname;
 			} catch (error) {
-				// Skip invalid or relative links
+				// If the URL is invalid or relative, skip it.
 				return false;
 			}
+
+			let normalizedLinkPath = normalizePath(linkPath);
+
+			// --- Case 1: Legacy "pretty URL" conversion ---
+			// If the link uses the legacy pattern (e.g. "/destination-retreats/ericeira")
+			// convert it to the pretty URL equivalent ("/destinations/ericeira/retreats")
+			if (normalizedLinkPath.startsWith("/destination-")) {
+				// Split the path parts (ignoring empty strings)
+				const parts = normalizedLinkPath.split("/").filter(Boolean);
+				if (parts.length >= 2) {
+					// Extract the subpage from the first part.
+					// e.g. "destination-retreats" becomes "retreats"
+					const legacyPart = parts[0];
+					const subpage = legacyPart.substring("destination-".length);
+					const destination = parts[1];
+					// Include any additional segments if present.
+					const extra = parts.slice(2).join("/");
+					normalizedLinkPath = normalizePath(
+						`/destinations/${destination}/${subpage}${extra ? "/" + extra : ""}`
+					);
+				}
+			}
+
+			// --- Case 2: Room page special handling ---
+			// If the current page is a room ("/rooms/xxx"), then we want the "Stay" menu link,
+			// which is of the form "/destinations/yyy/stay", to be considered active.
+			if (normalizedCurrentPath.startsWith("/rooms/")) {
+				// Use a regex to check if the link's path matches "/destinations/<destination>/stay"
+				if (/^\/destinations\/[^\/]+\/stay\/?$/.test(normalizedLinkPath)) {
+					return true;
+				}
+			}
+
+			// --- Default: Direct path comparison ---
+			return normalizedLinkPath === normalizedCurrentPath;
 		});
-		return activeLink;
 	}
 
-	function menuHover(
+	function menuUnderline(
 		menu,
 		target,
 		underlineWidthProp,
@@ -4623,7 +4978,7 @@ function main() {
 		function adjustHeight() {
 			const grid = document.querySelector(".c-destinations-grid");
 			if (!grid) return; // Exit if element is not found
-			console.log("Adjusting grid height");
+			aethos.log("Adjusting grid height");
 			// Check if the grid content overflows
 			if (grid.scrollHeight > grid.clientHeight) {
 				grid.style.minHeight = `${grid.scrollHeight}px`; // Set minHeight dynamically
@@ -4638,8 +4993,8 @@ function main() {
 	aethos.functions.mews = function () {
 		// If on a destination-specific page, open Mews for that destination
 		if (aethos.settings.destinationMewsId) {
-			console.log(
-				"Opening Mews for destination",
+			aethos.log(
+				"Setting up Mews for destination",
 				aethos.settings.destinationMewsId
 			);
 			Mews.Distributor({
@@ -4647,7 +5002,7 @@ function main() {
 				openElements: ".reservenow",
 			});
 		} else {
-			console.log("Opening Mews for all destinations");
+			aethos.log("Setting up Mews for all destinations");
 			// On the masterbrand page, listen for clicks on hotels in the booking modal
 			document.querySelectorAll(".booking_link").forEach((el) => {
 				el.addEventListener("click", function () {
