@@ -1440,6 +1440,7 @@ function main() {
 		aethos.nav.headerForcedShown = false;
 		const hideThreshold = 150; // Distance to scroll before hiding is allowed
 		const showThreshold = 100; // Distance from the top where the header is always shown
+		let headerVisible = true; // Track whether the header is currently visible
 
 		// if we are on a non-destination page...
 
