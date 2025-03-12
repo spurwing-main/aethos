@@ -1438,9 +1438,8 @@ function main() {
 		}
 
 		aethos.nav.headerForcedShown = false;
-		const hideThreshold = 150; // Distance to scroll before hiding is allowed
-		const showThreshold = 100; // Distance from the top where the header is always shown
-		let headerVisible = true; // Track whether the header is currently visible
+		const hideThreshold = 100; // Distance to scroll before hiding is allowed
+		const showThreshold = 50; // Distance from the top where the header is always shown
 
 		// if we are on a non-destination page...
 
@@ -1473,25 +1472,18 @@ function main() {
 				const deltaY = currentScrollY - lastScrollY;
 
 				if (currentScrollY <= showThreshold) {
-					// **Smoothly ensure header is always shown near the top**
-					if (!headerVisible) {
-						aethos.nav.headerRevealAnim.play();
-						headerVisible = true;
-					}
+					// **Always show header near top**
+					aethos.nav.headerRevealAnim.play();
 					scrollBuffer = 0;
 				} else if (deltaY > 0 && currentScrollY > hideThreshold) {
 					// **Only hide after scrolling past hideThreshold**
-					if (headerVisible) {
-						aethos.nav.headerRevealAnim.reverse();
-						headerVisible = false;
-					}
+					aethos.nav.headerRevealAnim.reverse();
 					scrollBuffer = 0;
 				} else if (deltaY < 0) {
 					// **Reveal header when scrolling up**
 					scrollBuffer -= deltaY;
-					if (scrollBuffer >= 50 && !headerVisible) {
+					if (scrollBuffer >= 50) {
 						aethos.nav.headerRevealAnim.play();
-						headerVisible = true;
 						scrollBuffer = 0;
 					}
 				}
