@@ -1472,18 +1472,25 @@ function main() {
 				const deltaY = currentScrollY - lastScrollY;
 
 				if (currentScrollY <= showThreshold) {
-					// **Always show header near top**
-					aethos.nav.headerRevealAnim.play();
+					// **Smoothly ensure header is always shown near the top**
+					if (!headerVisible) {
+						aethos.nav.headerRevealAnim.play();
+						headerVisible = true;
+					}
 					scrollBuffer = 0;
 				} else if (deltaY > 0 && currentScrollY > hideThreshold) {
 					// **Only hide after scrolling past hideThreshold**
-					aethos.nav.headerRevealAnim.reverse();
+					if (headerVisible) {
+						aethos.nav.headerRevealAnim.reverse();
+						headerVisible = false;
+					}
 					scrollBuffer = 0;
 				} else if (deltaY < 0) {
 					// **Reveal header when scrolling up**
 					scrollBuffer -= deltaY;
-					if (scrollBuffer >= 50) {
+					if (scrollBuffer >= 50 && !headerVisible) {
 						aethos.nav.headerRevealAnim.play();
+						headerVisible = true;
 						scrollBuffer = 0;
 					}
 				}
