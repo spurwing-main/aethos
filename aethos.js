@@ -1438,108 +1438,115 @@ function main() {
 		}
 
 		aethos.nav.headerForcedShown = false;
+		const hideThreshold = 150; // Distance to scroll before hiding is allowed
+		const showThreshold = 100; // Distance from the top where the header is always shown
 
 		// if we are on a non-destination page...
-		if (aethos.settings.theme) {
-			// if (!aethos.settings.theme || aethos.settings.theme == "default") {
-			aethos.nav.headerRevealAnim = gsap
-				.from(".headers", {
-					yPercent: -100,
-					paused: true,
-					duration: 0.5,
-				})
-				.progress(1);
 
-			let lastScrollY = window.scrollY; // Store the last scroll position
-			const scrollThreshold = 50; // Pixel distance to trigger header reveal
-			let scrollBuffer = 0; // Accumulated scroll-up distance
+		// if (!aethos.settings.theme || aethos.settings.theme == "default") {
 
-			aethos.headerScrollTrigger = ScrollTrigger.create({
-				start: "top -1px",
-				end: "max",
-				pin: ".site-header",
-				pinSpacing: false,
-				onUpdate: (self) => {
-					// prevent header from hiding if it was forced to show
-					if (aethos.nav.headerForcedShown) {
-						return;
-					}
+		// EDIT - we no longer handle different themes differently - we just hide/show all
+		aethos.nav.headerRevealAnim = gsap
+			.from(".headers", {
+				yPercent: -100,
+				paused: true,
+				duration: 0.5,
+			})
+			.progress(1);
 
-					const currentScrollY = window.scrollY;
-					const deltaY = currentScrollY - lastScrollY;
+		let lastScrollY = window.scrollY;
+		let scrollBuffer = 0;
 
-					if (deltaY > 0) {
-						// Scrolling Down: Hide the header and reset buffer
-						aethos.nav.headerRevealAnim.reverse();
+		aethos.headerScrollTrigger = ScrollTrigger.create({
+			start: "top -1px",
+			end: "max",
+			pin: ".site-header",
+			pinSpacing: false,
+			onUpdate: (self) => {
+				// prevent header from hiding if it was forced to show
+				if (aethos.nav.headerForcedShown) {
+					return;
+				}
+
+				const currentScrollY = window.scrollY;
+				const deltaY = currentScrollY - lastScrollY;
+
+				if (currentScrollY <= showThreshold) {
+					// **Always show header near top**
+					aethos.nav.headerRevealAnim.play();
+					scrollBuffer = 0;
+				} else if (deltaY > 0 && currentScrollY > hideThreshold) {
+					// **Only hide after scrolling past hideThreshold**
+					aethos.nav.headerRevealAnim.reverse();
+					scrollBuffer = 0;
+				} else if (deltaY < 0) {
+					// **Reveal header when scrolling up**
+					scrollBuffer -= deltaY;
+					if (scrollBuffer >= 50) {
+						aethos.nav.headerRevealAnim.play();
 						scrollBuffer = 0;
-					} else if (deltaY < 0) {
-						// Scrolling Up: Accumulate buffer and show header after threshold
-						scrollBuffer -= deltaY; // deltaY is negative, so subtracting increases the buffer
-						if (scrollBuffer >= scrollThreshold) {
-							aethos.nav.headerRevealAnim.play();
-							scrollBuffer = 0; // Reset buffer after showing header
-						}
 					}
+				}
 
-					lastScrollY = currentScrollY; // Update last scroll position
-				},
-			});
-		} else if (aethos.settings.theme == "club") {
-			aethos.headerScrollTrigger = ScrollTrigger.create({
-				start: "top -1px",
-				end: "max",
-				pin: ".club-header",
-			});
-		} else {
-			let mm = gsap.matchMedia();
+				lastScrollY = currentScrollY; // Update last scroll position
+			},
+		});
+		// } else if (aethos.settings.theme == "club") {
+		// 	aethos.headerScrollTrigger = ScrollTrigger.create({
+		// 		start: "top -1px",
+		// 		end: "max",
+		// 		pin: ".club-header",
+		// 	});
+		// } else {
+		// 	let mm = gsap.matchMedia();
 
-			aethos.headerScrollTrigger = ScrollTrigger.create({
-				start: "top -1px",
-				end: "max",
-				pin: ".dest-header",
-			});
+		// 	aethos.headerScrollTrigger = ScrollTrigger.create({
+		// 		start: "top -1px",
+		// 		end: "max",
+		// 		pin: ".dest-header",
+		// 	});
 
-			// mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
-			// 	console.log("test");
-			// 	aethos.nav.headerRevealAnim = gsap
-			// 		.from(".header-bar", {
-			// 			yPercent: -100,
-			// 			paused: true,
-			// 			duration: 0.5,
-			// 		})
-			// 		.progress(1);
+		// 	// mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
+		// 	// 	console.log("test");
+		// 	// 	aethos.nav.headerRevealAnim = gsap
+		// 	// 		.from(".header-bar", {
+		// 	// 			yPercent: -100,
+		// 	// 			paused: true,
+		// 	// 			duration: 0.5,
+		// 	// 		})
+		// 	// 		.progress(1);
 
-			// 	let lastScrollY = window.scrollY;
-			// 	const scrollThreshold = 50;
-			// 	let scrollBuffer = 0;
+		// 	// 	let lastScrollY = window.scrollY;
+		// 	// 	const scrollThreshold = 50;
+		// 	// 	let scrollBuffer = 0;
 
-			// 	aethos.headerScrollTrigger2 = ScrollTrigger.create({
-			// 		start: "top -1px",
-			// 		end: "max",
-			// 		onUpdate: (self) => {
-			// 			if (aethos.nav.headerForcedShown) {
-			// 				return;
-			// 			}
+		// 	// 	aethos.headerScrollTrigger2 = ScrollTrigger.create({
+		// 	// 		start: "top -1px",
+		// 	// 		end: "max",
+		// 	// 		onUpdate: (self) => {
+		// 	// 			if (aethos.nav.headerForcedShown) {
+		// 	// 				return;
+		// 	// 			}
 
-			// 			const currentScrollY = window.scrollY;
-			// 			const deltaY = currentScrollY - lastScrollY;
+		// 	// 			const currentScrollY = window.scrollY;
+		// 	// 			const deltaY = currentScrollY - lastScrollY;
 
-			// 			if (deltaY > 0) {
-			// 				aethos.nav.headerRevealAnim.reverse();
-			// 				scrollBuffer = 0;
-			// 			} else if (deltaY < 0) {
-			// 				scrollBuffer -= deltaY;
-			// 				if (scrollBuffer >= scrollThreshold) {
-			// 					aethos.nav.headerRevealAnim.play();
-			// 					scrollBuffer = 0;
-			// 				}
-			// 			}
+		// 	// 			if (deltaY > 0) {
+		// 	// 				aethos.nav.headerRevealAnim.reverse();
+		// 	// 				scrollBuffer = 0;
+		// 	// 			} else if (deltaY < 0) {
+		// 	// 				scrollBuffer -= deltaY;
+		// 	// 				if (scrollBuffer >= scrollThreshold) {
+		// 	// 					aethos.nav.headerRevealAnim.play();
+		// 	// 					scrollBuffer = 0;
+		// 	// 				}
+		// 	// 			}
 
-			// 			lastScrollY = currentScrollY;
-			// 		},
-			// 	});
-			// });
-		}
+		// 	// 			lastScrollY = currentScrollY;
+		// 	// 		},
+		// 	// 	});
+		// 	// });
+		// }
 	};
 
 	// function to force show header
