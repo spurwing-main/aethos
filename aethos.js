@@ -290,8 +290,6 @@ function main() {
 
 	/* set up GSAP smooth scroll */
 	aethos.anim.smoothScroll = function () {
-		gsap.registerPlugin(ScrollSmoother);
-
 		if (!aethos.settings.dev.smooth) {
 			return;
 		}
@@ -1441,9 +1439,10 @@ function main() {
 		aethos.nav.headerForcedShown = false;
 
 		// if we are on a non-destination page...
-		if (!aethos.settings.theme || aethos.settings.theme == "default") {
+		if (aethos.settings.theme) {
+			// if (!aethos.settings.theme || aethos.settings.theme == "default") {
 			aethos.nav.headerRevealAnim = gsap
-				.from(".header-bar", {
+				.from(".headers", {
 					yPercent: -100,
 					paused: true,
 					duration: 0.5,
@@ -1457,7 +1456,8 @@ function main() {
 			aethos.headerScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
-				pin: ".header",
+				pin: ".site-header",
+				pinSpacing: false,
 				onUpdate: (self) => {
 					// prevent header from hiding if it was forced to show
 					if (aethos.nav.headerForcedShown) {
@@ -1490,11 +1490,54 @@ function main() {
 				pin: ".club-header",
 			});
 		} else {
+			let mm = gsap.matchMedia();
+
 			aethos.headerScrollTrigger = ScrollTrigger.create({
 				start: "top -1px",
 				end: "max",
 				pin: ".dest-header",
 			});
+
+			// mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
+			// 	console.log("test");
+			// 	aethos.nav.headerRevealAnim = gsap
+			// 		.from(".header-bar", {
+			// 			yPercent: -100,
+			// 			paused: true,
+			// 			duration: 0.5,
+			// 		})
+			// 		.progress(1);
+
+			// 	let lastScrollY = window.scrollY;
+			// 	const scrollThreshold = 50;
+			// 	let scrollBuffer = 0;
+
+			// 	aethos.headerScrollTrigger2 = ScrollTrigger.create({
+			// 		start: "top -1px",
+			// 		end: "max",
+			// 		onUpdate: (self) => {
+			// 			if (aethos.nav.headerForcedShown) {
+			// 				return;
+			// 			}
+
+			// 			const currentScrollY = window.scrollY;
+			// 			const deltaY = currentScrollY - lastScrollY;
+
+			// 			if (deltaY > 0) {
+			// 				aethos.nav.headerRevealAnim.reverse();
+			// 				scrollBuffer = 0;
+			// 			} else if (deltaY < 0) {
+			// 				scrollBuffer -= deltaY;
+			// 				if (scrollBuffer >= scrollThreshold) {
+			// 					aethos.nav.headerRevealAnim.play();
+			// 					scrollBuffer = 0;
+			// 				}
+			// 			}
+
+			// 			lastScrollY = currentScrollY;
+			// 		},
+			// 	});
+			// });
 		}
 	};
 
