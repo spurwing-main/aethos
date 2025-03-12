@@ -1,5 +1,4 @@
 function main() {
-	aethos.log("Running latest version");
 	aethos.settings.dev = aethos.settings.dev || {};
 
 	// Function to get URL parameters
