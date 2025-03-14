@@ -5142,7 +5142,7 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
-	//aethos.functions.mews();
-	aethos.functions.hc();
+	aethos.functions.mews();
+	// aethos.functions.hc();
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
