@@ -5074,6 +5074,16 @@ function main() {
 		}
 	};
 
+	aethos.functions.hc = function () {
+		const buttons = document.querySelectorAll(".reservenow");
+		buttons.forEach((button) => {
+			button.addEventListener("click", (e) => {
+				e.preventDefault();
+				window.__HC__.ibe.search();
+			});
+		});
+	};
+
 	/******/
 	/*** CALL FUNCTIONS ***/
 	/******/
@@ -5132,6 +5142,7 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
-	aethos.functions.mews();
+	//aethos.functions.mews();
+	aethos.functions.hc();
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
