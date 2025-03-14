@@ -311,6 +311,14 @@ function main() {
 					// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
 					ScrollTrigger.refresh();
 				},
+				onFocusIn: () => {
+					// Prevent focus on hc-ibe element
+					var focused = document.activeElement;
+					if (focused.tagName.toLowerCase() === "hc-ibe") {
+						aethos.log('Blocked focus to "hc-ibe"');
+						return false;
+					}
+				},
 			});
 			// kill smoother on mobile
 			return () => {
@@ -5142,7 +5150,7 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
-	aethos.functions.mews();
-	// aethos.functions.hc();
+	// aethos.functions.mews();
+	aethos.functions.hc();
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
