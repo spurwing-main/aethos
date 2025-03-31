@@ -388,6 +388,8 @@ function main() {
 		document.addEventListener("click", function (e) {
 			const link = e.target.closest("a");
 
+			console.log("Link clicked:", link);
+
 			if (!link) return; // Ignore clicks not on <a> elements
 
 			// Exclude links that are descendants of a `.pagination` element
@@ -519,6 +521,7 @@ function main() {
 		}
 
 		function playPageTransition(theme1, theme2, onComplete) {
+			console.log("Running page transition");
 			// Hide the Lottie container initially
 			gsap.set(aethos.transition.container, { display: "none" });
 
@@ -535,6 +538,11 @@ function main() {
 		}
 
 		function startLottieAnimation(theme1, theme2, onComplete) {
+			aethos.log("Calling showHC(false)"); // <- add this to confirm
+
+			// hide HC
+			aethos.functions.showHC(false);
+
 			// Display the transition overlay
 			gsap.set(aethos.transition.element, { display: "flex" });
 
@@ -551,6 +559,8 @@ function main() {
 				delay: 0,
 				onComplete: () => {
 					aethos.log("Transition complete.");
+					// show HC again
+					aethos.functions.showHC(true);
 					onComplete();
 				},
 			});
@@ -683,6 +693,9 @@ function main() {
 
 		aethos.log("Page loader running");
 
+		// hide HC
+		aethos.functions.showHC(false);
+
 		// Store current visit time
 		localStorage.setItem("aethos_last_visit", Date.now().toString());
 
@@ -701,6 +714,8 @@ function main() {
 		// Check if any required element is missing
 		if (!header || !loader || !lottie_container || !header_logo_wrap || !header_logo) {
 			console.warn("One or more required elements are missing. Exiting...");
+			aethos.functions.showHC(true);
+			aethos.helpers.pauseScroll(false);
 			return; // Exit early
 		}
 
@@ -854,238 +869,240 @@ function main() {
 
 			// resume scroll
 			requestAnimationFrame(() => {
-				// Disable scrolling
 				aethos.helpers.pauseScroll(false);
 			});
+
+			// show HC
+			aethos.functions.showHC(true);
 		}
 	};
 
-	/* site loader */
-	aethos.anim.loader_v2 = function () {
-		// Check if loader is enabled, if this is the user's first visit in 30 days,
-		// or if a specific URL parameter forces the loader.
-		const urlParams = new URLSearchParams(window.location.search);
-		const forceLoader = urlParams.has("forceLoader");
-		const suppressLoader = urlParams.has("suppressLoader");
+	// /* site loader */
+	// aethos.anim.loader_v2 = function () {
+	// 	// Check if loader is enabled, if this is the user's first visit in 30 days,
+	// 	// or if a specific URL parameter forces the loader.
+	// 	const urlParams = new URLSearchParams(window.location.search);
+	// 	const forceLoader = urlParams.has("forceLoader");
+	// 	const suppressLoader = urlParams.has("suppressLoader");
 
-		let loader = document.querySelector(".site-loader");
-		if (!loader) {
-			return;
-		}
+	// 	let loader = document.querySelector(".site-loader");
+	// 	if (!loader) {
+	// 		return;
+	// 	}
 
-		// Check last visit time (30-minute window)
-		function hasRecentVisit() {
-			const lastVisit = localStorage.getItem("aethos_last_visit");
-			if (!lastVisit) return false;
-			return Date.now() - parseInt(lastVisit, 10) < 30 * 60 * 1000; // 30 minutes in ms
-		}
+	// 	// Check last visit time (30-minute window)
+	// 	function hasRecentVisit() {
+	// 		const lastVisit = localStorage.getItem("aethos_last_visit");
+	// 		if (!lastVisit) return false;
+	// 		return Date.now() - parseInt(lastVisit, 10) < 30 * 60 * 1000; // 30 minutes in ms
+	// 	}
 
-		if (
-			!forceLoader &&
-			(suppressLoader || aethos.settings.siteLoader !== "enabled" || hasRecentVisit())
-		) {
-			aethos.log("Page loader not running");
-			// Store current visit time
-			localStorage.setItem("aethos_last_visit", Date.now().toString());
-			gsap.to(loader, { autoAlpha: 0, duration: 0.4, delay: 0.2 });
-			// var tl_hide = gsap.timeline();
-			// tl_hide.to(loader, { autoAlpha: 0, duration: 0.3 });
-			// tl_hide.set(loader, { display: "none" });
-			return;
-		}
+	// 	if (
+	// 		!forceLoader &&
+	// 		(suppressLoader || aethos.settings.siteLoader !== "enabled" || hasRecentVisit())
+	// 	) {
+	// 		aethos.log("Page loader not running");
+	// 		// Store current visit time
+	// 		localStorage.setItem("aethos_last_visit", Date.now().toString());
+	// 		gsap.to(loader, { autoAlpha: 0, duration: 0.4, delay: 0.2 });
+	// 		// var tl_hide = gsap.timeline();
+	// 		// tl_hide.to(loader, { autoAlpha: 0, duration: 0.3 });
+	// 		// tl_hide.set(loader, { display: "none" });
+	// 		return;
+	// 	}
 
-		aethos.log("Page loader running");
+	// 	aethos.log("Page loader running");
 
-		// Store current visit time
-		localStorage.setItem("aethos_last_visit", Date.now().toString());
+	// 	// Store current visit time
+	// 	localStorage.setItem("aethos_last_visit", Date.now().toString());
 
-		requestAnimationFrame(() => {
-			// Disable scrolling
-			aethos.helpers.pauseScroll(true);
-		});
+	// 	requestAnimationFrame(() => {
+	// 		// Disable scrolling
+	// 		aethos.helpers.pauseScroll(true);
+	// 	});
 
-		let header = document.querySelector(".header");
-		let lottie_container = document.querySelector(".site-loader_lottie");
-		let pageBg = aethos.helpers.getProp("--color--page-bg");
-		let header_logo_wrap = header?.querySelector(".header-bar_logo-wrap");
-		let header_logo = header?.querySelector(".header-bar_middle svg.logo");
+	// 	let header = document.querySelector(".header");
+	// 	let lottie_container = document.querySelector(".site-loader_lottie");
+	// 	let pageBg = aethos.helpers.getProp("--color--page-bg");
+	// 	let header_logo_wrap = header?.querySelector(".header-bar_logo-wrap");
+	// 	let header_logo = header?.querySelector(".header-bar_middle svg.logo");
 
-		// Check if any required element is missing
-		if (!header || !loader || !lottie_container || !header_logo_wrap || !header_logo) {
-			console.warn("One or more required elements are missing. Exiting...");
-			return; // Exit early
-		}
+	// 	// Check if any required element is missing
+	// 	if (!header || !loader || !lottie_container || !header_logo_wrap || !header_logo) {
+	// 		console.warn("One or more required elements are missing. Exiting...");
+	// 		return; // Exit early
+	// 	}
 
-		// get height of header logo
-		let logo_h = aethos.helpers.getProp("--c--header--logo-h");
+	// 	// get height of header logo
+	// 	let logo_h = aethos.helpers.getProp("--c--header--logo-h");
 
-		// apply a tiny tweak to this to try to get Lottie logo to line up with header logo
-		let logo_marginTop = "0.1rem";
-		let adjusted_logo_h = "2.13rem";
-		if (window.innerWidth < 768) {
-			adjusted_logo_h = "1.563rem";
-		}
+	// 	// apply a tiny tweak to this to try to get Lottie logo to line up with header logo
+	// 	let logo_marginTop = "0.1rem";
+	// 	let adjusted_logo_h = "2.13rem";
+	// 	if (window.innerWidth < 768) {
+	// 		adjusted_logo_h = "1.563rem";
+	// 	}
 
-		let loader_lottie = lottie.loadAnimation({
-			container: lottie_container,
-			renderer: "svg",
-			loop: false,
-			autoplay: false,
-			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67a389b78b1e2fe99b624193_aethoslogo_Siteloader_v4.json",
-		});
+	// 	let loader_lottie = lottie.loadAnimation({
+	// 		container: lottie_container,
+	// 		renderer: "svg",
+	// 		loop: false,
+	// 		autoplay: false,
+	// 		path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67a389b78b1e2fe99b624193_aethoslogo_Siteloader_v4.json",
+	// 	});
 
-		gsap.set(loader, { display: "flex" }); // show loader
-		gsap.set([".header-bar_left", ".header-bar_right"], { y: "-200%" }); // hide header buttons offscreen at first
-		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
-		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
-		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
-		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
-		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
+	// 	gsap.set(loader, { display: "flex" }); // show loader
+	// 	gsap.set([".header-bar_left", ".header-bar_right"], { y: "-200%" }); // hide header buttons offscreen at first
+	// 	gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
+	// 	gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
+	// 	gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
+	// 	gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
+	// 	gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
 
-		// when lottie loads
-		loader_lottie.addEventListener("DOMLoaded", () => {
-			// Calculate clip block sizes
-			let lottie_rect = lottie_container.getBoundingClientRect();
-			const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
-			let lottie_w = lottie_rect.height / logoRatio;
-			let screen_w = window.innerWidth;
-			let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
-			gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
-				width: clip_w + "%",
-			});
+	// 	// when lottie loads
+	// 	loader_lottie.addEventListener("DOMLoaded", () => {
+	// 		// Calculate clip block sizes
+	// 		let lottie_rect = lottie_container.getBoundingClientRect();
+	// 		const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
+	// 		let lottie_w = lottie_rect.height / logoRatio;
+	// 		let screen_w = window.innerWidth;
+	// 		let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
+	// 		gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
+	// 			width: clip_w + "%",
+	// 		});
 
-			gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+	// 		gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
 
-			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
+	// 		let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
 
-			let playhead = { frame: 0 };
+	// 		let playhead = { frame: 0 };
 
-			// play lottie
-			tl.to(playhead, {
-				frame: loader_lottie.totalFrames - 1,
-				duration: 3.5,
-				ease: "none",
-				onUpdate: () => {
-					loader_lottie.goToAndStop(playhead.frame, true);
-				},
-			});
+	// 		// play lottie
+	// 		tl.to(playhead, {
+	// 			frame: loader_lottie.totalFrames - 1,
+	// 			duration: 3.5,
+	// 			ease: "none",
+	// 			onUpdate: () => {
+	// 				loader_lottie.goToAndStop(playhead.frame, true);
+	// 			},
+	// 		});
 
-			// change bg color
-			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
+	// 		// change bg color
+	// 		tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
 
-			// show hero (only img is visible at first)
-			tl.to(".section-hero-home", { autoAlpha: 1, duration: 1, ease: "power4.in" }, 3);
+	// 		// show hero (only img is visible at first)
+	// 		tl.to(".section-hero-home", { autoAlpha: 1, duration: 1, ease: "power4.in" }, 3);
 
-			// Scale image up
-			tl.to(".hero-home_media-wrap", { scale: 1, duration: 1.5, ease: "power4.inOut" }, 3.75);
+	// 		// Scale image up
+	// 		tl.to(".hero-home_media-wrap", { scale: 1, duration: 1.5, ease: "power4.inOut" }, 3.75);
 
-			// shrink the clip elements. top clip stays bigger to allow for larger logo
-			tl.to(
-				".site-loader_img-clip.left, .site-loader_img-clip.right",
-				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
-				4.05
-			);
-			tl.to(
-				".site-loader_img-clip.bottom",
-				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
-				4.05
-			);
-			tl.to(
-				".site-loader_img-clip.top",
-				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
-				4.05
-			);
+	// 		// shrink the clip elements. top clip stays bigger to allow for larger logo
+	// 		tl.to(
+	// 			".site-loader_img-clip.left, .site-loader_img-clip.right",
+	// 			{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
+	// 			4.05
+	// 		);
+	// 		tl.to(
+	// 			".site-loader_img-clip.bottom",
+	// 			{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
+	// 			4.05
+	// 		);
+	// 		tl.to(
+	// 			".site-loader_img-clip.top",
+	// 			{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
+	// 			4.05
+	// 		);
 
-			// delete clip elements to avoid weirdness on resize
-			tl.call(removeElement(".site-loader_img-clip.left"));
-			tl.call(removeElement(".site-loader_img-clip.right"));
-			tl.call(removeElement(".site-loader_img-clip.bottom"));
+	// 		// delete clip elements to avoid weirdness on resize
+	// 		tl.call(removeElement(".site-loader_img-clip.left"));
+	// 		tl.call(removeElement(".site-loader_img-clip.right"));
+	// 		tl.call(removeElement(".site-loader_img-clip.bottom"));
 
-			// scale up the lottie spacer to force lottie up to header position
-			tl.to(
-				".site-loader_lottie-spacer",
-				{ height: "100%", duration: 2, ease: "power4.inOut" },
-				4.05
-			);
+	// 		// scale up the lottie spacer to force lottie up to header position
+	// 		tl.to(
+	// 			".site-loader_lottie-spacer",
+	// 			{ height: "100%", duration: 2, ease: "power4.inOut" },
+	// 			4.05
+	// 		);
 
-			tl.add(() => {
-				const state = Flip.getState(lottie_container);
-				header_logo_wrap.prepend(lottie_container);
-				Flip.from(state, {
-					duration: 2,
-					ease: "power4.inOut",
-				});
-			}, 4.05);
+	// 		tl.add(() => {
+	// 			const state = Flip.getState(lottie_container);
+	// 			header_logo_wrap.prepend(lottie_container);
+	// 			Flip.from(state, {
+	// 				duration: 2,
+	// 				ease: "power4.inOut",
+	// 			});
+	// 		}, 4.05);
 
-			// show content
-			tl.to(".hero-home_content", { autoAlpha: 1, duration: 1.5, ease: "power4.inOut" }, 4.5);
+	// 		// show content
+	// 		tl.to(".hero-home_content", { autoAlpha: 1, duration: 1.5, ease: "power4.inOut" }, 4.5);
 
-			// bring in header buttons
-			tl.to(
-				[".header-bar_left", ".header-bar_right"],
-				{ y: 0, duration: 1.5, ease: "power4.inOut" },
-				5
-			);
+	// 		// bring in header buttons
+	// 		tl.to(
+	// 			[".header-bar_left", ".header-bar_right"],
+	// 			{ y: 0, duration: 1.5, ease: "power4.inOut" },
+	// 			5
+	// 		);
 
-			// get rid of extra space at top
-			tl.to(
-				".site-loader_img-clip.top",
-				{
-					height: 0,
-					duration: 1.5,
-					ease: "power4.inOut",
-				},
-				"<"
-			);
+	// 		// get rid of extra space at top
+	// 		tl.to(
+	// 			".site-loader_img-clip.top",
+	// 			{
+	// 				height: 0,
+	// 				duration: 1.5,
+	// 				ease: "power4.inOut",
+	// 			},
+	// 			"<"
+	// 		);
 
-			// gsap.set(lottie_container, { transformOrigin: "top center" });
+	// 		// gsap.set(lottie_container, { transformOrigin: "top center" });
 
-			//shrink lottie to match real logo
-			// tl.to(
-			// 	lottie_container,
-			// 	{
-			// 		height: adjusted_logo_h,
-			// 		duration: 1.5,
-			// 		ease: "power4.inOut",
-			// 	},
-			// 	"<"
-			// );
+	// 		//shrink lottie to match real logo
+	// 		// tl.to(
+	// 		// 	lottie_container,
+	// 		// 	{
+	// 		// 		height: adjusted_logo_h,
+	// 		// 		duration: 1.5,
+	// 		// 		ease: "power4.inOut",
+	// 		// 	},
+	// 		// 	"<"
+	// 		// );
 
-			// delete clip elements to avoid weirdness on resize
-			tl.call(removeElement(".site-loader_img-clip.top"));
+	// 		// delete clip elements to avoid weirdness on resize
+	// 		tl.call(removeElement(".site-loader_img-clip.top"));
 
-			// Play the timeline
-			tl.play();
-			// GSDevTools.create(tl);
-		});
+	// 		// Play the timeline
+	// 		tl.play();
+	// 		// GSDevTools.create(tl);
+	// 	});
 
-		function removeElement(element) {
-			if (typeof element === "string") {
-				element = document.querySelector(element);
-			}
-			return function () {
-				if (element) {
-					element.parentNode.removeChild(element);
-				}
-			};
-		}
+	// 	function removeElement(element) {
+	// 		if (typeof element === "string") {
+	// 			element = document.querySelector(element);
+	// 		}
+	// 		return function () {
+	// 			if (element) {
+	// 				element.parentNode.removeChild(element);
+	// 			}
+	// 		};
+	// 	}
 
-		// enable scrolling
-		function loaderEnds() {
-			//move lottie to header and hide original logo
-			// header_logo_wrap.prepend(lottie_container);
-			// header_logo.style.display = "none";
-			// gsap.set(header_logo, { opacity: 1 }); // show actual header logo
-			gsap.set(loader, { display: "none" }); // hide loader
-			// gsap.set(lottie_container, { display: "none" }); // hide loader
+	// 	// enable scrolling
+	// 	function loaderEnds() {
+	// 		//move lottie to header and hide original logo
+	// 		// header_logo_wrap.prepend(lottie_container);
+	// 		// header_logo.style.display = "none";
+	// 		// gsap.set(header_logo, { opacity: 1 }); // show actual header logo
+	// 		gsap.set(loader, { display: "none" }); // hide loader
+	// 		// gsap.set(lottie_container, { display: "none" }); // hide loader
 
-			// resume scroll
-			requestAnimationFrame(() => {
-				// Disable scrolling
-				aethos.helpers.pauseScroll(false);
-			});
-		}
-	};
+	// 		// resume scroll
+	// 		requestAnimationFrame(() => {
+	// 			// Disable scrolling
+	// 			aethos.helpers.pauseScroll(false);
+	// 		});
+	// 	}
+	// };
 
 	/******/
 	/***  FUNCTIONS - NAV ***/
@@ -4804,6 +4821,16 @@ function main() {
 				window.__HC__.ibe.search();
 			});
 		});
+	};
+
+	aethos.functions.showHC = function (bool) {
+		if (bool) {
+			console.log("showing HC");
+			document.body.classList.remove("hc-hidden");
+		} else {
+			console.log("hiding HC");
+			document.body.classList.remove("hc-hidden");
+		}
 	};
 
 	/******/
