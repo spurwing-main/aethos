@@ -76,18 +76,12 @@ function main() {
 		if (pageWrap) {
 			aethos.settings.pageWrap = pageWrap;
 			aethos.settings.pageBg = pageWrap.getAttribute("aethos-page-bg") || "";
-			aethos.settings.pageName =
-				pageWrap.getAttribute("aethos-page-name") || "";
-			aethos.settings.siteLoader =
-				pageWrap.getAttribute("aethos-site-loader") || "";
-			aethos.settings.destinationSlug =
-				pageWrap.getAttribute("aethos-destination-slug") || "";
-			aethos.settings.destinationStatus =
-				pageWrap.getAttribute("aethos-destination-status") || "";
+			aethos.settings.pageName = pageWrap.getAttribute("aethos-page-name") || "";
+			aethos.settings.siteLoader = pageWrap.getAttribute("aethos-site-loader") || "";
+			aethos.settings.destinationSlug = pageWrap.getAttribute("aethos-destination-slug") || "";
+			aethos.settings.destinationStatus = pageWrap.getAttribute("aethos-destination-status") || "";
 			const themeAttribute = pageWrap.getAttribute("aethos-theme");
-			aethos.settings.theme = themeAttribute
-				? themeAttribute.toLowerCase()
-				: "";
+			aethos.settings.theme = themeAttribute ? themeAttribute.toLowerCase() : "";
 
 			// Log settings without circular references
 			const loggableSettings = { ...aethos.settings };
@@ -176,9 +170,7 @@ function main() {
 	/* update any relative destination links - links of the form ./something on a destination page will be updated to /destinations/destination-name/something */
 	(function updateRelativeLinks() {
 		if (!aethos || !aethos.settings) {
-			console.warn(
-				"Aethos settings not found. Skipping relative links update."
-			);
+			console.warn("Aethos settings not found. Skipping relative links update.");
 			return;
 		}
 
@@ -205,10 +197,7 @@ function main() {
 		relativeLinks.forEach((link) => {
 			const originalHref = link.getAttribute("href");
 			if (!originalHref) {
-				console.warn(
-					"Href attribute is missing on one of the links. Skipping this link.",
-					link
-				);
+				console.warn("Href attribute is missing on one of the links. Skipping this link.", link);
 				return;
 			}
 
@@ -218,10 +207,7 @@ function main() {
 				: originalHref.substring(2); // Removes "./"
 
 			// Construct the new href with the destination slug
-			const newHref = `/destinations/${destinationSlug}/${relativePath.replace(
-				/^\/+/,
-				""
-			)}`;
+			const newHref = `/destinations/${destinationSlug}/${relativePath.replace(/^\/+/, "")}`;
 
 			// Update the href of the link
 			link.setAttribute("href", newHref);
@@ -234,9 +220,7 @@ function main() {
 	// Open all external links in a new tab
 	// NB we need to do this after updateRelativeLinks() because we need to have processed relative links first
 	(function openExternalLinksInNewTab() {
-		const links = document.querySelectorAll(
-			"a[href^='https://'], a[href^='http://']"
-		);
+		const links = document.querySelectorAll("a[href^='https://'], a[href^='http://']");
 		const host = window.location.hostname;
 
 		const isInternalLink = (link) => new URL(link).hostname === host;
@@ -254,10 +238,7 @@ function main() {
 	/******/
 
 	/* helper to get a custom prop value */
-	aethos.helpers.getProp = function (
-		propName,
-		element = document.documentElement
-	) {
+	aethos.helpers.getProp = function (propName, element = document.documentElement) {
 		const value = getComputedStyle(element).getPropertyValue(propName).trim();
 		if (!value) {
 			console.warn(`CSS property "${propName}" not found on the element.`);
@@ -365,9 +346,8 @@ function main() {
 		};
 		// Transition elements
 		aethos.transition.element = document.querySelector(".page-transition");
-		aethos.transition.container = aethos.transition.element.querySelector(
-			".page-transition_lottie"
-		);
+		aethos.transition.container =
+			aethos.transition.element.querySelector(".page-transition_lottie");
 
 		// Load the Lottie animation
 		aethos.transition.lottie = lottie.loadAnimation({
@@ -445,11 +425,10 @@ function main() {
 				const currentTheme = aethos.settings.theme || "default";
 				const currentDestination = aethos.settings.destinationSlug || "default"; // Track current destination
 
-				const { targetTheme, targetDestination } =
-					getThemeAndDestinationFromUrl(
-						destinationUrl.pathname,
-						new URLSearchParams(destinationUrl.search)
-					);
+				const { targetTheme, targetDestination } = getThemeAndDestinationFromUrl(
+					destinationUrl.pathname,
+					new URLSearchParams(destinationUrl.search)
+				);
 
 				aethos.log(
 					`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
@@ -471,10 +450,7 @@ function main() {
 				}
 
 				// Play transition if themes or destinations are different
-				if (
-					currentTheme !== targetTheme ||
-					currentDestination !== targetDestination
-				) {
+				if (currentTheme !== targetTheme || currentDestination !== targetDestination) {
 					playPageTransition(currentTheme, targetTheme, () => {
 						aethos.log("Navigating with transition:", destinationUrl.href);
 						localStorage.setItem("aethos_transition", "true");
@@ -499,9 +475,7 @@ function main() {
 			}
 
 			// Check for /destinations/.../club
-			const clubInDestinationsMatch = pathname.match(
-				/^\/destinations\/[^\/]+\/club/
-			);
+			const clubInDestinationsMatch = pathname.match(/^\/destinations\/[^\/]+\/club/);
 			if (clubInDestinationsMatch) {
 				return { targetTheme: "club", targetDestination: "default" };
 			}
@@ -518,9 +492,7 @@ function main() {
 			}
 
 			// Check for URLs of the form /destination-SOMETHING/destination-name
-			const destinationMatch = pathname.match(
-				/^\/destination-[^\/]+\/([^\/]+)/
-			);
+			const destinationMatch = pathname.match(/^\/destination-[^\/]+\/([^\/]+)/);
 			if (destinationMatch) {
 				const slug = destinationMatch[1]; // Extract the destination name
 				if (!aethos.destinations?.[slug]) {
@@ -554,13 +526,8 @@ function main() {
 			updateLottieColors(aethos.transition.lottie, theme1, theme2);
 
 			// Force Lottie renderer to refresh with updated colors
-			aethos.transition.lottie.goToAndStop(
-				aethos.transition.lottie.totalFrames - 1,
-				true
-			);
-			aethos.transition.lottie.renderer.renderFrame(
-				aethos.transition.lottie.currentFrame
-			);
+			aethos.transition.lottie.goToAndStop(aethos.transition.lottie.totalFrames - 1, true);
+			aethos.transition.lottie.renderer.renderFrame(aethos.transition.lottie.currentFrame);
 			aethos.transition.lottie.goToAndStop(0, true);
 
 			// Once colors are updated, start the animation
@@ -651,8 +618,7 @@ function main() {
 						const keyframes = shape.c.k;
 
 						if (keyframes[0]) keyframes[0].s = startColor; // Start color
-						if (keyframes[keyframes.length - 1])
-							keyframes[keyframes.length - 1].s = endColor; // End color
+						if (keyframes[keyframes.length - 1]) keyframes[keyframes.length - 1].s = endColor; // End color
 					}
 
 					// Handle static fills
@@ -703,9 +669,7 @@ function main() {
 
 		if (
 			!forceLoader &&
-			(suppressLoader ||
-				aethos.settings.siteLoader !== "enabled" ||
-				hasRecentVisit())
+			(suppressLoader || aethos.settings.siteLoader !== "enabled" || hasRecentVisit())
 		) {
 			aethos.log("Page loader not running");
 			// Store current visit time
@@ -735,13 +699,7 @@ function main() {
 		let header_bar_inner = header?.querySelector(".header-bar_inner");
 
 		// Check if any required element is missing
-		if (
-			!header ||
-			!loader ||
-			!lottie_container ||
-			!header_logo_wrap ||
-			!header_logo
-		) {
+		if (!header || !loader || !lottie_container || !header_logo_wrap || !header_logo) {
 			console.warn("One or more required elements are missing. Exiting...");
 			return; // Exit early
 		}
@@ -805,18 +763,10 @@ function main() {
 			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
 
 			// show hero (only img is visible at first)
-			tl.to(
-				".section-hero-home",
-				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
-				3
-			);
+			tl.to(".section-hero-home", { autoAlpha: 1, duration: 1, ease: "power4.in" }, 3);
 
 			// Scale image up
-			tl.to(
-				".hero-home_media-wrap",
-				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
-				3.75
-			);
+			tl.to(".hero-home_media-wrap", { scale: 1, duration: 1.5, ease: "power4.inOut" }, 3.75);
 
 			// shrink the clip elements. top clip stays bigger to allow for larger logo
 			tl.to(
@@ -848,11 +798,7 @@ function main() {
 			);
 
 			// show content
-			tl.to(
-				".hero-home_content",
-				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
-				4.5
-			);
+			tl.to(".hero-home_content", { autoAlpha: 1, duration: 1.5, ease: "power4.inOut" }, 4.5);
 
 			// bring in header buttons
 			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, 5);
@@ -936,9 +882,7 @@ function main() {
 
 		if (
 			!forceLoader &&
-			(suppressLoader ||
-				aethos.settings.siteLoader !== "enabled" ||
-				hasRecentVisit())
+			(suppressLoader || aethos.settings.siteLoader !== "enabled" || hasRecentVisit())
 		) {
 			aethos.log("Page loader not running");
 			// Store current visit time
@@ -967,13 +911,7 @@ function main() {
 		let header_logo = header?.querySelector(".header-bar_middle svg.logo");
 
 		// Check if any required element is missing
-		if (
-			!header ||
-			!loader ||
-			!lottie_container ||
-			!header_logo_wrap ||
-			!header_logo
-		) {
+		if (!header || !loader || !lottie_container || !header_logo_wrap || !header_logo) {
 			console.warn("One or more required elements are missing. Exiting...");
 			return; // Exit early
 		}
@@ -1036,18 +974,10 @@ function main() {
 			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
 
 			// show hero (only img is visible at first)
-			tl.to(
-				".section-hero-home",
-				{ autoAlpha: 1, duration: 1, ease: "power4.in" },
-				3
-			);
+			tl.to(".section-hero-home", { autoAlpha: 1, duration: 1, ease: "power4.in" }, 3);
 
 			// Scale image up
-			tl.to(
-				".hero-home_media-wrap",
-				{ scale: 1, duration: 1.5, ease: "power4.inOut" },
-				3.75
-			);
+			tl.to(".hero-home_media-wrap", { scale: 1, duration: 1.5, ease: "power4.inOut" }, 3.75);
 
 			// shrink the clip elements. top clip stays bigger to allow for larger logo
 			tl.to(
@@ -1088,11 +1018,7 @@ function main() {
 			}, 4.05);
 
 			// show content
-			tl.to(
-				".hero-home_content",
-				{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
-				4.5
-			);
+			tl.to(".hero-home_content", { autoAlpha: 1, duration: 1.5, ease: "power4.inOut" }, 4.5);
 
 			// bring in header buttons
 			tl.to(
@@ -1237,11 +1163,7 @@ function main() {
 				.to(els.bg, { scaleY: 1, opacity: 1 }, 0)
 				.to(els.bar, { backgroundColor: barColor_open }, 0)
 				.to(els.overlay, { y: "-200%", duration: 2, ease: "none" }, 0.6)
-				.to(
-					els.content2,
-					{ opacity: 1, duration: 1.2, ease: "power3.inOut" },
-					0.6
-				)
+				.to(els.content2, { opacity: 1, duration: 1.2, ease: "power3.inOut" }, 0.6)
 				.set(els.content1, { display: "grid" }, 0.6);
 		}
 
@@ -1267,16 +1189,8 @@ function main() {
 		}
 
 		// Initialize animations
-		animateOpenNav(
-			aethos.nav.timelines.open,
-			global_elements,
-			global_elements.barColor_open
-		);
-		animateCloseNav(
-			aethos.nav.timelines.close,
-			global_elements,
-			global_elements.barColor_closed
-		);
+		animateOpenNav(aethos.nav.timelines.open, global_elements, global_elements.barColor_open);
+		animateCloseNav(aethos.nav.timelines.close, global_elements, global_elements.barColor_closed);
 
 		// burger timeline - this was just a CSS animation but this fails for some reason on Masterbrand pages
 		function setUpBurgerTimeline() {
@@ -1578,15 +1492,9 @@ function main() {
 
 	/* Show nav images on nav link hover */
 	aethos.anim.NavImage = function () {
-		const navLinkTriggers = document.querySelectorAll(
-			".anim-nav-img_trigger[data-link-id]"
-		);
-		const navLinkImgs = document.querySelectorAll(
-			".anim-nav-img_target[data-link-id]"
-		);
-		const navLinkImgDefault = document.querySelector(
-			".nav_img-wrap.is-default"
-		);
+		const navLinkTriggers = document.querySelectorAll(".anim-nav-img_trigger[data-link-id]");
+		const navLinkImgs = document.querySelectorAll(".anim-nav-img_target[data-link-id]");
+		const navLinkImgDefault = document.querySelector(".nav_img-wrap.is-default");
 		if (navLinkImgDefault) {
 			navLinkImgDefault.classList.add("is-active");
 		}
@@ -1643,8 +1551,7 @@ function main() {
 
 				// Fetch the destination-specific page
 				const response = await fetch(`/destinations/${destinationSlug}`);
-				if (!response.ok)
-					throw new Error("Failed to fetch the destination nav");
+				if (!response.ok) throw new Error("Failed to fetch the destination nav");
 
 				// Parse the response HTML to extract the .dest-nav element
 				const responseText = await response.text();
@@ -1652,12 +1559,9 @@ function main() {
 				tempDiv.innerHTML = responseText;
 				const fetchedNav = tempDiv.querySelector(".dest-nav");
 
-				if (!fetchedNav)
-					throw new Error(".dest-nav element not found in the fetched page");
+				if (!fetchedNav) throw new Error(".dest-nav element not found in the fetched page");
 
-				aethos.log(
-					`Successfully fetched navigation for destination: ${destinationSlug}`
-				);
+				aethos.log(`Successfully fetched navigation for destination: ${destinationSlug}`);
 				return fetchedNav;
 			} catch (error) {
 				console.error(`Error fetching navigation: ${error.message}`);
@@ -1672,10 +1576,7 @@ function main() {
 					let navElement = document.querySelector(".site-header .dest-nav");
 
 					if (navElement) {
-						aethos.log(
-							"Navigation already exists on the page. Skipping fetch.",
-							"info"
-						);
+						aethos.log("Navigation already exists on the page. Skipping fetch.", "info");
 					} else {
 						// Retrieve the destination slug from aethos.settings
 						const destinationSlug = aethos.settings.destinationSlug;
@@ -1685,9 +1586,7 @@ function main() {
 							return reject("Destination slug not found");
 						}
 
-						aethos.log(
-							`Starting navigation setup for destination: ${destinationSlug}`
-						);
+						aethos.log(`Starting navigation setup for destination: ${destinationSlug}`);
 
 						// Fetch the destination-specific navigation
 						navElement = await fetchDestinationNav(destinationSlug);
@@ -1698,9 +1597,7 @@ function main() {
 						}
 
 						// Insert the fetched nav into the .header element
-						const headerElement = document.querySelector(
-							".dest-header .dest-nav-wrap"
-						);
+						const headerElement = document.querySelector(".dest-header .dest-nav-wrap");
 						if (!headerElement) {
 							console.warn(".header element not found on the page");
 							return reject(".header element not found");
@@ -1718,9 +1615,7 @@ function main() {
 
 					// Show the navigation after processing
 					navElement.style.display = "";
-					aethos.log(
-						"Navigation processing complete. Navigation is now visible."
-					);
+					aethos.log("Navigation processing complete. Navigation is now visible.");
 
 					// run our links function again to ensure any new links in the nav have the right params for page transitions
 					aethos.functions.listingLinks();
@@ -1736,9 +1631,7 @@ function main() {
 
 		function processNavigation(navElement) {
 			// Select all nav items within the fetched .dest-nav element
-			const navItems = Array.from(
-				navElement.querySelectorAll(".dest-nav_item")
-			);
+			const navItems = Array.from(navElement.querySelectorAll(".dest-nav_item"));
 
 			// Separate primary and secondary items
 			const primaryItems = [];
@@ -1766,13 +1659,10 @@ function main() {
 			});
 
 			// Reference to the .dest-nav_bottom container within the fetched nav
-			const bottomContainer_global =
-				navElement.querySelector(".dest-nav_bottom");
+			const bottomContainer_global = navElement.querySelector(".dest-nav_bottom");
 
 			if (!bottomContainer_global) {
-				console.warn(
-					".dest-nav_bottom element not found within the fetched nav"
-				);
+				console.warn(".dest-nav_bottom element not found within the fetched nav");
 				return;
 			}
 
@@ -1841,16 +1731,12 @@ function main() {
 				) {
 					// Hide the orphaned secondary link
 					secondary.element.style.display = "none";
-					console.warn(
-						`Hiding orphaned secondary item with parent ID: ${secondary.parentId}`
-					);
+					console.warn(`Hiding orphaned secondary item with parent ID: ${secondary.parentId}`);
 				}
 			});
 
 			// open Global Nav from Dest Nav
-			const globalNavLink = navElement.querySelector(
-				".dest-nav_link.is-global"
-			);
+			const globalNavLink = navElement.querySelector(".dest-nav_link.is-global");
 			const globalMenuButton = document.querySelector(".header .nav-btn");
 			const destMenuButton = document.querySelector(".header .dest-nav-btn");
 			if (globalNavLink && globalMenuButton && destMenuButton) {
@@ -1871,16 +1757,14 @@ function main() {
 
 		function setupUnderlines() {
 			const menu_top = document.querySelector(topMenu_selector); // top menu
-			const menus_bottom = Array.from(
-				document.querySelectorAll(bottomMenu_selector)
-			).filter((menu) => menu.querySelector(".dest-nav_item")); // all bottom menus that actually have links in
+			const menus_bottom = Array.from(document.querySelectorAll(bottomMenu_selector)).filter(
+				(menu) => menu.querySelector(".dest-nav_item")
+			); // all bottom menus that actually have links in
 			const currentPath = window.location.pathname; // current page path
 			let topActiveLink; // active link in top menu
 
 			// Find the active link in the top menu
-			const links_top = Array.from(
-				menu_top.querySelectorAll(topLinkMatchString)
-			);
+			const links_top = Array.from(menu_top.querySelectorAll(topLinkMatchString));
 			topActiveLink = getActiveLink(links_top, currentPath);
 			if (topActiveLink) {
 				topActiveLink.classList.add("active");
@@ -1952,9 +1836,7 @@ function main() {
 		}
 
 		function getParent(link_or_menu) {
-			let parentItem = link_or_menu.closest(
-				".dest-nav_item[aethos-nav-children='true']"
-			);
+			let parentItem = link_or_menu.closest(".dest-nav_item[aethos-nav-children='true']");
 			if (!parentItem) {
 				return;
 			}
@@ -1967,12 +1849,7 @@ function main() {
 			return parent;
 		}
 
-		function addUnderlineEventListeners(
-			menu,
-			activeLink,
-			type,
-			parent = false
-		) {
+		function addUnderlineEventListeners(menu, activeLink, type, parent = false) {
 			let underlineWidthProp, underlineOffsetProp, listClass;
 
 			if (type === "top") {
@@ -1991,12 +1868,7 @@ function main() {
 					event.target.classList.contains("link-cover") &&
 					!(type === "top" && event.target.classList.contains("is-child"))
 				) {
-					menuUnderline(
-						menu,
-						event.target,
-						underlineWidthProp,
-						underlineOffsetProp
-					);
+					menuUnderline(menu, event.target, underlineWidthProp, underlineOffsetProp);
 				}
 
 				// if we are hovering over a bottom menu, trigger the parent item hover
@@ -2012,12 +1884,7 @@ function main() {
 
 			menu.addEventListener("mouseleave", () => {
 				if (activeLink) {
-					menuUnderline(
-						menu,
-						activeLink,
-						underlineWidthProp,
-						underlineOffsetProp
-					);
+					menuUnderline(menu, activeLink, underlineWidthProp, underlineOffsetProp);
 				} else {
 					menu.style.setProperty(underlineWidthProp, "0");
 				}
@@ -2093,73 +1960,69 @@ function main() {
 				}
 
 				if (subnav) {
-					gsap
-						.matchMedia()
-						.add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
-							aethos.log("setting up subnav hover");
-							const tl = setupSubnavTimeline();
+					gsap.matchMedia().add(`(min-width: ${aethos.breakpoints.tab + 1}px)`, () => {
+						aethos.log("setting up subnav hover");
+						const tl = setupSubnavTimeline();
 
-							// Desktop: toggle timeline on hover
-							let isHovered = false;
+						// Desktop: toggle timeline on hover
+						let isHovered = false;
 
-							function toggleTimeline() {
-								isHovered ? tl.play() : tl.reverse();
-							}
+						function toggleTimeline() {
+							isHovered ? tl.play() : tl.reverse();
+						}
 
-							primaryItem.addEventListener("mouseenter", () => {
-								isHovered = true;
-								toggleTimeline();
-							});
-
-							primaryItem.addEventListener("mouseleave", () => {
-								isHovered = false;
-
-								toggleTimeline();
-							});
-
-							subnav.addEventListener("mouseenter", () => {
-								isHovered = true;
-
-								toggleTimeline();
-							});
-
-							subnav.addEventListener("mouseleave", () => {
-								isHovered = false;
-
-								toggleTimeline();
-							});
-
-							// Cleanup function for when the media query condition changes
-							return () => {
-								aethos.log("turning off subnav hover");
-							};
+						primaryItem.addEventListener("mouseenter", () => {
+							isHovered = true;
+							toggleTimeline();
 						});
 
-					gsap
-						.matchMedia()
-						.add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
-							const tl = setupSubnavTimeline();
+						primaryItem.addEventListener("mouseleave", () => {
+							isHovered = false;
 
-							let isOpen = false;
-
-							primaryItem.addEventListener("click", () => {
-								isOpen = !isOpen;
-								isOpen ? tl.play() : tl.reverse();
-							});
-
-							// Back button closes subnav
-							const backBtn = document.querySelector(".dest-nav_back");
-							if (backBtn) {
-								backBtn.addEventListener("click", () => {
-									gsap.set(subnavWrapper, { display: "none" });
-									isOpen = false;
-									tl.reverse();
-								});
-							}
-
-							// Cleanup function for when the media query condition changes
-							return () => {};
+							toggleTimeline();
 						});
+
+						subnav.addEventListener("mouseenter", () => {
+							isHovered = true;
+
+							toggleTimeline();
+						});
+
+						subnav.addEventListener("mouseleave", () => {
+							isHovered = false;
+
+							toggleTimeline();
+						});
+
+						// Cleanup function for when the media query condition changes
+						return () => {
+							aethos.log("turning off subnav hover");
+						};
+					});
+
+					gsap.matchMedia().add(`(max-width: ${aethos.breakpoints.tab}px)`, () => {
+						const tl = setupSubnavTimeline();
+
+						let isOpen = false;
+
+						primaryItem.addEventListener("click", () => {
+							isOpen = !isOpen;
+							isOpen ? tl.play() : tl.reverse();
+						});
+
+						// Back button closes subnav
+						const backBtn = document.querySelector(".dest-nav_back");
+						if (backBtn) {
+							backBtn.addEventListener("click", () => {
+								gsap.set(subnavWrapper, { display: "none" });
+								isOpen = false;
+								tl.reverse();
+							});
+						}
+
+						// Cleanup function for when the media query condition changes
+						return () => {};
+					});
 				}
 			});
 		}
@@ -2223,15 +2086,10 @@ function main() {
 		const self_targets = gsap.utils.toArray(".anim_fade-up_self");
 		self_targets.forEach((target) => {
 			// Fetch animation attributes with defaults
-			const opacity_duration = getAnimAttr(
-				target,
-				"aethos-anim-duration-opacity",
-				1
-			);
+			const opacity_duration = getAnimAttr(target, "aethos-anim-duration-opacity", 1);
 			const y_duration = getAnimAttr(target, "aethos-anim-duration-y", 0.8);
 			const y = getAnimAttr(target, "aethos-anim-y", 20);
-			const start =
-				target.getAttribute("aethos-anim-scroll-start") ?? "top 80%";
+			const start = target.getAttribute("aethos-anim-scroll-start") ?? "top 80%";
 
 			// Initial setup
 			gsap.set(target, { y: y, opacity: 0 });
@@ -2255,14 +2113,9 @@ function main() {
 			// Fetch animation attributes with defaults
 			const stagger = getAnimAttr(trigger, "aethos-anim-stagger", 0);
 			const y = getAnimAttr(trigger, "aethos-anim-y", 20);
-			const opacity_duration = getAnimAttr(
-				trigger,
-				"aethos-anim-duration-opacity",
-				1
-			);
+			const opacity_duration = getAnimAttr(trigger, "aethos-anim-duration-opacity", 1);
 			const y_duration = getAnimAttr(trigger, "aethos-anim-duration-y", 0.8);
-			const start =
-				trigger.getAttribute("aethos-anim-scroll-start") ?? "top 70%";
+			const start = trigger.getAttribute("aethos-anim-scroll-start") ?? "top 70%";
 
 			// Initial setup for target elements within the trigger
 			const targets = trigger.querySelectorAll(".anim_fade-up_target");
@@ -2278,11 +2131,7 @@ function main() {
 					},
 				})
 				.to(targets, { y: 0, duration: y_duration, stagger: stagger })
-				.to(
-					targets,
-					{ opacity: 1, duration: opacity_duration, stagger: stagger },
-					"<"
-				);
+				.to(targets, { opacity: 1, duration: opacity_duration, stagger: stagger }, "<");
 		});
 	};
 
@@ -2450,8 +2299,7 @@ function main() {
 			if (!trigger) {
 				return;
 			}
-			let startValue =
-				trigger.getAttribute("aethos-trigger-start") || "20% 80%";
+			let startValue = trigger.getAttribute("aethos-trigger-start") || "20% 80%";
 
 			let tl = gsap.timeline({
 				scrollTrigger: {
@@ -2642,12 +2490,8 @@ function main() {
 
 		// Set up slide counters
 		function setupCounters(counters, slideCount) {
-			const totalCounter = counters.querySelector(
-				".room-card_counter-item.is-total"
-			);
-			const activeCounter = counters.querySelector(
-				".room-card_counter-item.is-active"
-			);
+			const totalCounter = counters.querySelector(".room-card_counter-item.is-total");
+			const activeCounter = counters.querySelector(".room-card_counter-item.is-active");
 			if (totalCounter) totalCounter.innerHTML = slideCount;
 			counters.style.display = "flex"; // Make counters visible
 			return activeCounter;
@@ -2673,16 +2517,12 @@ function main() {
 
 			splideInstance.on("move", (newIndex) => {
 				if (counters) {
-					const activeCounter = counters.querySelector(
-						".room-card_counter-item.is-active"
-					);
+					const activeCounter = counters.querySelector(".room-card_counter-item.is-active");
 					if (activeCounter) activeCounter.innerHTML = newIndex + 1;
 				}
 				if (pagination) {
 					const dots = pagination.querySelectorAll(".room-card_pagination-dot");
-					dots.forEach((dot, index) =>
-						dot.classList.toggle("is-active", index === newIndex)
-					);
+					dots.forEach((dot, index) => dot.classList.toggle("is-active", index === newIndex));
 				}
 			});
 
@@ -2694,9 +2534,10 @@ function main() {
 			const mediaList = container.querySelector(config.mediaListSelector);
 			if (!mediaList) return;
 
-			const slides = Array.from(
-				mediaList.querySelectorAll(config.slideSelector)
-			).slice(0, config.maxSlides || Infinity);
+			const slides = Array.from(mediaList.querySelectorAll(config.slideSelector)).slice(
+				0,
+				config.maxSlides || Infinity
+			);
 			const slideCount = slides.length;
 
 			const pagination = container.querySelector(config.paginationSelector);
@@ -2707,15 +2548,10 @@ function main() {
 				return;
 			}
 
-			const dots = pagination
-				? setupPagination(pagination, slideCount, config.dotClass)
-				: null;
-			const activeCounter = counters
-				? setupCounters(counters, slideCount)
-				: null;
+			const dots = pagination ? setupPagination(pagination, slideCount, config.dotClass) : null;
+			const activeCounter = counters ? setupCounters(counters, slideCount) : null;
 
-			const splideEl =
-				container.querySelector(".splide") || mediaList.closest(".splide");
+			const splideEl = container.querySelector(".splide") || mediaList.closest(".splide");
 			if (splideEl) {
 				initializeSplide(splideEl, pagination, counters);
 			}
@@ -2754,59 +2590,51 @@ function main() {
 		// CMS Carousels
 		// loads carousel elements from Components Block template page to (1) get around nesting limits and (2) improve performance
 		function loadCMSCarousels() {
-			document
-				.querySelectorAll("[aethos-cms-carousel='enabled']")
-				.forEach((carouselSection) => {
-					const slug = carouselSection.getAttribute("aethos-cms-carousel-slug");
-					const path = carouselSection.getAttribute("aethos-cms-carousel-path");
-					const maxSlides =
-						parseInt(carouselSection.getAttribute("aethos-cms-carousel-max")) ||
-						8;
+			document.querySelectorAll("[aethos-cms-carousel='enabled']").forEach((carouselSection) => {
+				const slug = carouselSection.getAttribute("aethos-cms-carousel-slug");
+				const path = carouselSection.getAttribute("aethos-cms-carousel-path");
+				const maxSlides = parseInt(carouselSection.getAttribute("aethos-cms-carousel-max")) || 8;
 
-					const carousel = carouselSection.querySelector(".cms-carousel");
-					if (!carousel) return;
+				const carousel = carouselSection.querySelector(".cms-carousel");
+				if (!carousel) return;
 
-					const setupCarousel = (carouselInner) => {
-						initializeCarousel(carouselSection, {
-							mediaListSelector: ".cms-carousel_inner",
-							slideSelector: ".cms-carousel_list-item",
-							paginationSelector: ".room-card_pagination",
-							countersSelector: ".room-card_counters",
-							dotClass: "room-card_pagination-dot",
-							maxSlides: maxSlides,
-						});
-					};
+				const setupCarousel = (carouselInner) => {
+					initializeCarousel(carouselSection, {
+						mediaListSelector: ".cms-carousel_inner",
+						slideSelector: ".cms-carousel_list-item",
+						paginationSelector: ".room-card_pagination",
+						countersSelector: ".room-card_counters",
+						dotClass: "room-card_pagination-dot",
+						maxSlides: maxSlides,
+					});
+				};
 
-					if (slug && path) {
-						ScrollTrigger.create({
-							trigger: carouselSection,
-							start: "top 150%",
-							onEnter: () => {
-								fetch(`${path}/${slug}`)
-									.then((response) => response.text())
-									.then((html) => {
-										const parser = new DOMParser();
-										const doc = parser.parseFromString(html, "text/html");
-										const carouselInner = doc.querySelector(
-											".page-resources .cms-carousel_inner"
-										);
+				if (slug && path) {
+					ScrollTrigger.create({
+						trigger: carouselSection,
+						start: "top 150%",
+						onEnter: () => {
+							fetch(`${path}/${slug}`)
+								.then((response) => response.text())
+								.then((html) => {
+									const parser = new DOMParser();
+									const doc = parser.parseFromString(html, "text/html");
+									const carouselInner = doc.querySelector(".page-resources .cms-carousel_inner");
 
-										if (carouselInner) {
-											carousel.innerHTML = "";
-											carousel.appendChild(carouselInner);
-											setupCarousel(carouselInner);
-										}
-									})
-									.catch((error) =>
-										console.error("Error fetching carousel:", error)
-									);
-							},
-							once: true,
-						});
-					} else {
-						setupCarousel(carousel.querySelector(".cms-carousel_inner"));
-					}
-				});
+									if (carouselInner) {
+										carousel.innerHTML = "";
+										carousel.appendChild(carouselInner);
+										setupCarousel(carouselInner);
+									}
+								})
+								.catch((error) => console.error("Error fetching carousel:", error));
+						},
+						once: true,
+					});
+				} else {
+					setupCarousel(carousel.querySelector(".cms-carousel_inner"));
+				}
+			});
 		}
 
 		/* Initialize All Carousels */
@@ -3053,9 +2881,7 @@ function main() {
 					section
 						.querySelector(".values_body-list")
 						.append(value.querySelector(".values_item-body"));
-					section
-						.querySelector(".values_img-list")
-						.append(value.querySelector(".values_item-img"));
+					section.querySelector(".values_img-list").append(value.querySelector(".values_item-img"));
 				});
 			}
 
@@ -3091,18 +2917,14 @@ function main() {
 				// Check if the content is too tall for the viewport
 				const checkContentHeight = () => {
 					// Calculate the height of the pinned content and the viewport
-					let pinHeight =
-						values_pin_top.offsetHeight + values_pin_bottom.offsetHeight + 100;
+					let pinHeight = values_pin_top.offsetHeight + values_pin_bottom.offsetHeight + 100;
 					let viewportHeight = window.innerHeight;
 
 					if (pinHeight > viewportHeight) {
 						if (scrollTriggersCreated) {
 							// Content too tall: kill scroll triggers and add class
 							ScrollTrigger.getAll().forEach((trigger) => {
-								if (
-									trigger.trigger === section ||
-									section.contains(trigger.trigger)
-								) {
+								if (trigger.trigger === section || section.contains(trigger.trigger)) {
 									trigger.kill();
 								}
 							});
@@ -3233,40 +3055,35 @@ function main() {
 	/* sticky cards in journal */
 	aethos.anim.journalSticky = function () {
 		let mm = gsap.matchMedia();
-		mm.add(
-			`(min-width: ${aethos.breakpoints.mbl + 1}px) and (min-height: 651px)`,
-			() => {
-				// only make sticky on large screens
+		mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px) and (min-height: 651px)`, () => {
+			// only make sticky on large screens
 
-				// get sticky cards. We have already done the logic in CSS to identify the ones to be restyled as large, so we hook off a CSS variable rather than doing all this logic again
-				let cards = document.querySelectorAll(".journal-card");
-				let sticky_cards = []; // cards to make sticky
-				cards.forEach((card) => {
-					if (
-						getComputedStyle(card).getPropertyValue(
-							"--c--journal-card--type"
-						) == "large" &&
-						!card.getAttribute("data-scrollTrigger-processed")
-					) {
-						sticky_cards.push(card);
-						card.setAttribute("data-scrollTrigger-processed", "true"); // tracking if we've already processed this card
-					} else {
-					}
-				});
+			// get sticky cards. We have already done the logic in CSS to identify the ones to be restyled as large, so we hook off a CSS variable rather than doing all this logic again
+			let cards = document.querySelectorAll(".journal-card");
+			let sticky_cards = []; // cards to make sticky
+			cards.forEach((card) => {
+				if (
+					getComputedStyle(card).getPropertyValue("--c--journal-card--type") == "large" &&
+					!card.getAttribute("data-scrollTrigger-processed")
+				) {
+					sticky_cards.push(card);
+					card.setAttribute("data-scrollTrigger-processed", "true"); // tracking if we've already processed this card
+				} else {
+				}
+			});
 
-				sticky_cards.forEach((card) => {
-					let card_wrapper = card.closest(".journal-grid_item");
-					ScrollTrigger.create({
-						trigger: card_wrapper,
-						start: "top 32px", // annoyingly doesn't seem possible to set this in rem
-						end: () => `${card_wrapper.offsetHeight - card.offsetHeight}px 0px`,
-						pin: card,
-						invalidateOnRefresh: true,
-						pinSpacing: false,
-					});
+			sticky_cards.forEach((card) => {
+				let card_wrapper = card.closest(".journal-grid_item");
+				ScrollTrigger.create({
+					trigger: card_wrapper,
+					start: "top 32px", // annoyingly doesn't seem possible to set this in rem
+					end: () => `${card_wrapper.offsetHeight - card.offsetHeight}px 0px`,
+					pin: card,
+					invalidateOnRefresh: true,
+					pinSpacing: false,
 				});
-			}
-		);
+			});
+		});
 	};
 
 	/* map */
@@ -3292,9 +3109,7 @@ function main() {
 		}
 
 		// check which destination is the primary one (ie if we are on a specific destination Contact page)
-		const primarySlug = aethos.map.mapElement.getAttribute(
-			"aethos-map-primary-dest"
-		);
+		const primarySlug = aethos.map.mapElement.getAttribute("aethos-map-primary-dest");
 
 		// Add markers and tooltips
 		destinations.forEach((destEl) => {
@@ -3306,8 +3121,7 @@ function main() {
 			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
 			destination.theme = destEl.getAttribute("aethos-dest-theme");
 			destination.slug = destEl.getAttribute("aethos-dest-slug");
-			destination.themeColor =
-				aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
+			destination.themeColor = aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
 
 			if (!destination.lat || !destination.long) {
 				return;
@@ -3418,9 +3232,7 @@ function main() {
 	/* update copyright */
 	aethos.functions.updateCopyrightYear = function () {
 		const year = new Date().getFullYear().toString();
-		document
-			.querySelectorAll(".u-current-year")
-			.forEach((el) => (el.textContent = year));
+		document.querySelectorAll(".u-current-year").forEach((el) => (el.textContent = year));
 	};
 
 	/* load in standard hero sections */
@@ -3432,14 +3244,14 @@ function main() {
 			let content = gsap_section(".anim-load-hero_content"); // content element
 			let media = gsap_section(".anim-load-hero_media"); // media element
 			let content_bg = gsap_section(".anim-load-hero_content-bg"); // bg element behind content - already exists on page
-			let section_bg_color = getComputedStyle(
-				document.documentElement
-			).getPropertyValue("--color--sand--light");
+			let section_bg_color = getComputedStyle(document.documentElement).getPropertyValue(
+				"--color--sand--light"
+			);
 
 			if (aethos.settings.theme == "club") {
-				section_bg_color = getComputedStyle(
-					document.documentElement
-				).getPropertyValue("--color--charcoal--dark");
+				section_bg_color = getComputedStyle(document.documentElement).getPropertyValue(
+					"--color--charcoal--dark"
+				);
 			}
 
 			/* decide if we are doing full animation or not */
@@ -3462,17 +3274,9 @@ function main() {
 			if (doFullAnimation) {
 				tl.from(content_bg, { height: 0, duration: 0.8, ease: "power2.inOut" });
 
-				tl.from(
-					content,
-					{ autoAlpha: 0, duration: 0.6, ease: "power2.inOut" },
-					">"
-				);
+				tl.from(content, { autoAlpha: 0, duration: 0.6, ease: "power2.inOut" }, ">");
 
-				tl.from(
-					media,
-					{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
-					">"
-				);
+				tl.from(media, { autoAlpha: 0, duration: 0.8, ease: "power2.inOut" }, ">");
 				tl.from(
 					section,
 					{
@@ -3484,11 +3288,7 @@ function main() {
 				);
 			} else {
 				gsap.set(content, { autoAlpha: 1 });
-				tl.from(
-					media,
-					{ autoAlpha: 0, duration: 0.8, ease: "power2.inOut" },
-					">"
-				);
+				tl.from(media, { autoAlpha: 0, duration: 0.8, ease: "power2.inOut" }, ">");
 			}
 		});
 	};
@@ -3523,9 +3323,7 @@ function main() {
 						// Insert the sourceElement content into the target element
 						target.innerHTML = sourceElement.innerHTML;
 					} else {
-						console.warn(
-							`No element with aethos-vibes='source' found in ${sourcePath}`
-						);
+						console.warn(`No element with aethos-vibes='source' found in ${sourcePath}`);
 					}
 				})
 				.catch((error) => {
@@ -3553,9 +3351,7 @@ function main() {
 
 		blocks.forEach((block) => {
 			// Get the filter slug(s) and destination slug
-			let experienceCategories = block.getAttribute(
-				"aethos-experience-category"
-			);
+			let experienceCategories = block.getAttribute("aethos-experience-category");
 			const destinationSlug = block.getAttribute("aethos-destination-slug");
 
 			// Check if the filter slug or destination slug are missing or empty
@@ -3578,9 +3374,7 @@ function main() {
 				.slice(0, 3);
 
 			// Encode each category for URL and join with commas
-			const encodedCategories = categoriesArray
-				.map((cat) => encodeURIComponent(cat))
-				.join("%2C");
+			const encodedCategories = categoriesArray.map((cat) => encodeURIComponent(cat)).join("%2C");
 
 			// Set the button href with the correct link
 			try {
@@ -3724,9 +3518,7 @@ function main() {
 
 	/* format dates */
 	aethos.functions.formatDates = function () {
-		let dateEls = document.querySelectorAll(
-			".date:not([aethos-date-formatted='true']"
-		); // get all date elements on the page that haven't been formatted already
+		let dateEls = document.querySelectorAll(".date:not([aethos-date-formatted='true']"); // get all date elements on the page that haven't been formatted already
 
 		dateEls.forEach((dateEl) => {
 			var startDate = dateEl.getAttribute("aethos-date-start");
@@ -3866,10 +3658,7 @@ function main() {
 					const currentHref = link.getAttribute("href");
 
 					// Ignore external links
-					if (
-						!currentHref.startsWith("/") &&
-						!currentHref.startsWith(window.location.origin)
-					) {
+					if (!currentHref.startsWith("/") && !currentHref.startsWith(window.location.origin)) {
 						return;
 					}
 
@@ -3884,10 +3673,7 @@ function main() {
 						// For other links, append the destination parameter
 						const updatedHref = new URL(currentHref, window.location.origin);
 						updatedHref.searchParams.set("dest", destinationSlug);
-						link.setAttribute(
-							"href",
-							updatedHref.pathname + updatedHref.search
-						);
+						link.setAttribute("href", updatedHref.pathname + updatedHref.search);
 					}
 				}
 			});
@@ -3897,9 +3683,7 @@ function main() {
 	aethos.functions.hiddenFormFields = function () {
 		/* user language */
 		const userLanguage = navigator.language || navigator.userLanguage;
-		const languageFields = document.querySelectorAll(
-			'input[name="USERLANGUAGE"]'
-		);
+		const languageFields = document.querySelectorAll('input[name="USERLANGUAGE"]');
 
 		languageFields.forEach((field) => {
 			field.value = userLanguage.substring(0, 2); // Optionally, only use the language code (e.g., 'en')
@@ -3922,9 +3706,7 @@ function main() {
 		// /* current destination */
 		// /* EDIT - this is now set manually in component overrides so we can control on a page by page basis, e.g. setting a destination on club pages */
 		// /* EDIT 2 - we were not manually setting this for footer forms, and there's no easy for a client to do this for static destination forms, so we are reverting to auto-setting this for empty fields */
-		const destinationFields = document.querySelectorAll(
-			'input[name="PAGEDESTINATION"]'
-		);
+		const destinationFields = document.querySelectorAll('input[name="PAGEDESTINATION"]');
 
 		// if we know the current destination
 		if (aethos.settings.destinationSlug) {
@@ -3945,10 +3727,7 @@ function main() {
 				let currentElement = button;
 
 				// Traverse up the DOM to find the nearest .w-dropdown element
-				while (
-					currentElement &&
-					!currentElement.classList.contains("w-dropdown")
-				) {
+				while (currentElement && !currentElement.classList.contains("w-dropdown")) {
 					currentElement = currentElement.parentElement;
 				}
 
@@ -4002,9 +3781,7 @@ function main() {
 		}
 
 		// Get all elements with the attribute
-		const currentLangEls = document.querySelectorAll(
-			"[aethos-lang-current='true']"
-		);
+		const currentLangEls = document.querySelectorAll("[aethos-lang-current='true']");
 
 		// Listen for the Weglot language change event
 		Weglot.on("languageChanged", function (newLang, prevLang) {
@@ -4090,9 +3867,7 @@ function main() {
 		}
 
 		// create array of numbers
-		const numbers = Array.from(
-			document.querySelectorAll("[data-date-suffix='true']")
-		);
+		const numbers = Array.from(document.querySelectorAll("[data-date-suffix='true']"));
 		// apply function definition for each number
 		numbers.forEach((number) => {
 			const suffix = suffixMe(Number(number.textContent));
@@ -4144,9 +3919,7 @@ function main() {
 		});
 
 		// add placeholders to date fields
-		const dateFields = document.querySelectorAll(
-			".proposal-form_field.is-date-placeholder"
-		);
+		const dateFields = document.querySelectorAll(".proposal-form_field.is-date-placeholder");
 
 		dateFields.forEach((dateField) => {
 			// Initialize placeholder
@@ -4252,10 +4025,7 @@ function main() {
 				ScrollTrigger.create({
 					trigger: section,
 					start: () => updateStart(true), // Include the extra 32px
-					end: () =>
-						`${
-							section.offsetHeight - imgContainer.offsetHeight - paddingBottom
-						}px 0px`,
+					end: () => `${section.offsetHeight - imgContainer.offsetHeight - paddingBottom}px 0px`,
 					pin: imgContainer,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
@@ -4265,8 +4035,7 @@ function main() {
 				ScrollTrigger.create({
 					trigger: section,
 					start: () => updateStart(false), // Only account for the nav height
-					end: () =>
-						`${section.offsetHeight - imgContainer.offsetHeight}px 0px`,
+					end: () => `${section.offsetHeight - imgContainer.offsetHeight}px 0px`,
 					pin: header,
 					invalidateOnRefresh: true,
 					pinSpacing: false,
@@ -4358,11 +4127,9 @@ function main() {
 
 			// on resize, update height of open items
 			window.addEventListener("resize", () => {
-				document
-					.querySelectorAll(".faq-item.is-open .faq_content")
-					.forEach((content) => {
-						content.style.height = "auto";
-					});
+				document.querySelectorAll(".faq-item.is-open .faq_content").forEach((content) => {
+					content.style.height = "auto";
+				});
 			});
 		});
 	};
@@ -4510,15 +4277,9 @@ function main() {
 		const result = document.querySelector(".calc-result");
 		const backButton = document.querySelector(".calc-result_back");
 		const clubSelect = document.querySelector('select[name="Club"]');
-		const otherClubsRadio = document.querySelectorAll(
-			'input[name="other-clubs"]'
-		);
-		const partnerClubsRadioFieldset = document.querySelector(
-			".calc_partner-clubs"
-		);
-		const partnerClubsRadio = document.querySelectorAll(
-			'input[name="partner-clubs"]'
-		);
+		const otherClubsRadio = document.querySelectorAll('input[name="other-clubs"]');
+		const partnerClubsRadioFieldset = document.querySelector(".calc_partner-clubs");
+		const partnerClubsRadio = document.querySelectorAll('input[name="partner-clubs"]');
 		const submitButton = document.querySelector(".calc_submit .button");
 		const calcDataElements = document.querySelectorAll(".calc-data");
 		const benefitsContainer = document.querySelector(".calc-result_benefits");
@@ -4532,21 +4293,13 @@ function main() {
 		// Function to enable/disable the button
 		function buttonEnabled() {
 			const clubSelected = !!selectedClub;
-			const otherClubsSelected = Array.from(otherClubsRadio).some(
-				(radio) => radio.checked
-			);
+			const otherClubsSelected = Array.from(otherClubsRadio).some((radio) => radio.checked);
 			const otherClubsYes = Array.from(otherClubsRadio).find(
 				(radio) => radio.value === "yes" && radio.checked
 			);
-			const partnerClubsSelected = Array.from(partnerClubsRadio).some(
-				(radio) => radio.checked
-			);
+			const partnerClubsSelected = Array.from(partnerClubsRadio).some((radio) => radio.checked);
 
-			if (
-				clubSelected &&
-				otherClubsSelected &&
-				(otherClubsYes || partnerClubsSelected)
-			) {
+			if (clubSelected && otherClubsSelected && (otherClubsYes || partnerClubsSelected)) {
 				submitButton.removeAttribute("disabled");
 			} else {
 				submitButton.setAttribute("disabled", true);
@@ -4572,9 +4325,7 @@ function main() {
 			benefitsContainer.innerHTML = "";
 
 			try {
-				const response = await fetch(
-					`/memberships/${selectedPlan.toLowerCase()}`
-				);
+				const response = await fetch(`/memberships/${selectedPlan.toLowerCase()}`);
 				if (!response.ok) throw new Error("Failed to load benefits");
 
 				const pageHtml = await response.text();
@@ -4670,15 +4421,9 @@ function main() {
 				return;
 			}
 
-			price = calcData.getAttribute(
-				`aethos-calc-${selectedPlan.toLowerCase()}-price`
-			);
-			fee = calcData.getAttribute(
-				`aethos-calc-${selectedPlan.toLowerCase()}-fee`
-			);
-			bodyText = calcData.getAttribute(
-				`aethos-calc-${selectedPlan.toLowerCase()}-body`
-			);
+			price = calcData.getAttribute(`aethos-calc-${selectedPlan.toLowerCase()}-price`);
+			fee = calcData.getAttribute(`aethos-calc-${selectedPlan.toLowerCase()}-fee`);
+			bodyText = calcData.getAttribute(`aethos-calc-${selectedPlan.toLowerCase()}-body`);
 
 			await showResult();
 		});
@@ -4724,32 +4469,19 @@ function main() {
 				);
 			} else {
 				// set offset to a reasonable starting pos
-				menu.style.setProperty(
-					underlineOffsetProp,
-					`${window.innerWidth * 0.5}px`
-				);
+				menu.style.setProperty(underlineOffsetProp, `${window.innerWidth * 0.5}px`);
 			}
 
 			menu.addEventListener("mouseover", (event) => {
 				if (event.target.classList.contains("club-nav_link-text")) {
 					// trigger hover on this item
-					menuUnderline(
-						menu,
-						event.target,
-						underlineWidthProp,
-						underlineOffsetProp
-					);
+					menuUnderline(menu, event.target, underlineWidthProp, underlineOffsetProp);
 				}
 			});
 
 			menu.addEventListener("mouseleave", () => {
 				if (activeLink) {
-					menuUnderline(
-						menu,
-						activeLink,
-						underlineWidthProp,
-						underlineOffsetProp
-					);
+					menuUnderline(menu, activeLink, underlineWidthProp, underlineOffsetProp);
 				} else {
 					menu.style.setProperty(underlineWidthProp, "0");
 				}
@@ -4776,9 +4508,7 @@ function main() {
 		if (!tabMenu) return;
 
 		const tabs = tabMenu.querySelectorAll(".well-tabs_link");
-		const dropdownToggleLabel = document.querySelector(
-			".well-tabs_dd-toggle .label-heading"
-		);
+		const dropdownToggleLabel = document.querySelector(".well-tabs_dd-toggle .label-heading");
 
 		function updateUnderline() {
 			const activeTab = tabMenu.querySelector(".well-tabs_link.is-active");
@@ -4788,10 +4518,7 @@ function main() {
 			const activeTabRect = activeTab.getBoundingClientRect();
 			const offsetX = activeTabRect.left - menuRect.left;
 
-			tabMenu.style.setProperty(
-				"--tabs-underline-width",
-				`${activeTabRect.width}px`
-			);
+			tabMenu.style.setProperty("--tabs-underline-width", `${activeTabRect.width}px`);
 			tabMenu.style.setProperty("--tabs-underline-offset-x", `${offsetX}px`);
 		}
 
@@ -4819,8 +4546,7 @@ function main() {
 			});
 		});
 
-		const initialTab =
-			tabMenu.querySelector(".well-tabs_link.is-active") || tabs[0];
+		const initialTab = tabMenu.querySelector(".well-tabs_link.is-active") || tabs[0];
 		if (initialTab) {
 			setActiveTab(initialTab);
 			updateUnderline();
@@ -4896,10 +4622,7 @@ function main() {
 		}
 
 		// check dest has socials
-		if (
-			!aethos.settings.destinationFacebook &&
-			!aethos.settings.destinationInstagram
-		) {
+		if (!aethos.settings.destinationFacebook && !aethos.settings.destinationInstagram) {
 			return;
 		}
 
@@ -4923,18 +4646,12 @@ function main() {
 		}
 
 		if (aethos.settings.destinationFacebook) {
-			var fbLink = createSocialLink(
-				aethos.settings.destinationFacebook,
-				"Facebook"
-			);
+			var fbLink = createSocialLink(aethos.settings.destinationFacebook, "Facebook");
 			existingParent.appendChild(fbLink);
 		}
 
 		if (aethos.settings.destinationInstagram) {
-			var igLink = createSocialLink(
-				aethos.settings.destinationInstagram,
-				"Instagram"
-			);
+			var igLink = createSocialLink(aethos.settings.destinationInstagram, "Instagram");
 			existingParent.appendChild(igLink);
 		}
 	};
@@ -5051,10 +4768,7 @@ function main() {
 	aethos.functions.mews = function () {
 		// If on a destination-specific page, open Mews for that destination
 		if (aethos.settings.destinationMewsId) {
-			aethos.log(
-				"Setting up Mews for destination",
-				aethos.settings.destinationMewsId
-			);
+			aethos.log("Setting up Mews for destination", aethos.settings.destinationMewsId);
 			Mews.Distributor({
 				configurationIds: [aethos.settings.destinationMewsId],
 				openElements: ".reservenow",
@@ -5150,7 +4864,13 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
-	// aethos.functions.mews();
-	aethos.functions.hc();
+
+	// run either mews or hc
+	if (aethos.engine === "hc") {
+		aethos.functions.hc();
+	} else {
+		aethos.functions.mews();
+	}
+
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
