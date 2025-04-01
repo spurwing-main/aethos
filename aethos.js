@@ -388,8 +388,6 @@ function main() {
 		document.addEventListener("click", function (e) {
 			const link = e.target.closest("a");
 
-			console.log("Link clicked:", link);
-
 			if (!link) return; // Ignore clicks not on <a> elements
 
 			// Exclude links that are descendants of a `.pagination` element
@@ -521,7 +519,6 @@ function main() {
 		}
 
 		function playPageTransition(theme1, theme2, onComplete) {
-			console.log("Running page transition");
 			// Hide the Lottie container initially
 			gsap.set(aethos.transition.container, { display: "none" });
 
@@ -538,9 +535,7 @@ function main() {
 		}
 
 		function startLottieAnimation(theme1, theme2, onComplete) {
-			aethos.log("Calling showHC(false)"); // <- add this to confirm
-
-			// hide HC
+			// hide HC. It will be shown by default on new page load
 			aethos.functions.showHC(false);
 
 			// Display the transition overlay
@@ -559,8 +554,6 @@ function main() {
 				delay: 0,
 				onComplete: () => {
 					aethos.log("Transition complete.");
-					// show HC again
-					aethos.functions.showHC(true);
 					onComplete();
 				},
 			});
@@ -1445,7 +1438,6 @@ function main() {
 		// 	});
 
 		// 	// mm.add(`(max-width: ${aethos.breakpoints.mbl}px)`, () => {
-		// 	// 	console.log("test");
 		// 	// 	aethos.nav.headerRevealAnim = gsap
 		// 	// 		.from(".header-bar", {
 		// 	// 			yPercent: -100,
@@ -4783,6 +4775,9 @@ function main() {
 	};
 
 	aethos.functions.mews = function () {
+		if (aethos.bookingEngine !== "mews") {
+			return;
+		}
 		// If on a destination-specific page, open Mews for that destination
 		if (aethos.settings.destinationMewsId) {
 			aethos.log("Setting up Mews for destination", aethos.settings.destinationMewsId);
@@ -4814,22 +4809,60 @@ function main() {
 	};
 
 	aethos.functions.hc = function () {
-		const buttons = document.querySelectorAll(".reservenow");
-		buttons.forEach((button) => {
-			button.addEventListener("click", (e) => {
-				e.preventDefault();
-				window.__HC__.ibe.search();
+		const HCbuttons = document.querySelectorAll(".button.reservenow");
+
+		function openOnButtonClick(buttons) {
+			buttons.forEach((button) => {
+				button.addEventListener("click", (e) => {
+					e.preventDefault();
+					aethos.log("opening HC");
+					window.__HC__.ibe.search();
+				});
 			});
-		});
+		}
+
+		function enableButtons(buttons) {
+			buttons.forEach((button) => {
+				button.removeAttribute("disabled");
+			});
+			clearTimeout(window.__hcFallbackTimeout);
+			openOnButtonClick(buttons); // Move this here so it's only added once they're active
+		}
+
+		function watchForHotelChampLoad() {
+			// Immediate check in case HC loaded early
+			if (document.querySelector("hc-ibe")) {
+				enableButtons(HCbuttons);
+				return;
+			}
+
+			// Otherwise, watch for it
+			const observer = new MutationObserver((mutations, obs) => {
+				if (document.querySelector("hc-ibe")) {
+					enableButtons(HCbuttons);
+					obs.disconnect();
+				}
+			});
+
+			observer.observe(document.body, { childList: true, subtree: true });
+		}
+
+		// Disable buttons immediately and set fallback
+		HCbuttons.forEach((button) => button.setAttribute("disabled", "true"));
+		window.__hcFallbackTimeout = setTimeout(() => {
+			enableButtons(HCbuttons);
+		}, 5000);
+
+		watchForHotelChampLoad();
 	};
 
-	aethos.functions.showHC = function (bool) {
-		if (bool) {
-			console.log("showing HC");
+	aethos.functions.showHC = function (show = true) {
+		if (show === true) {
+			aethos.log("showing HC");
 			document.body.classList.remove("hc-hidden");
 		} else {
-			console.log("hiding HC");
-			document.body.classList.remove("hc-hidden");
+			aethos.log("hiding HC");
+			document.body.classList.add("hc-hidden");
 		}
 	};
 
