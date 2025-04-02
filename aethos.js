@@ -4894,6 +4894,22 @@ function main() {
 		}
 	};
 
+	aethos.functions.scrollbarWidth = function () {
+		// sets a CSS variable we can use to fix layout shift when opening HC
+		function updateProp() {
+			document.documentElement.style.setProperty(
+				"--scrollbar-width",
+				window.innerWidth - document.documentElement.offsetWidth + "px"
+			);
+			// console.log(getComputedStyle(document.documentElement).getPropertyValue("--scrollbar-width"));
+		}
+
+		updateProp();
+
+		// // update on resize - possibly not needed
+		// window.addEventListener("resize", updateProp);
+	};
+
 	/******/
 	/*** CALL FUNCTIONS ***/
 	/******/
@@ -4952,6 +4968,7 @@ function main() {
 	aethos.functions.updateCopyrightYear();
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
+	aethos.functions.scrollbarWidth();
 
 	// run either mews or hc
 	if (aethos.engine === "hc") {
