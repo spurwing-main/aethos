@@ -4811,22 +4811,36 @@ function main() {
 	aethos.functions.hc = function () {
 		const HCbuttons = document.querySelectorAll(".button.reservenow");
 
-		function openOnButtonClick(buttons) {
-			buttons.forEach((button) => {
-				button.addEventListener("click", (e) => {
-					e.preventDefault();
-					aethos.log("opening HC");
-					window.__HC__.ibe.search();
-				});
-			});
-		}
+		// function openOnButtonClick(buttons) {
+		// 	buttons.forEach((button) => {
+		// 		button.addEventListener("click", (e) => {
+		// 			e.preventDefault();
+		// 			aethos.log("opening HC");
+		// 			window.__HC__.ibe.search();
+		// 		});
+		// 	});
+		// }
+
+		// function enableButtons(buttons) {
+		// 	buttons.forEach((button) => {
+		// 		button.removeAttribute("disabled");
+		// 	});
+		// 	clearTimeout(window.__hcFallbackTimeout);
+		// 	openOnButtonClick(buttons); // Move this here so it's only added once they're active
+		// }
 
 		function enableButtons(buttons) {
-			buttons.forEach((button) => {
-				button.removeAttribute("disabled");
+			waitForHotelChampAPI(() => {
+				buttons.forEach((button) => {
+					button.removeAttribute("disabled");
+					button.addEventListener("click", (e) => {
+						e.preventDefault();
+						aethos.log("opening HC");
+						window.__HC__.ibe.search();
+					});
+				});
+				clearTimeout(window.__hcFallbackTimeout);
 			});
-			clearTimeout(window.__hcFallbackTimeout);
-			openOnButtonClick(buttons); // Move this here so it's only added once they're active
 		}
 
 		function watchForHotelChampLoad() {
@@ -4845,6 +4859,20 @@ function main() {
 			});
 
 			observer.observe(document.body, { childList: true, subtree: true });
+		}
+
+		function waitForHotelChampAPI(callback, fallbackDelay = 5000) {
+			const poll = setInterval(() => {
+				if (window.__HC__?.ibe?.search) {
+					clearInterval(poll);
+					callback();
+				}
+			}, 100);
+
+			setTimeout(() => {
+				clearInterval(poll);
+				if (window.__HC__?.ibe?.search) callback();
+			}, fallbackDelay);
 		}
 
 		// Disable buttons immediately and set fallback
