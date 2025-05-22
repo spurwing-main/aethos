@@ -287,7 +287,7 @@ function main() {
 				normalizeScroll: {
 					allowNestedScroll: true,
 				},
-				onUpdate: () => {},
+				onUpdate: () => { },
 				onRefresh: () => {
 					// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
 					ScrollTrigger.refresh();
@@ -2030,7 +2030,7 @@ function main() {
 						}
 
 						// Cleanup function for when the media query condition changes
-						return () => {};
+						return () => { };
 					});
 				}
 			});
@@ -3525,9 +3525,86 @@ function main() {
 		}
 	};
 
+	aethos.functions.dateRangeFilter = function () {
+		if (!document.querySelector("[data-date-range]")) {
+			return;
+		}
+		const ITEM_SEL = '[data-date-range=list-item]';
+		const DATE_SEL = '[fs-cmsfilter-field="date"]';
+		const FROM_SEL = '[data-date-range="from"]';
+		const TO_SEL = '[data-date-range="to"]';
+		const TAG_SEL = '[data-date-range="tag"]';
+		const TAG_TEXT_SEL = '[data-date-range="text"]';
+		const TAG_CLEAR_SEL = '[data-date-range="clear"]';
+
+		const extractDate = s => {
+			const m = s && s.match(/^(\d{4}-\d{2}-\d{2})/);
+			return m ? m[1] : null;
+		};
+
+		const inRange = (d, from, to) =>
+			d && (!from || d >= from) && (!to || d <= to);
+
+		const updateActiveTag = (from, to) => {
+			const tag = document.querySelector(TAG_SEL);
+			const text = document.querySelector(TAG_TEXT_SEL);
+
+			if (!tag || !text) return;
+
+			if (!from && !to) {
+				tag.style.display = 'none';
+				return;
+			}
+
+			let label = '';
+			if (from && to) label = `${from} - ${to}`;
+			else if (from) label = from;
+			else if (to) label = `… - ${to}`;
+
+			text.textContent = label;
+			tag.style.display = '';
+		};
+
+		const filterByDate = () => {
+			const from = document.querySelector(FROM_SEL)?.value || null;
+			const to = document.querySelector(TO_SEL)?.value || null;
+
+			document.querySelectorAll(ITEM_SEL).forEach(item => {
+				const raw = item.querySelector(DATE_SEL)?.textContent || '';
+				const dates = raw.split(',').map(s => extractDate(s.trim())).filter(Boolean);
+				item.style.display = (!from && !to) || dates.some(d => inRange(d, from, to)) ? '' : 'none';
+			});
+
+			updateActiveTag(from, to);
+		};
+
+		const clearDateInputs = () => {
+			const from = document.querySelector(FROM_SEL);
+			const to = document.querySelector(TO_SEL);
+			if (from) from.value = '';
+			if (to) to.value = '';
+			filterByDate();
+		};
+
+		// Attach change listeners
+		document.querySelector(FROM_SEL)?.addEventListener('change', filterByDate);
+		document.querySelector(TO_SEL)?.addEventListener('change', filterByDate);
+
+		// Attach click handler to the clear icon inside the active tag
+		document.querySelector(TAG_CLEAR_SEL)?.addEventListener('click', clearDateInputs);
+
+		// Initial filter on load
+		filterByDate();
+
+		// Re-filter if CMS list is re-rendered (e.g., Finsweet)
+		window.addEventListener('cmsFilterRendered', filterByDate);
+	};
+
+
+
 	/* format dates */
 	aethos.functions.formatDates = function () {
-		let dateEls = document.querySelectorAll(".date:not([aethos-date-formatted='true']"); // get all date elements on the page that haven't been formatted already
+		let dateEls = document.querySelectorAll(".date:not([aethos-date-formatted='true'])"); // get all date elements on the page that haven't been formatted already
 
 		dateEls.forEach((dateEl) => {
 			var startDate = dateEl.getAttribute("aethos-date-start");
@@ -3818,7 +3895,12 @@ function main() {
 				if (filterInstance) {
 					// The `renderitems` event runs whenever the list renders items after filtering.
 					filterInstance.listInstance.on("renderitems", (renderedItems) => {
-						aethos.log("CMS filter - render items");
+						aethos.log("CMS filter - render items - add event");
+						window.dispatchEvent(
+							new CustomEvent("cmsFilterRendered", {
+								detail: { items: renderedItems }
+							})
+						);
 						aethos.helpers.refreshSticky(true); // hard refresh
 					});
 
@@ -4925,6 +5007,7 @@ function main() {
 	aethos.functions.hiddenFormFields();
 	aethos.functions.handleCMSLoad();
 	aethos.functions.handleCMSFilter();
+	aethos.functions.dateRangeFilter();
 	aethos.functions.hideEmptySections();
 	aethos.functions.updateDestinationSocials();
 	aethos.anim.splitText();
