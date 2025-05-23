@@ -3529,129 +3529,163 @@ function main() {
 		aethos.log('Date range filter function called');
 		if (!document.querySelector('[data-date-range]')) return;
 		aethos.log('Date range filter detected');
-
+	
 		// ---------------------------------------------------------------------------
 		// Selectors
 		// ---------------------------------------------------------------------------
-	  
+	
 		const SELECTORS = {
-		  ITEM     : '[data-date-range="list-item"]',
-		  DATE     : '[fs-cmsfilter-field="date"]',
-		  TAG      : '[data-date-range="tag"]',
-		  TAG_TEXT : '[data-date-range="text"]',
-		  CLEAR    : '[data-date-range="clear"]',
-		  APPLY    : '[data-date-range="apply"]',
-		  EMPTY_EL : '.empty'
+			ITEM     : '[data-date-range="list-item"]',
+			DATE     : '[fs-cmsfilter-field="date"]',
+			TAG      : '[data-date-range="tag"]',
+			TAG_TEXT : '[data-date-range="text"]',
+			CLEAR    : '[data-date-range="clear"]',
+			APPLY    : '[data-date-range="apply"]',
+			EMPTY_EL : '.empty'
 		};
-	  
+	
 		// ---------------------------------------------------------------------------
 		// Internal state – updated by the picker’s `date-range-change` event
 		// ---------------------------------------------------------------------------
-	  
+	
 		const range = {
-		  from: null, // string YYYY-MM-DD | null
-		  to  : null  // string YYYY-MM-DD | null
+			from: null, // string YYYY-MM-DD | null
+			to  : null  // string YYYY-MM-DD | null
 		};
-	  
+	
 		// Helper: zero‑pad
 		const pad = n => String(n).padStart(2, '0');
 		// Helper: Date → YYYY‑MM‑DD
 		const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-	  
+	
 		// Listen for date‑range events from the picker root (or document fall‑back)
-		(document)
-		  .addEventListener('date-range-change', e => {
+		document.addEventListener('date-range-change', e => {
 			aethos.log('Date range change detected:', e.detail);
 			const { start, end } = e.detail || {};
 			range.from = start ? fmtDate(start) : null;
 			range.to   = end   ? fmtDate(end)   : null;
-		  });
-	  
+		});
+	
 		// ---------------------------------------------------------------------------
 		// Utilities
 		// ---------------------------------------------------------------------------
-	  
+	
 		// Extract leading YYYY‑MM‑DD from a string
 		const extractDate = str => {
-		  const m = str && str.match(/^(\d{4}-\d{2}-\d{2})/);
-		  return m ? m[1] : null;
+			const m = str && str.match(/^(\d{4}-\d{2}-\d{2})/);
+			return m ? m[1] : null;
 		};
-	  
+	
 		// Check if a date string sits inside the current range
 		const inRange = (date, from, to) => {
-		  if (!date) return false;
-		  if (from && date < from) return false;
-		  if (to   && date > to) return false;
-		  return true;
+			if (!date) return false;
+			if (from && date < from) return false;
+			if (to   && date > to) return false;
+			return true;
 		};
-	  
+	
 		const updateActiveTag = (from, to) => {
-		  const tag  = document.querySelector(SELECTORS.TAG);
-		  const text = document.querySelector(SELECTORS.TAG_TEXT);
-		  if (!tag || !text) return;
-	  
-		  if (!from && !to) {
-			tag.style.display = 'none';
-			return;
-		  }
-	  
-		  text.textContent = from && to ? `${from} - ${to}` : from || to;
-		  tag.style.display = '';
+			const tag  = document.querySelector(SELECTORS.TAG);
+			const text = document.querySelector(SELECTORS.TAG_TEXT);
+			if (!tag || !text) return;
+	
+			if (!from && !to) {
+				tag.style.display = 'none';
+				return;
+			}
+	
+			text.textContent = from && to ? `${from} - ${to}` : from || to;
+			tag.style.display = '';
 		};
-	  
+	
 		// ---------------------------------------------------------------------------
 		// Core filtering logic – uses *stored* range, not input values
 		// ---------------------------------------------------------------------------
-	  
+	
 		const filterItemsByDate = () => {
-		  const { from, to } = range;
-		  const items = document.querySelectorAll(SELECTORS.ITEM);
-		  let hidden = 0;
-	  
-		  items.forEach(item => {
-			const dateStr = item.querySelector(SELECTORS.DATE)?.textContent || '';
-			const dates   = dateStr.split(',').map(d => extractDate(d.trim())).filter(Boolean);
-			const visible = (!from && !to) || dates.some(d => inRange(d, from, to));
-			item.style.display = visible ? '' : 'none';
-			if (!visible) hidden++;
-		  });
-	  
-		  updateActiveTag(from, to);
-	  
-		  const emptyEl = document.querySelector(SELECTORS.EMPTY_EL);
-		  if (emptyEl) {
-			emptyEl.style.display = items.length && hidden === items.length ? '' : 'none';
-			if (hidden === items.length) aethos.log('[DateFilter] All items hidden by date filter');
-		  }
+			const { from, to } = range;
+			const items = document.querySelectorAll(SELECTORS.ITEM);
+			let hidden = 0;
+	
+			items.forEach(item => {
+				const dateStr = item.querySelector(SELECTORS.DATE)?.textContent || '';
+				const dates   = dateStr.split(',').map(d => extractDate(d.trim())).filter(Boolean);
+				const visible = (!from && !to) || dates.some(d => inRange(d, from, to));
+				item.style.display = visible ? '' : 'none';
+				if (!visible) hidden++;
+			});
+	
+			updateActiveTag(from, to);
+	
+			const emptyEl = document.querySelector(SELECTORS.EMPTY_EL);
+			if (emptyEl) {
+				emptyEl.style.display = items.length && hidden === items.length ? '' : 'none';
+				if (hidden === items.length) aethos.log('[DateFilter] All items hidden by date filter');
+			}
 		};
-	  
+	
 		// ---------------------------------------------------------------------------
 		// Clear – reset range **and** clear the picker UI (assumes single picker)
 		// ---------------------------------------------------------------------------
-	  
+	
 		const clearRange = () => {
-		  range.from = range.to = null;
-		  // Clear the picker if it exists
-		  window.datePicker?.clear?.();
-		  filterItemsByDate();
+			range.from = range.to = null;
+			// Clear the picker if it exists
+			window.datePicker?.clear?.();
+			filterItemsByDate();
 		};
-	  
+	
 		// ---------------------------------------------------------------------------
 		// Wire up buttons
 		// ---------------------------------------------------------------------------
-	  
+	
 		const attachListeners = () => {
-		  document.querySelectorAll(SELECTORS.APPLY)
-			.forEach(btn => btn.addEventListener('click', filterItemsByDate));
-	  
-		  document.querySelectorAll(SELECTORS.CLEAR)
-			.forEach(btn => btn.addEventListener('click', clearRange));
+			document.querySelectorAll(SELECTORS.APPLY)
+				.forEach(btn => btn.addEventListener('click', filterItemsByDate));
+	
+			document.querySelectorAll(SELECTORS.CLEAR)
+				.forEach(btn => btn.addEventListener('click', clearRange));
 		};
-	  
+	
+		// ---------------------------------------------------------------------------
+		// One-time setup: Send all available dates to date picker
+		// ---------------------------------------------------------------------------
+	
+		const initializeAvailableDatesOnce = (() => {
+			let hasRun = false;
+			return function () {
+				if (hasRun) return;
+				hasRun = true;
+	
+				const allDateEls = document.querySelectorAll(SELECTORS.DATE);
+				const allDatesSet = new Set();
+	
+				allDateEls.forEach(el => {
+					const raw = el.textContent || '';
+					const dates = raw.split(',').map(d => extractDate(d.trim())).filter(Boolean);
+					dates.forEach(d => allDatesSet.add(d));
+				});
+	
+				const allDates = Array.from(allDatesSet).sort();
+				if (window.datePicker?.setAvailable) {
+					window.datePicker.setAvailable(allDates);
+					aethos.log('[DateFilter] Available dates sent to datePicker:', allDates);
+				}
+			};
+		})();
+	
+		// ---------------------------------------------------------------------------
+		// Initialize
+		// ---------------------------------------------------------------------------
+	
 		attachListeners();
-		filterItemsByDate(); // initial pass
-		window.addEventListener('cmsFilterRendered', filterItemsByDate);
+		filterItemsByDate(); 
+		initializeAvailableDatesOnce();
+		window.addEventListener('cmsFilterRendered', () => {
+			filterItemsByDate();
+		});
 	};
+	
 
 
 	/* format dates */
