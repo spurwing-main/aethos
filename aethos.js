@@ -3836,12 +3836,39 @@ function main() {
 	};
 
 	aethos.functions.initDateRangePicker = function () {
-		if (document.querySelector('.c-destinations-grid [data-date-range]')) {
+		const generateNext30Days = () => {
+			const dates = [];
+			const today = new Date();
+			for (let i = 0; i < 30; i++) {
+				const d = new Date(today);
+				d.setDate(today.getDate() + i);
+				const pad = n => String(n).padStart(2, '0');
+				dates.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+			}
+			return dates;
+		};
+	
+		const availableDates = generateNext30Days();
+	
+		/* Destination grid picker */
+		const destEl = document.querySelector('.c-destinations-grid [data-date-range]');
+		if (destEl) {
 			const api = aethos.functions.dateRangePicker('.c-destinations-grid', { mode: 'range' });
-			api?.setAvailable([...Array(30)].map((_, i) => `2025-07-${String(i + 1).padStart(2, '0')}`));
+			api?.setAvailable(availableDates);
+		}
+	
+		/* Proposal form picker */
+		const proposalForm = document.querySelector('.s-proposal');
+		if (proposalForm) {
+			const hasStart = proposalForm.querySelector('[data-drp-output="start"]');
+			const hasEnd   = proposalForm.querySelector('[data-drp-output="end"]');
+	
+			if (hasStart || hasEnd) {
+				const api  = aethos.functions.dateRangePicker('.s-proposal', { mode });
+			}
 		}
 	};
-
+	
 	/* format dates */
 	aethos.functions.formatDates = function () {
 		let dateEls = document.querySelectorAll(".date:not([aethos-date-formatted='true'])"); // get all date elements on the page that haven't been formatted already
@@ -4248,36 +4275,37 @@ function main() {
 			$(this).closest(".nav-link_dd-content").removeClass("w--open");
 			$(this).closest(".nav-link_dd .w-dropdown-toggle").removeClass("w--open");
 		});
-
-		// add placeholders to date fields
-		const dateFields = document.querySelectorAll(".proposal-form_field.is-date-placeholder");
-
-		dateFields.forEach((dateField) => {
-			// Initialize placeholder
-			const placeholder = dateField.dataset.placeholder;
-			if (!dateField.value) {
-				dateField.type = "text";
-				dateField.placeholder = placeholder;
-			}
-
-			// Handle focus: Show the date picker
-			dateField.addEventListener("focus", () => {
-				if (dateField.type !== "date") {
-					dateField.type = "date"; // Change type to "date"
-					setTimeout(() => {
-						dateField.showPicker(); // Trigger the picker after a brief delay
-					}, 10); // Short timeout to ensure Safari processes the type change
-				}
-			});
-
-			// Handle blur: Restore placeholder if no value is entered
-			dateField.addEventListener("blur", () => {
-				if (!dateField.value) {
-					dateField.type = "text";
-					dateField.placeholder = placeholder;
-				}
-			});
-		});
+		/*
+				// add placeholders to date fields
+				const dateFields = document.querySelectorAll(".proposal-form_field.is-date-placeholder");
+		
+				dateFields.forEach((dateField) => {
+					// Initialize placeholder
+					const placeholder = dateField.dataset.placeholder;
+					if (!dateField.value) {
+						dateField.type = "text";
+						dateField.placeholder = placeholder;
+					}
+		
+					// Handle focus: Show the date picker
+					dateField.addEventListener("focus", () => {
+						if (dateField.type !== "date") {
+							dateField.type = "date"; // Change type to "date"
+							setTimeout(() => {
+								dateField.showPicker(); // Trigger the picker after a brief delay
+							}, 10); // Short timeout to ensure Safari processes the type change
+						}
+					});
+		
+					// Handle blur: Restore placeholder if no value is entered
+					dateField.addEventListener("blur", () => {
+						if (!dateField.value) {
+							dateField.type = "text";
+							dateField.placeholder = placeholder;
+						}
+					});
+				});
+				*/
 
 		// convert any capitalised block IDs to lowercase - since we are using the Heading field of destination blocks to power section IDs
 		document.querySelectorAll(".s-dest-block[id]").forEach((el) => {
