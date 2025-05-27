@@ -3096,7 +3096,7 @@ function main() {
 	};
 
 	/* map */
-	aethos.map.init = function () {
+	aethos.map.init = async function () {
 		aethos.map.mapElement = document.querySelector(".map");
 		aethos.map.destinations = [];
 
@@ -3104,11 +3104,48 @@ function main() {
 		if (!aethos.map.mapElement) {
 			return;
 		}
-
 		aethos.log("Map found, building...");
 
-		// define marker group and add to map
-		var markerLayer = new L.featureGroup();
+		aethos.settings.partnerApiURL =
+			"https://aethos-partners.netlify.app/.netlify/functions/partners";
+
+		// Determine theme and tile layer
+		const theme = aethos.settings.theme;
+		const tileId = aethos.map.tileIds[theme] || aethos.map.tileIds.default;
+		const tileLayer = L.tileLayer(
+			"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+			{ id: tileId, accessToken: aethos.map.accessToken }
+		);
+
+		// Prepare feature groups
+		const aethosLayer = L.featureGroup();
+		const partnerLayer = L.featureGroup();
+
+		const primarySlug = aethos.map.mapElement.getAttribute("aethos-map-primary-dest");
+
+		// Popup generator for Aethos locations
+		const createPopupContent = ({ imageUrl, address, name, slug }) => `
+    <div class="popup">
+      <div class="popup_media"><img src="${imageUrl}" alt="${name}" class="img-cover"></div>
+      <div class="popup_content">
+        <div class="popup_header"><div class="label-heading">${name}</div></div>
+        <div class="popup_body"><div class="body-xxs">${address}</div></div>
+        <a class="popup_footer" href="/destinations/${slug}/contact" aria-label="Contact Aethos ${name}">
+          <div class="button-text-xs">Contact</div>
+          <div class="popup_icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
+              <path d="M20.9939 11.9938L13.5689 19.9876L13.0001 19.3752L19.8563 11.9938L13.0001 4.61234L13.5689 4L20.9939 11.9938Z" fill="currentColor"/>
+              <path d="M20.547 11.5574L20.5471 11.5946V12.3879L3 12.3878L3.00001 11.5574L20.547 11.5574Z" fill="currentColor"/>
+            </svg>
+          </div>
+        </a>
+      </div>
+    </div>
+  `;
+
+		// Shared marker configurations
+		const defaultConfig = { radius: 7, fillOpacity: 1 };
+		const partnerConfig = { ...defaultConfig, fillColor: "#000", color: null };
 
 		// Collect destination elements
 		const destinations = document.querySelectorAll(".map-data");
@@ -3117,14 +3154,14 @@ function main() {
 			return;
 		}
 
-		// check which destination is the primary one (ie if we are on a specific destination Contact page)
-		const primarySlug = aethos.map.mapElement.getAttribute("aethos-map-primary-dest");
-
-		// Add markers and tooltips
+		// Add Aethos locations from DOM
 		destinations.forEach((destEl) => {
-			const destination = {};
+			let destination = {};
 			destination.lat = parseFloat(destEl.getAttribute("aethos-dest-lat"));
 			destination.long = parseFloat(destEl.getAttribute("aethos-dest-long"));
+			if (!destination.lat || !destination.long) {
+				return;
+			}
 			destination.name = destEl.getAttribute("aethos-dest-name");
 			destination.address = destEl.getAttribute("aethos-dest-address");
 			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
@@ -3132,109 +3169,146 @@ function main() {
 			destination.slug = destEl.getAttribute("aethos-dest-slug");
 			destination.themeColor = aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
 
-			if (!destination.lat || !destination.long) {
-				return;
-			}
-
 			// choose the primary destination
 			if (primarySlug && primarySlug == destination.slug) {
 				destination.isPrimary = true;
 				aethos.map.primaryLatLong = [destination.lat, destination.long]; // so we know to focus map
 			}
 
-			// for club, make pin colors dark
-			if (aethos.settings.theme == "club") {
-				destination.themeColor = "#000";
+			if (theme === "club") {
+				// Use custom icon for partner clubs
+				// White circle + logo via CSS classes
+				// const aethosIcon = L.divIcon({ className: "aethos-club-marker" });
+
+				// custom icon
+				var aethosIcon = L.icon({
+					iconUrl:
+						"https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/68359395137805feff54e043_club-aethos-icon.svg",
+					iconSize: [16, 16],
+					iconAnchor: [8, 8],
+					//popupAnchor: [0, -12],
+				});
+
+				destination.marker = L.marker([destination.lat, destination.long], { icon: aethosIcon });
+			} else {
+				// Themed circleMarker
+				// const color = aethos.themes[data.themeKey.toLowerCase()]?.dark || "#000";
+				const cfg = {
+					...defaultConfig,
+					fillColor: destination.themeColor,
+					color: destination.themeColor,
+				};
+				destination.marker = L.circleMarker([destination.lat, destination.long], cfg);
 			}
 
-			// Create and add custom circle marker
-			destination.marker = L.circleMarker([destination.lat, destination.long], {
-				radius: 8,
-				color: destination.themeColor,
-				fillColor: destination.themeColor,
-				fillOpacity: 1,
-			}).addTo(markerLayer);
+			destination.marker.bindPopup(
+				createPopupContent({
+					imageUrl: destination.imgSrc,
+					address: destination.address,
+					name: destination.name,
+					slug: destination.slug,
+				}),
+				{ maxWidth: 300 }
+			);
 
-			// Use the createPopupContent function to generate the HTML for each pop-up
-			destination.popupContent = createPopupContent({
-				imageUrl: destination.imgSrc,
-				address: destination.address,
-				name: destination.name,
-				slug: destination.slug,
-				linkUrl: "/destinations/" + destination.slug + "/contact",
-			});
-
-			// Bind the pop-up to the marker
-			destination.marker.bindPopup(destination.popupContent, {
-				maxWidth: 300,
-			});
-
+			aethosLayer.addLayer(destination.marker);
 			aethos.map.destinations.push(destination);
 		});
 
-		// choose tile theme
-		if (aethos.settings.theme) {
-			aethos.map.tileId = aethos.map.tileIds[aethos.settings.theme]; // if we are on a destination page with a specified theme, set map tile accordingly
-			aethos.log("using custom map theme");
-		} else {
-			aethos.map.tileId = aethos.map.tileIds.default; // otherwise set default theme
-			aethos.log("using default map theme");
+		// On club pages: fetch and add Partner Clubs
+		if (theme === "club") {
+			try {
+				const response = await fetch(aethos.settings.partnerApiURL, { mode: "cors" }); // fetch partner club items via custom proxy
+
+				const json = await response.json();
+				const partners = Array.isArray(json.data) ? json.data : [];
+
+				partners.forEach((item) => {
+					const loc = item.location;
+					if (!loc.latitude || !loc.longitude) return;
+
+					const marker = L.circleMarker([loc.latitude, loc.longitude], partnerConfig);
+					const popupHtml = `
+          <div class="popup is-partner">
+            <div class="popup_header is-partner">
+				<div class="label-heading">${loc.location_name}</div>
+			</div>
+            <div class="popup_body is-partner"><div class="body-xxs">${
+							loc.city_country || loc.country_name
+						}</div></div>
+          </div>
+        `;
+					marker.bindPopup(popupHtml, { maxWidth: 250 });
+					partnerLayer.addLayer(marker);
+				});
+			} catch (err) {
+				aethos.log("Error loading Partner Clubs:", err);
+			}
 		}
 
-		// Define Mapbox tile layer
-		var tileLayer = new L.tileLayer(
-			"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
-			{
-				id: aethos.map.tileId,
-				accessToken: aethos.map.accessToken,
-			}
-		);
+		// Initialize the map instance with conditional partnerLayer inclusion
+		const initialLayers = [tileLayer, aethosLayer];
+		if (theme === "club") initialLayers.push(partnerLayer);
 
-		// Initialize the map
 		aethos.map.map = L.map(aethos.map.mapElement, {
 			attributionControl: false,
 			scrollWheelZoom: false,
 			center: [0, 0],
 			zoom: 0,
-			layers: [tileLayer, markerLayer],
+			layers: initialLayers,
 		});
 
-		// fit map to markers
+		// Fit or center map
 		if (aethos.map.primaryLatLong) {
 			aethos.map.map.setView(aethos.map.primaryLatLong, 11);
 		} else {
-			aethos.map.map.fitBounds(markerLayer.getBounds());
+			const bounds = aethosLayer.getBounds();
+			if (theme === "club" && partnerLayer.getBounds().isValid()) {
+				bounds.extend(partnerLayer.getBounds());
+			}
+			aethos.map.map.fitBounds(bounds);
 		}
 
-		// // if a destination page, zoom out a lot
-		// if (aethos.settings.destinationSlug) {
-		// 	aethos.map.map.setZoom(11);
-		// }
+		// Add layer toggle for Partner Clubs
+		if (theme === "club") {
+			console.log("Adding Partner Clubs layer control");
+			// L.control
+			// 	.layers(null, { "Partner Clubs": partnerLayer }, { collapsed: false })
+			// 	.addTo(aethos.map.map);
 
-		// }
+			// add custom control
+			const partnerControl = document.createElement("div");
+			partnerControl.setAttribute("aria-label", "Toggle Partner Clubs Layer");
+			partnerControl.innerHTML = `
+				<div class="club-map_radio-header">PARTNER CLUBS</div>
+				<div class="club-map_radio-row">
+					<div class="club-map_radio-field">
+						<input type="radio" id="club-map-partners-hide" name="Club Map Partners Layer" class="club-map_radio" value="Hide">
+						<label for="club-map-partners-hide" class="club-map_radio-label">Hide</label>
+					</div>
+					<div class="club-map_radio-field is-second-half">
+						<input type="radio" id="club-map-partners-show" name="Club Map Partners Layer" class="club-map_radio" value="Show" checked>
+						<label for="club-map-partners-show" class="club-map_radio-label">Show</label>
+					</div>
+				</div>`;
+			partnerControl.className = "club-map_control";
+			//add to DOM
 
-		function createPopupContent({ imageUrl, address, name, linkUrl }) {
-			return `
-				<div class="popup">
-					<div class="popup_media">
-						<img src="${imageUrl}" alt="${name}" class="img-cover">
-					</div>
-					<div class="popup_content">
-						<div class="popup_header">
-							<div class="label-heading">${name}</div>
-						</div>
-						<div class="popup_body">
-							<div class="body-xxs">${address}</div>
-						</div>
-						<a class="popup_footer" href="${linkUrl}" aria-label="Contact Aethos ${name}">
-							<div class="button-text-xs">Contact</div>
-							<div class="popup_icon">
-								<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24" fill="none" class="icon"><path d="M20.9939 11.9938L13.5689 19.9876L13.0001 19.3752L19.8563 11.9938L13.0001 4.61234L13.5689 4L20.9939 11.9938Z" fill="currentColor"></path><path d="M20.547 11.5574L20.5471 11.5946V12.3879L3 12.3878L3.00001 11.5574L20.547 11.5574Z" fill="currentColor"></path></svg>
-							</div>
-						</a>
-					</div>
-				</div>
-			`;
+			aethos.map.mapElement.querySelector(".leaflet-control-container").appendChild(partnerControl);
+
+			// add event listeners
+			const hideRadio = partnerControl.querySelector("#club-map-partners-hide");
+			const showRadio = partnerControl.querySelector("#club-map-partners-show");
+			hideRadio.addEventListener("change", () => {
+				if (hideRadio.checked) {
+					aethos.map.map.removeLayer(partnerLayer);
+				}
+			});
+			showRadio.addEventListener("change", () => {
+				if (showRadio.checked) {
+					aethos.map.map.addLayer(partnerLayer);
+				}
+			});
 		}
 	};
 
