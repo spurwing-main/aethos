@@ -3864,6 +3864,7 @@ function main() {
 			const hasEnd   = proposalForm.querySelector('[data-drp-output="end"]');
 	
 			if (hasStart || hasEnd) {
+				const mode = (hasStart && hasEnd) ? 'range' : 'single';
 				const api  = aethos.functions.dateRangePicker('.s-proposal', { mode });
 			}
 		}
