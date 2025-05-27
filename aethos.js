@@ -3525,168 +3525,222 @@ function main() {
 		}
 	};
 
-	aethos.functions.dateRangeFilter = function () {
-		aethos.log('Date range filter function called');
-		if (!document.querySelector('[data-date-range]')) return;
-		aethos.log('Date range filter detected');
-	
-		// ---------------------------------------------------------------------------
-		// Selectors
-		// ---------------------------------------------------------------------------
-	
-		const SELECTORS = {
-			ITEM     : '[data-date-range="list-item"]',
-			DATE     : '[fs-cmsfilter-field="date"]',
-			TAG      : '[data-date-range="tag"]',
-			TAG_TEXT : '[data-date-range="text"]',
-			CLEAR    : '[data-date-range="clear"]',
-			APPLY    : '[data-date-range="apply"]',
-			EMPTY_EL : '.empty'
-		};
-	
-		// ---------------------------------------------------------------------------
-		// Internal state – updated by the picker’s `date-range-change` event
-		// ---------------------------------------------------------------------------
-	
-		const range = {
-			from: null, // string YYYY-MM-DD | null
-			to  : null  // string YYYY-MM-DD | null
-		};
-	
-		// Helper: zero‑pad
-		const pad = n => String(n).padStart(2, '0');
-		// Helper: Date → YYYY‑MM‑DD
-		const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-	
-		// Listen for date‑range events from the picker root (or document fall‑back)
-		document.addEventListener('date-range-change', e => {
-			aethos.log('Date range change detected:', e.detail);
-			const { start, end } = e.detail || {};
-			range.from = start ? fmtDate(start) : null;
-			range.to   = end   ? fmtDate(end)   : null;
-		});
-	
-		// ---------------------------------------------------------------------------
-		// Utilities
-		// ---------------------------------------------------------------------------
-	
-		// Extract leading YYYY‑MM‑DD from a string
-		const extractDate = str => {
-			const m = str && str.match(/^(\d{4}-\d{2}-\d{2})/);
-			return m ? m[1] : null;
-		};
-	
-		// Check if a date string sits inside the current range
-		const inRange = (date, from, to) => {
-			if (!date) return false;
-			if (from && date < from) return false;
-			if (to   && date > to) return false;
-			return true;
-		};
-	
-		const updateActiveTag = (from, to) => {
-			const tag  = document.querySelector(SELECTORS.TAG);
-			const text = document.querySelector(SELECTORS.TAG_TEXT);
-			if (!tag || !text) return;
-	
-			if (!from && !to) {
-				tag.style.display = 'none';
-				return;
-			}
-	
-			text.textContent = from && to ? `${from} - ${to}` : from || to;
-			tag.style.display = '';
-		};
-	
-		// ---------------------------------------------------------------------------
-		// Core filtering logic – uses *stored* range, not input values
-		// ---------------------------------------------------------------------------
-	
-		const filterItemsByDate = () => {
-			const { from, to } = range;
-			const items = document.querySelectorAll(SELECTORS.ITEM);
-			let hidden = 0;
-	
-			items.forEach(item => {
-				const dateStr = item.querySelector(SELECTORS.DATE)?.textContent || '';
-				const dates   = dateStr.split(',').map(d => extractDate(d.trim())).filter(Boolean);
-				const visible = (!from && !to) || dates.some(d => inRange(d, from, to));
-				item.style.display = visible ? '' : 'none';
-				if (!visible) hidden++;
-			});
-	
-			updateActiveTag(from, to);
-	
-			const emptyEl = document.querySelector(SELECTORS.EMPTY_EL);
-			if (emptyEl) {
-				emptyEl.style.display = items.length && hidden === items.length ? '' : 'none';
-				if (hidden === items.length) aethos.log('[DateFilter] All items hidden by date filter');
-			}
-		};
-	
-		// ---------------------------------------------------------------------------
-		// Clear – reset range **and** clear the picker UI (assumes single picker)
-		// ---------------------------------------------------------------------------
-	
-		const clearRange = () => {
-			range.from = range.to = null;
-			// Clear the picker if it exists
-			window.datePicker?.clear?.();
-			filterItemsByDate();
-		};
-	
-		// ---------------------------------------------------------------------------
-		// Wire up buttons
-		// ---------------------------------------------------------------------------
-	
-		const attachListeners = () => {
-			document.querySelectorAll(SELECTORS.APPLY)
-				.forEach(btn => btn.addEventListener('click', filterItemsByDate));
-	
-			document.querySelectorAll(SELECTORS.CLEAR)
-				.forEach(btn => btn.addEventListener('click', clearRange));
-		};
-	
-		// ---------------------------------------------------------------------------
-		// One-time setup: Send all available dates to date picker
-		// ---------------------------------------------------------------------------
-	
-		const initializeAvailableDatesOnce = (() => {
-			let hasRun = false;
-			return function () {
-				if (hasRun) return;
-				hasRun = true;
-	
-				const allDateEls = document.querySelectorAll(SELECTORS.DATE);
-				const allDatesSet = new Set();
-	
-				allDateEls.forEach(el => {
-					const raw = el.textContent || '';
-					const dates = raw.split(',').map(d => extractDate(d.trim())).filter(Boolean);
-					dates.forEach(d => allDatesSet.add(d));
-				});
-	
-				const allDates = Array.from(allDatesSet).sort();
-				if (window.datePicker?.setAvailable) {
-					window.datePicker.setAvailable(allDates);
-					aethos.log('[DateFilter] Available dates sent to datePicker:', allDates);
-				}
-			};
-		})();
-	
-		// ---------------------------------------------------------------------------
-		// Initialize
-		// ---------------------------------------------------------------------------
-	
-		attachListeners();
-		filterItemsByDate(); 
-		initializeAvailableDatesOnce();
-		window.addEventListener('cmsFilterRendered', () => {
-			filterItemsByDate();
-		});
-	};
-	
+	aethos.functions.dateRangePicker = function (selector, opts = {}) {
+		if (window.datePicker) return window.datePicker;      /* singleton */
 
+		/* helpers */
+		const pad = n => String(n).padStart(2, '0');
+		const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+		const same = (a, b) => a?.toDateString() === b?.toDateString();
+		const parse = s => (/^\d{4}-\d{2}-\d{2}/.test(s) ? (() => { const [y, m, d] = s.slice(0, 10).split('-').map(Number); const dt = new Date(y, m - 1, d); return dt && (dt.getMonth() + 1) === m && dt.getDate() === d ? dt : null; })() : null);
+
+		const root = document.querySelector(selector);
+		if (!root) { console.error('[DatePicker] container not found'); return; }
+		const { mode = 'range' } = opts;
+
+		/* available-date set */
+		const availableSet = new Set();
+		const normaliseAvail = d => { availableSet.clear(); d.forEach(x => availableSet.add(typeof x === 'string' ? x : fmt(x))); };
+
+		/* DOM refs */
+		const cal = root.querySelector('.drp-calendar');
+		const prev = root.querySelector('.drp-prev');
+		const next = root.querySelector('.drp-next');
+		const monthLbl = root.querySelector('.drp-month');
+		const toggle = root.querySelector('.drp-inputs') || root;
+
+		/* .drp-input boxes */
+		[...root.querySelectorAll('.drp-input')].forEach((div, i) => {
+			div.dataset.drpOutput ??= (mode === 'single' || i === 0 ? 'start' : 'end');
+			div.dataset.drpPlaceholder ??= div.textContent.trim();
+		});
+
+		/* grid */
+		const grid = root.querySelector('.drp_grid');
+		while (grid.children.length < 42) grid.appendChild(document.createElement('div'));
+		while (grid.children.length > 42) grid.removeChild(grid.lastChild);
+		grid.querySelectorAll('div').forEach(c => c.className = 'drp-day');
+		const cells = [...grid.children];
+
+		/* state */
+		let view = new Date(); view.setDate(1);
+		let start = null, end = null;
+
+		const p = new URLSearchParams(location.search);
+		const ps = parse(p.get('start')), pe = parse(p.get('end'));
+		if (mode === 'single') { if (ps) start = ps; }
+		else {
+			if (ps && pe) { start = ps <= pe ? ps : pe; end = ps <= pe ? pe : ps; }
+			else if (ps) start = ps;
+		}
+		if (start) view = new Date(start.getFullYear(), start.getMonth(), 1);
+
+		/* update outputs */
+		const updateTargets = () => {
+			document.querySelectorAll('[data-drp-output]').forEach(el => {
+				el.dataset.drpPlaceholder ??= ('value' in el ? el.value : el.textContent.trim());
+				const key = el.dataset.drpOutput;
+				let val = '';
+				if (start) {
+					if (mode === 'single') val = fmt(start);
+					else {
+						if (key === 'start') val = fmt(start);
+						if (key === 'end') val = end ? fmt(end) : '';
+						if (key === 'combined') val = end ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
+					}
+				}
+				'value' in el ? el.value = val : el.textContent = val || el.dataset.drpPlaceholder || '';
+			});
+			document.dispatchEvent(new CustomEvent('date-range-change', { detail: { start, end } }));
+		};
+
+		/* render */
+		const render = () => {
+			const y = view.getFullYear(), m = view.getMonth();
+			monthLbl.textContent = view.toLocaleString('default', { month: 'long', year: 'numeric' });
+			const first = new Date(y, m, 1).getDay();
+			const daysCur = new Date(y, m + 1, 0).getDate();
+			const daysPre = new Date(y, m, 0).getDate();
+
+			cells.forEach((cell, i) => {
+				let d;
+				cell.className = 'drp-day';
+				if (i < first) { d = new Date(y, m - 1, daysPre - first + i + 1); cell.classList.add('outside'); }
+				else if (i < first + daysCur) { d = new Date(y, m, i - first + 1); }
+				else { d = new Date(y, m + 1, i - first - daysCur + 1); cell.classList.add('outside'); }
+				cell.dataset.date = fmt(d); cell.textContent = d.getDate();
+
+				if (availableSet.size && !availableSet.has(cell.dataset.date)) cell.classList.add('unavailable');
+				if ((start && same(d, start)) || (end && same(d, end))) cell.classList.add('selected');
+				if (start && end && d > start && d < end) cell.classList.add('in-range');
+			});
+			updateTargets();
+		};
+
+		const showCal = () => { cal.classList.add('show'); toggle.setAttribute('aria-expanded', 'true'); render(); };
+		const hideCal = () => { cal.classList.remove('show'); toggle.setAttribute('aria-expanded', 'false'); };
+
+		const select = d => {
+			if (mode === 'single') { start = d; end = null; hideCal(); }
+			else {
+				if (!start || end) { start = d; end = null; }
+				else { if (d < start) { end = start; start = d; } else { end = d; } hideCal(); }
+			}
+			view = new Date(d.getFullYear(), d.getMonth(), 1);
+			render();
+		};
+		const hover = d => {
+			if (mode === 'single' || !start || end) return;
+			cells.forEach(c => {
+				const cd = parse(c.dataset.date);
+				c.classList.toggle('in-range', cd && ((cd > start && cd <= d) || (cd < start && cd >= d)));
+			});
+		};
+
+		toggle.addEventListener('click', e => { e.stopPropagation(); cal.classList.contains('show') ? hideCal() : showCal(); });
+		document.addEventListener('click', e => { if (!cal.classList.contains('show')) return; if (!cal.contains(e.target) && !toggle.contains(e.target)) hideCal(); });
+		document.addEventListener('keydown', e => { if (e.key === 'Escape') hideCal(); });
+		prev?.addEventListener('click', () => { view.setMonth(view.getMonth() - 1); render(); });
+		next?.addEventListener('click', () => { view.setMonth(view.getMonth() + 1); render(); });
+		cells.forEach(c => {
+			c.addEventListener('click', () => select(parse(c.dataset.date)));
+			if (mode === 'range') {
+				c.addEventListener('mouseenter', () => hover(parse(c.dataset.date)));
+				c.addEventListener('mouseleave', render);
+			}
+		});
+
+		render();
+
+		const api = {
+			setAvailable: d => { if (!Array.isArray(d)) return; aethos.log?.('[DatePicker] setAvailable', d.length); normaliseAvail(d); render(); },
+			clear: () => { start = end = null; view = new Date(); view.setDate(1); render(); hideCal(); },
+			getStart: () => start,
+			getEnd: () => end
+		};
+
+		window.datePicker = api;
+		root.drp = api;
+		document.dispatchEvent(new CustomEvent('date-picker-ready', { detail: { api, root } }));
+		return api;
+	};
+
+	window.dateRangePicker = aethos.functions.dateRangePicker;
+
+	aethos.functions.dateRangeFilter = function () {
+		if (!document.querySelector('[data-date-range]')) return;
+
+		const SEL = { ITEM: '[data-date-range="list-item"]', DATE: '[fs-cmsfilter-field="date"]', TAG: '[data-date-range="tag"]', TAG_TEXT: '[data-date-range="text"]', CLEAR: '[data-date-range="clear"]', APPLY: '[data-date-range="apply"]', EMPTY: '.empty' };
+
+		const range = { from: null, to: null };
+		const pad = n => String(n).padStart(2, '0');
+		const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+		const extractDate = str => (str.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
+		const inRange = (d, f, t) => d && (!f || d >= f) && (!t || d <= t);
+
+		const updateTag = (f, t) => {
+			const tag = document.querySelector(SEL.TAG), text = document.querySelector(SEL.TAG_TEXT);
+			if (!tag || !text) return;
+			if (!f && !t) { tag.style.display = 'none'; return; }
+			text.textContent = f && t ? `${f} - ${t}` : f || t; tag.style.display = '';
+		};
+
+		const filterItems = () => {
+			const { from, to } = range;
+			const items = document.querySelectorAll(SEL.ITEM);
+			let hidden = 0;
+			items.forEach(item => {
+				const raw = item.querySelector(SEL.DATE)?.textContent || '';
+				const dates = raw.split(',').map(d => extractDate(d.trim())).filter(Boolean);
+				const vis = (!from && !to) || dates.some(d => inRange(d, from, to));
+				item.style.display = vis ? '' : 'none';
+				if (!vis) hidden++;
+			});
+			updateTag(from, to);
+			const empty = document.querySelector(SEL.EMPTY);
+			if (empty) empty.style.display = items.length && hidden === items.length ? '' : 'none';
+		};
+
+		const clear = () => { range.from = range.to = null; window.datePicker?.clear?.(); filterItems(); };
+
+		document.querySelectorAll(SEL.APPLY).forEach(b => b.addEventListener('click', filterItems));
+		document.querySelectorAll(SEL.CLEAR).forEach(b => b.addEventListener('click', clear));
+
+		const sendAvailableDates = () => {
+			if (!window.datePicker?.setAvailable) return;
+			const els = document.querySelectorAll(SEL.DATE);
+			if (!els.length) return;
+			const unique = new Set();
+			els.forEach(el => el.textContent.split(',').forEach(ch => { const d = extractDate(ch.trim()); if (d) unique.add(d); }));
+			if (!unique.size) return;                                   /* never wipe out list */
+			const arr = [...unique].sort();
+			window.datePicker.setAvailable(arr);
+		};
+
+		document.addEventListener('date-range-change', e => {
+			const { start, end } = e.detail || {};
+			range.from = start ? fmt(start) : null;
+			range.to = end ? fmt(end) : null;
+			//filterItems();
+		});
+
+		document.addEventListener('date-picker-ready', () => { if (document.querySelector(SEL.DATE)) sendAvailableDates(); }, { once: true });
+
+		let firstRenderDone = false;
+		window.addEventListener('cmsFilterRendered', () => {
+			filterItems();
+			if (!firstRenderDone) { firstRenderDone = true; sendAvailableDates(); }
+		});
+
+		/* run once after current call stack */
+		setTimeout(sendAvailableDates, 0);
+		filterItems();
+	};
+
+	aethos.functions.initDateRangePicker = function () {
+		const api = aethos.functions.dateRangePicker('.c-destinations-grid', { mode: 'range' });
+		api?.setAvailable([...Array(30)].map((_, i) => `2025-07-${String(i + 1).padStart(2, '0')}`));
+	};
 
 	/* format dates */
 	aethos.functions.formatDates = function () {
@@ -5093,6 +5147,7 @@ function main() {
 	aethos.functions.hiddenFormFields();
 	aethos.functions.handleCMSLoad();
 	aethos.functions.handleCMSFilter();
+	aethos.functions.initDateRangePicker();
 	aethos.functions.dateRangeFilter();
 	aethos.functions.hideEmptySections();
 	aethos.functions.updateDestinationSocials();
