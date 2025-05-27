@@ -3144,7 +3144,7 @@ function main() {
   `;
 
 		// Shared marker configurations
-		const defaultConfig = { radius: 8, fillOpacity: 1 };
+		const defaultConfig = { radius: 7, fillOpacity: 1 };
 		const partnerConfig = { ...defaultConfig, fillColor: "#000", color: null };
 
 		// Collect destination elements
@@ -3176,9 +3176,20 @@ function main() {
 			}
 
 			if (theme === "club") {
+				// Use custom icon for partner clubs
 				// White circle + logo via CSS classes
-				const icon = L.divIcon({ className: "aethos-marker", iconSize: [24, 24] });
-				destination.marker = L.marker([destination.lat, destination.long], { icon });
+				// const aethosIcon = L.divIcon({ className: "aethos-club-marker" });
+
+				// custom icon
+				var aethosIcon = L.icon({
+					iconUrl:
+						"https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/68359395137805feff54e043_club-aethos-icon.svg",
+					iconSize: [16, 16],
+					iconAnchor: [8, 8],
+					//popupAnchor: [0, -12],
+				});
+
+				destination.marker = L.marker([destination.lat, destination.long], { icon: aethosIcon });
 			} else {
 				// Themed circleMarker
 				// const color = aethos.themes[data.themeKey.toLowerCase()]?.dark || "#000";
@@ -3219,7 +3230,9 @@ function main() {
 					const marker = L.circleMarker([loc.latitude, loc.longitude], partnerConfig);
 					const popupHtml = `
           <div class="popup is-partner">
-            <div class="popup_header is-partner">${loc.location_name}</div>
+            <div class="popup_header is-partner">
+				<div class="label-heading">${loc.location_name}</div>
+			</div>
             <div class="popup_body is-partner"><div class="body-xxs">${
 							loc.city_country || loc.country_name
 						}</div></div>
@@ -3258,9 +3271,44 @@ function main() {
 
 		// Add layer toggle for Partner Clubs
 		if (theme === "club") {
-			L.control
-				.layers(null, { "Partner Clubs": partnerLayer }, { collapsed: false })
-				.addTo(aethos.map.map);
+			console.log("Adding Partner Clubs layer control");
+			// L.control
+			// 	.layers(null, { "Partner Clubs": partnerLayer }, { collapsed: false })
+			// 	.addTo(aethos.map.map);
+
+			// add custom control
+			const partnerControl = document.createElement("div");
+			partnerControl.setAttribute("aria-label", "Toggle Partner Clubs Layer");
+			partnerControl.innerHTML = `
+				<div class="club-map_radio-header">PARTNER CLUBS</div>
+				<div class="club-map_radio-row">
+					<div class="club-map_radio-field">
+						<input type="radio" id="club-map-partners-hide" name="Club Map Partners Layer" class="club-map_radio" value="Hide">
+						<label for="club-map-partners-hide" class="club-map_radio-label">Hide</label>
+					</div>
+					<div class="club-map_radio-field is-second-half">
+						<input type="radio" id="club-map-partners-show" name="Club Map Partners Layer" class="club-map_radio" value="Show" checked>
+						<label for="club-map-partners-show" class="club-map_radio-label">Show</label>
+					</div>
+				</div>`;
+			partnerControl.className = "club-map_control";
+			//add to DOM
+
+			aethos.map.mapElement.querySelector(".leaflet-control-container").appendChild(partnerControl);
+
+			// add event listeners
+			const hideRadio = partnerControl.querySelector("#club-map-partners-hide");
+			const showRadio = partnerControl.querySelector("#club-map-partners-show");
+			hideRadio.addEventListener("change", () => {
+				if (hideRadio.checked) {
+					aethos.map.map.removeLayer(partnerLayer);
+				}
+			});
+			showRadio.addEventListener("change", () => {
+				if (showRadio.checked) {
+					aethos.map.map.addLayer(partnerLayer);
+				}
+			});
 		}
 	};
 
