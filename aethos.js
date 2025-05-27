@@ -3525,6 +3525,19 @@ function main() {
 		}
 	};
 
+	aethos.functions.updateFooterLinks = function () {
+		// Select all <a> elements with class "footer_link", a data-dest attribute, and href="/contact"
+		const links = document.querySelectorAll('a.footer_link[data-dest][href="/contact"]');
+		if (!links.length) return;
+
+		links.forEach(link => {
+			const dest = link.getAttribute('data-dest');              // e.g. "mallorca"
+			if (dest) {
+				link.href = `/destinations/${encodeURIComponent(dest)}/contact`;
+			}
+		});
+	};
+
 	aethos.functions.dateRangePicker = function (selector, opts = {}) {
 		if (window.datePicker) return window.datePicker;      /* singleton */
 
@@ -3566,13 +3579,24 @@ function main() {
 		let view = new Date(); view.setDate(1);
 		let start = null, end = null;
 
-		const p = new URLSearchParams(location.search);
-		const ps = parse(p.get('start')), pe = parse(p.get('end'));
-		if (mode === 'single') { if (ps) start = ps; }
-		else {
-			if (ps && pe) { start = ps <= pe ? ps : pe; end = ps <= pe ? pe : ps; }
-			else if (ps) start = ps;
+		/* ── preset from URL — supports ?start-date= & ?end-date= ─────────────── */
+		const qs = new URLSearchParams(location.search);
+		const paramStart = parse(qs.get('start-date'));
+		const paramEnd = parse(qs.get('end-date'));
+		const s = paramStart;
+		const e = paramEnd;
+
+		if (mode === 'single') {
+			if (s) start = s;
+		} else {
+			if (s && e) {
+				start = s <= e ? s : e;
+				end = s <= e ? e : s;
+			} else if (s) {
+				start = s;
+			}
 		}
+
 		if (start) view = new Date(start.getFullYear(), start.getMonth(), 1);
 
 		/* update outputs */
@@ -3738,8 +3762,10 @@ function main() {
 	};
 
 	aethos.functions.initDateRangePicker = function () {
-		const api = aethos.functions.dateRangePicker('.c-destinations-grid', { mode: 'range' });
-		api?.setAvailable([...Array(30)].map((_, i) => `2025-07-${String(i + 1).padStart(2, '0')}`));
+		if (document.querySelector('.c-destinations-grid [data-date-range]')) {
+			const api = aethos.functions.dateRangePicker('.c-destinations-grid', { mode: 'range' });
+			api?.setAvailable([...Array(30)].map((_, i) => `2025-07-${String(i + 1).padStart(2, '0')}`));
+		}
 	};
 
 	/* format dates */
@@ -5193,6 +5219,7 @@ function main() {
 	aethos.functions.observeNavGridChanges();
 	aethos.functions.observeBookingToggle();
 	aethos.functions.scrollbarWidth();
+	aethos.functions.updateFooterLinks();
 
 	// run either mews or hc
 	if (aethos.engine === "hc") {
