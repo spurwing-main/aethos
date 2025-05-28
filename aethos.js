@@ -3623,7 +3623,7 @@ function main() {
 
 		const root = document.querySelector(selector);
 		if (!root) { console.error('[DatePicker] container not found'); return; }
-		const { mode = 'range' } = opts;
+		const { mode = 'range', urlSync = false } = opts;
 
 		/* available-date set */
 		const availableSet = new Set();
@@ -3689,6 +3689,19 @@ function main() {
 				}
 				'value' in el ? el.value = val : el.textContent = val || el.dataset.drpPlaceholder || '';
 			});
+			if (urlSync) {
+				const qs = new URLSearchParams(location.search);
+				if (start) qs.set('start-date', fmt(start));
+				else qs.delete('start-date');
+				if (mode === 'range') {
+					if (end) qs.set('end-date', fmt(end));
+					else qs.delete('end-date');
+				} else {
+					qs.delete('end-date');
+				}
+				const q = qs.toString();
+				history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
+			}			
 			document.dispatchEvent(new CustomEvent('date-range-change', { detail: { start, end } }));
 		};
 
@@ -3752,7 +3765,20 @@ function main() {
 
 		const api = {
 			setAvailable: d => { if (!Array.isArray(d)) return; aethos.log?.('[DatePicker] setAvailable', d.length); normaliseAvail(d); render(); },
-			clear: () => { start = end = null; view = new Date(); view.setDate(1); render(); hideCal(); },
+			clear: () => {
+				start = end = null;
+				view = new Date();
+				view.setDate(1);
+				render();
+				hideCal();
+				if (urlSync) {
+					const qs = new URLSearchParams(location.search);
+					qs.delete('start-date');
+					qs.delete('end-date');
+					const q = qs.toString();
+					history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
+				}
+			},			
 			getStart: () => start,
 			getEnd: () => end
 		};
@@ -3853,21 +3879,20 @@ function main() {
 		/* Destination grid picker */
 		const destEl = document.querySelector('.c-destinations-grid [data-date-range]');
 		if (destEl) {
-			const api = aethos.functions.dateRangePicker('.c-destinations-grid', { mode: 'range' });
+			const api = aethos.functions.dateRangePicker('.c-destinations-grid', { mode: 'range', urlSync: true });
 			api?.setAvailable(availableDates);
 		}
 	
-		/* Proposal form picker */
 		const proposalForm = document.querySelector('.s-proposal');
 		if (proposalForm) {
 			const hasStart = proposalForm.querySelector('[data-drp-output="start"]');
 			const hasEnd   = proposalForm.querySelector('[data-drp-output="end"]');
-	
+		
 			if (hasStart || hasEnd) {
 				const mode = (hasStart && hasEnd) ? 'range' : 'single';
-				const api  = aethos.functions.dateRangePicker('.s-proposal', { mode });
+				aethos.functions.dateRangePicker('.s-proposal', { mode });
 			}
-		}
+		}		
 	};
 	
 	/* format dates */
