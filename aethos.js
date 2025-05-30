@@ -3978,24 +3978,23 @@ function main() {
 
 		let firstRenderDone = false;
 		window.addEventListener("cmsFilterRendered", () => {
-			filterItems();
 			if (!firstRenderDone) {
 				firstRenderDone = true;
 				sendAvailableDates();
-				if (hasFromParam || hasToParam) {
-					applyUrlParams();
-				}
+				applyUrlParams();
+			} else {
+				filterItems(); // Ensures always correct state
 			}
 		});
 
-		// Ensure execution if DOM or CMS rendering delays occur
+		// Reliable final check
 		window.addEventListener('load', () => {
 			setTimeout(() => {
 				if (!firstRenderDone) {
 					sendAvailableDates();
-					if (hasFromParam || hasToParam) {
-						applyUrlParams();
-					}
+					applyUrlParams();
+				} else {
+					filterItems(); // Explicitly call again to fix potential tag visibility
 				}
 			}, 100);
 		});
