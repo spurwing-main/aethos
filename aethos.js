@@ -3867,7 +3867,7 @@ function main() {
 
 	aethos.functions.dateRangeFilter = function () {
 		if (!document.querySelector("[data-date-range]")) return;
-
+	
 		const SEL = {
 			ITEM: '[data-date-range="list-item"]',
 			DATE: '[fs-cmsfilter-field="date"]',
@@ -3877,13 +3877,15 @@ function main() {
 			APPLY: '[data-date-range="apply"]',
 			EMPTY: ".empty",
 		};
-
+	
 		const range = { from: null, to: null };
 		const pad = (n) => String(n).padStart(2, "0");
 		const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 		const extractDate = (str) => (str.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
 		const inRange = (d, f, t) => d && (!f || d >= f) && (!t || d <= t);
-
+	
+		let urlParamsApplyCount = 0;
+	
 		const updateTag = (f, t) => {
 			const tag = document.querySelector(SEL.TAG),
 				text = document.querySelector(SEL.TAG_TEXT);
@@ -3895,7 +3897,7 @@ function main() {
 			text.textContent = f && t ? `${f} - ${t}` : f || t;
 			tag.style.display = "";
 		};
-
+	
 		const filterItems = () => {
 			const { from, to } = range;
 			const items = document.querySelectorAll(SEL.ITEM);
@@ -3914,16 +3916,16 @@ function main() {
 			const empty = document.querySelector(SEL.EMPTY);
 			if (empty) empty.style.display = items.length && hidden === items.length ? "" : "none";
 		};
-
+	
 		const clear = () => {
 			range.from = range.to = null;
 			window.datePicker?.clear?.();
 			filterItems();
 		};
-
+	
 		document.querySelectorAll(SEL.APPLY).forEach((b) => b.addEventListener("click", filterItems));
 		document.querySelectorAll(SEL.CLEAR).forEach((b) => b.addEventListener("click", clear));
-
+	
 		const sendAvailableDates = () => {
 			if (!window.datePicker?.setAvailable) return;
 			const els = document.querySelectorAll(SEL.DATE);
@@ -3939,35 +3941,29 @@ function main() {
 			const arr = [...unique].sort();
 			window.datePicker.setAvailable(arr);
 		};
-
-		const urlParams = new URLSearchParams(window.location.search);
-		const hasFromParam = urlParams.has("start-date");
-		const hasToParam = urlParams.has("end-date");
-
-		console.log("URL Params detected at script start:", {
-			'start-date': hasFromParam ? urlParams.get("start-date") : "none",
-			'end-date': hasToParam ? urlParams.get("end-date") : "none",
-		});
-
+	
 		const applyUrlParams = () => {
-			const startParam = urlParams.get("start-date");
-			const endParam = urlParams.get("end-date");
+			if (urlParamsApplyCount >= 2) return;
+			urlParamsApplyCount++;
+	
+			const params = new URLSearchParams(window.location.search);
+			const startParam = params.get("start-date");
+			const endParam = params.get("end-date");
+	
 			const isValidDate = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str);
-
 			range.from = startParam && isValidDate(startParam) ? startParam : null;
 			range.to = endParam && isValidDate(endParam) ? endParam : null;
-
-			console.log("Applying filters from URL params:", { from: range.from, to: range.to });
+	
 			filterItems();
 		};
-
+	
 		document.addEventListener("date-range-change", (e) => {
 			const { start, end } = e.detail || {};
 			range.from = start ? fmt(start) : null;
 			range.to = end ? fmt(end) : null;
-			// filterItems();
+			filterItems();
 		});
-
+	
 		document.addEventListener(
 			"date-picker-ready",
 			() => {
@@ -3975,32 +3971,23 @@ function main() {
 			},
 			{ once: true }
 		);
-
+	
 		let firstRenderDone = false;
 		window.addEventListener("cmsFilterRendered", () => {
+			filterItems();
 			if (!firstRenderDone) {
 				firstRenderDone = true;
 				sendAvailableDates();
 				applyUrlParams();
-			} else {
-				filterItems(); // Ensures always correct state
 			}
 		});
-
-		// Reliable final check
-		window.addEventListener('load', () => {
-			setTimeout(() => {
-				if (!firstRenderDone) {
-					sendAvailableDates();
-					applyUrlParams();
-				} else {
-					filterItems(); // Explicitly call again to fix potential tag visibility
-				}
-			}, 100);
-		});
+	
+		setTimeout(() => {
+			sendAvailableDates();
+			applyUrlParams();
+		}, 0);
 	};
-
-
+	
 
 	aethos.functions.initDateRangePicker = function () {
 		const generateNext30Days = () => {
