@@ -3884,12 +3884,16 @@ function main() {
 		const extractDate = (str) => (str.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
 		const inRange = (d, f, t) => d && (!f || d >= f) && (!t || d <= t);
 	
-		let urlParamsApplyCount = 0;
+		let urlParamsInitiallyLoaded = false;
+		let manualSelectionMade = false;
 	
 		const updateTag = (f, t) => {
 			const tag = document.querySelector(SEL.TAG),
 				text = document.querySelector(SEL.TAG_TEXT);
-			if (!tag || !text) return;
+			if (!tag || !text) {
+				console.warn("[updateTag] Missing tag or text element.");
+				return;
+			}
 			if (!f && !t) {
 				tag.style.display = "none";
 				return;
@@ -3919,6 +3923,7 @@ function main() {
 	
 		const clear = () => {
 			range.from = range.to = null;
+			manualSelectionMade = false;
 			window.datePicker?.clear?.();
 			filterItems();
 		};
@@ -3943,8 +3948,7 @@ function main() {
 		};
 	
 		const applyUrlParams = () => {
-			if (urlParamsApplyCount >= 2) return;
-			urlParamsApplyCount++;
+			if (urlParamsInitiallyLoaded) return;
 	
 			const params = new URLSearchParams(window.location.search);
 			const startParam = params.get("start-date");
@@ -3954,6 +3958,7 @@ function main() {
 			range.from = startParam && isValidDate(startParam) ? startParam : null;
 			range.to = endParam && isValidDate(endParam) ? endParam : null;
 	
+			urlParamsInitiallyLoaded = true;
 			filterItems();
 		};
 	
@@ -3961,25 +3966,28 @@ function main() {
 			const { start, end } = e.detail || {};
 			range.from = start ? fmt(start) : null;
 			range.to = end ? fmt(end) : null;
-			filterItems();
+			manualSelectionMade = true;
+			//filterItems();
 		});
 	
 		document.addEventListener(
 			"date-picker-ready",
 			() => {
-				if (document.querySelector(SEL.DATE)) sendAvailableDates();
+				setTimeout(() => {
+					if (document.querySelector(SEL.DATE)) sendAvailableDates();
+				}, 50);
 			},
 			{ once: true }
 		);
 	
 		let firstRenderDone = false;
 		window.addEventListener("cmsFilterRendered", () => {
-			filterItems();
 			if (!firstRenderDone) {
 				firstRenderDone = true;
 				sendAvailableDates();
 				applyUrlParams();
 			}
+			filterItems();
 		});
 	
 		setTimeout(() => {
@@ -3987,7 +3995,6 @@ function main() {
 			applyUrlParams();
 		}, 0);
 	};
-	
 
 	aethos.functions.initDateRangePicker = function () {
 		const generateNext30Days = () => {
