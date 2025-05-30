@@ -287,7 +287,7 @@ function main() {
 				normalizeScroll: {
 					allowNestedScroll: true,
 				},
-				onUpdate: () => {},
+				onUpdate: () => { },
 				onRefresh: () => {
 					// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
 					ScrollTrigger.refresh();
@@ -2030,7 +2030,7 @@ function main() {
 						}
 
 						// Cleanup function for when the media query condition changes
-						return () => {};
+						return () => { };
 					});
 				}
 			});
@@ -3233,8 +3233,7 @@ function main() {
             <div class="popup_header is-partner">
 				<div class="label-heading">${loc.location_name}</div>
 			</div>
-            <div class="popup_body is-partner"><div class="body-xxs">${
-							loc.city_country || loc.country_name
+            <div class="popup_body is-partner"><div class="body-xxs">${loc.city_country || loc.country_name
 						}</div></div>
           </div>
         `;
@@ -3632,10 +3631,10 @@ function main() {
 		const parse = (s) =>
 			/^\d{4}-\d{2}-\d{2}/.test(s)
 				? (() => {
-						const [y, m, d] = s.slice(0, 10).split("-").map(Number);
-						const dt = new Date(y, m - 1, d);
-						return dt && dt.getMonth() + 1 === m && dt.getDate() === d ? dt : null;
-				  })()
+					const [y, m, d] = s.slice(0, 10).split("-").map(Number);
+					const dt = new Date(y, m - 1, d);
+					return dt && dt.getMonth() + 1 === m && dt.getDate() === d ? dt : null;
+				})()
 				: null;
 
 		const root = document.querySelector(selector);
@@ -3936,16 +3935,37 @@ function main() {
 					if (d) unique.add(d);
 				})
 			);
-			if (!unique.size) return; /* never wipe out list */
+			if (!unique.size) return;
 			const arr = [...unique].sort();
 			window.datePicker.setAvailable(arr);
+		};
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const hasFromParam = urlParams.has("start-date");
+		const hasToParam = urlParams.has("end-date");
+
+		console.log("URL Params detected at script start:", {
+			'start-date': hasFromParam ? urlParams.get("start-date") : "none",
+			'end-date': hasToParam ? urlParams.get("end-date") : "none",
+		});
+
+		const applyUrlParams = () => {
+			const startParam = urlParams.get("start-date");
+			const endParam = urlParams.get("end-date");
+			const isValidDate = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str);
+
+			range.from = startParam && isValidDate(startParam) ? startParam : null;
+			range.to = endParam && isValidDate(endParam) ? endParam : null;
+
+			console.log("Applying filters from URL params:", { from: range.from, to: range.to });
+			filterItems();
 		};
 
 		document.addEventListener("date-range-change", (e) => {
 			const { start, end } = e.detail || {};
 			range.from = start ? fmt(start) : null;
 			range.to = end ? fmt(end) : null;
-			//filterItems();
+			// filterItems();
 		});
 
 		document.addEventListener(
@@ -3962,13 +3982,26 @@ function main() {
 			if (!firstRenderDone) {
 				firstRenderDone = true;
 				sendAvailableDates();
+				if (hasFromParam || hasToParam) {
+					applyUrlParams();
+				}
 			}
 		});
 
-		/* run once after current call stack */
-		setTimeout(sendAvailableDates, 0);
-		filterItems();
+		// Ensure execution if DOM or CMS rendering delays occur
+		window.addEventListener('load', () => {
+			setTimeout(() => {
+				if (!firstRenderDone) {
+					sendAvailableDates();
+					if (hasFromParam || hasToParam) {
+						applyUrlParams();
+					}
+				}
+			}, 100);
+		});
 	};
+
+
 
 	aethos.functions.initDateRangePicker = function () {
 		const generateNext30Days = () => {
