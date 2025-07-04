@@ -184,12 +184,12 @@ function main() {
 		}
 
 		const relativeLinks = document.querySelectorAll(
-			'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"]'
+			'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"], a[aethos-relative-link][href^="https://./"]'
 		);
 
 		if (relativeLinks.length === 0) {
 			aethos.log(
-				"No links with aethos-relative-link attribute and './' or 'http://./' href found."
+				"No links with aethos-relative-link attribute and './', 'http://./', or 'https://./' href found."
 			);
 			return;
 		}
@@ -201,10 +201,15 @@ function main() {
 				return;
 			}
 
-			// Determine the relative path by handling both "./" and "http://./" cases
-			const relativePath = originalHref.startsWith("http://./")
-				? originalHref.substring(8) // Removes "http://./"
-				: originalHref.substring(2); // Removes "./"
+			// Determine the relative path by handling "./", "http://./", and "https://./" cases
+			let relativePath;
+			if (originalHref.startsWith("https://./")) {
+				relativePath = originalHref.substring(9); // Removes "https://./"
+			} else if (originalHref.startsWith("http://./")) {
+				relativePath = originalHref.substring(8); // Removes "http://./"
+			} else {
+				relativePath = originalHref.substring(2); // Removes "./"
+			}
 
 			// Construct the new href with the destination slug
 			const newHref = `/destinations/${destinationSlug}/${relativePath.replace(/^\/+/, "")}`;
