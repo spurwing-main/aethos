@@ -292,7 +292,7 @@ function main() {
 				normalizeScroll: {
 					allowNestedScroll: true,
 				},
-				onUpdate: () => {},
+				onUpdate: () => { },
 				onRefresh: () => {
 					// Ensure the scroll trigger is refreshed once the smooth scroll has recalculated the height
 					ScrollTrigger.refresh();
@@ -2035,7 +2035,7 @@ function main() {
 						}
 
 						// Cleanup function for when the media query condition changes
-						return () => {};
+						return () => { };
 					});
 				}
 			});
@@ -3238,8 +3238,7 @@ function main() {
             <div class="popup_header is-partner">
 				<div class="label-heading">${loc.location_name}</div>
 			</div>
-            <div class="popup_body is-partner"><div class="body-xxs">${
-							loc.city_country || loc.country_name
+            <div class="popup_body is-partner"><div class="body-xxs">${loc.city_country || loc.country_name
 						}</div></div>
           </div>
         `;
@@ -3637,10 +3636,10 @@ function main() {
 		const parse = (s) =>
 			/^\d{4}-\d{2}-\d{2}/.test(s)
 				? (() => {
-						const [y, m, d] = s.slice(0, 10).split("-").map(Number);
-						const dt = new Date(y, m - 1, d);
-						return dt && dt.getMonth() + 1 === m && dt.getDate() === d ? dt : null;
-				  })()
+					const [y, m, d] = s.slice(0, 10).split("-").map(Number);
+					const dt = new Date(y, m - 1, d);
+					return dt && dt.getMonth() + 1 === m && dt.getDate() === d ? dt : null;
+				})()
 				: null;
 
 		const root = document.querySelector(selector);
@@ -3873,7 +3872,7 @@ function main() {
 
 	aethos.functions.dateRangeFilter = function () {
 		if (!document.querySelector("[data-date-range]")) return;
-
+	
 		const SEL = {
 			ITEM: '[data-date-range="list-item"]',
 			DATE: '[fs-cmsfilter-field="date"]',
@@ -3883,17 +3882,23 @@ function main() {
 			APPLY: '[data-date-range="apply"]',
 			EMPTY: ".empty",
 		};
-
+	
 		const range = { from: null, to: null };
 		const pad = (n) => String(n).padStart(2, "0");
 		const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 		const extractDate = (str) => (str.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
 		const inRange = (d, f, t) => d && (!f || d >= f) && (!t || d <= t);
-
+	
+		let urlParamsInitiallyLoaded = false;
+		let manualSelectionMade = false;
+	
 		const updateTag = (f, t) => {
 			const tag = document.querySelector(SEL.TAG),
 				text = document.querySelector(SEL.TAG_TEXT);
-			if (!tag || !text) return;
+			if (!tag || !text) {
+				console.warn("[updateTag] Missing tag or text element.");
+				return;
+			}
 			if (!f && !t) {
 				tag.style.display = "none";
 				return;
@@ -3901,7 +3906,7 @@ function main() {
 			text.textContent = f && t ? `${f} - ${t}` : f || t;
 			tag.style.display = "";
 		};
-
+	
 		const filterItems = () => {
 			const { from, to } = range;
 			const items = document.querySelectorAll(SEL.ITEM);
@@ -3920,16 +3925,17 @@ function main() {
 			const empty = document.querySelector(SEL.EMPTY);
 			if (empty) empty.style.display = items.length && hidden === items.length ? "" : "none";
 		};
-
+	
 		const clear = () => {
 			range.from = range.to = null;
+			manualSelectionMade = false;
 			window.datePicker?.clear?.();
 			filterItems();
 		};
-
+	
 		document.querySelectorAll(SEL.APPLY).forEach((b) => b.addEventListener("click", filterItems));
 		document.querySelectorAll(SEL.CLEAR).forEach((b) => b.addEventListener("click", clear));
-
+	
 		const sendAvailableDates = () => {
 			if (!window.datePicker?.setAvailable) return;
 			const els = document.querySelectorAll(SEL.DATE);
@@ -3941,38 +3947,58 @@ function main() {
 					if (d) unique.add(d);
 				})
 			);
-			if (!unique.size) return; /* never wipe out list */
+			if (!unique.size) return;
 			const arr = [...unique].sort();
 			window.datePicker.setAvailable(arr);
 		};
-
+	
+		const applyUrlParams = () => {
+			if (urlParamsInitiallyLoaded) return;
+	
+			const params = new URLSearchParams(window.location.search);
+			const startParam = params.get("start-date");
+			const endParam = params.get("end-date");
+	
+			const isValidDate = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str);
+			range.from = startParam && isValidDate(startParam) ? startParam : null;
+			range.to = endParam && isValidDate(endParam) ? endParam : null;
+	
+			urlParamsInitiallyLoaded = true;
+			filterItems();
+		};
+	
 		document.addEventListener("date-range-change", (e) => {
 			const { start, end } = e.detail || {};
 			range.from = start ? fmt(start) : null;
 			range.to = end ? fmt(end) : null;
+			manualSelectionMade = true;
 			//filterItems();
 		});
-
+	
 		document.addEventListener(
 			"date-picker-ready",
 			() => {
-				if (document.querySelector(SEL.DATE)) sendAvailableDates();
+				setTimeout(() => {
+					if (document.querySelector(SEL.DATE)) sendAvailableDates();
+				}, 50);
 			},
 			{ once: true }
 		);
-
+	
 		let firstRenderDone = false;
 		window.addEventListener("cmsFilterRendered", () => {
-			filterItems();
 			if (!firstRenderDone) {
 				firstRenderDone = true;
 				sendAvailableDates();
+				applyUrlParams();
 			}
+			filterItems();
 		});
-
-		/* run once after current call stack */
-		setTimeout(sendAvailableDates, 0);
-		filterItems();
+	
+		setTimeout(() => {
+			sendAvailableDates();
+			applyUrlParams();
+		}, 0);
 	};
 
 	aethos.functions.initDateRangePicker = function () {
