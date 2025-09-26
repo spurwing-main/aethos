@@ -1,0 +1,372 @@
+/* TripleSeat embed form styling tuned for the Aethos visual language */
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) {
+	font-family: var(--fonts--secondary, "Fakt", sans-serif);
+	color: var(--color--body, #2a2826);
+	font-size: var(--font-size--fs-14, 0.875rem);
+	line-height: var(--line-height--line-height-24, 1.5rem);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	:is(h1, h2, h3, h4),
+#tsLeadSuccessMessage {
+	font-family: var(--fonts--primary);
+	font-size: var(--font-size--fs-24);
+	line-height: var(--line-height--line-height-32);
+	text-transform: uppercase;
+	margin-top: 2rem;
+	margin-bottom: 1rem;
+	font-weight: 400;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) table {
+	border-collapse: collapse;
+	border-spacing: 0;
+	width: 100%;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) tr {
+	border-bottom: 1px solid var(--color--slate--light, #eaeae7);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	tr:last-child {
+	border-bottom: none;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) td {
+	padding: var(--padding--pad-sm, 1rem) 0;
+	vertical-align: top;
+}
+
+@media (min-width: 768px) {
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+		td
+		+ td {
+		padding-left: var(--padding--pad-lg, 1.5rem);
+	}
+}
+
+@media (max-width: 767px) {
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) table,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) tbody,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) tr,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) td {
+		display: block;
+		width: 100%;
+	}
+
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) td {
+		padding: var(--padding--pad-sm, 1rem) 0 !important;
+	}
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) label {
+	font-size: var(--font-size--fs-14, 0.875rem);
+	font-weight: 400;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--color--charcoal--medium, #5e5b58);
+	line-height: var(--line-height--line-height-20, 1.25rem);
+	display: block;
+	margin: 0 0 var(--padding--pad-3xs, 0.5rem);
+	cursor: pointer;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	label
+	.required {
+	color: var(--color--terracotta--medium, #c17878);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="checkbox"]
+	+ label,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="radio"]
+	+ label {
+	font-size: var(--font-size--fs-14, 0.875rem);
+	font-weight: 400;
+	color: var(--color--body, #2a2826);
+	display: flex;
+	align-items: center;
+	margin: 0;
+}
+
+#tripleseat_embed_form table td:has(input[type="checkbox"]) {
+	vertical-align: middle;
+	display: flex;
+	align-content: center;
+	align-items: center;
+	gap: 0.5rem;
+}
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) input,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) select,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) textarea {
+	width: 100%;
+	min-height: 2.5rem;
+	font-family: inherit;
+	font-size: var(--font-size--fs-14, 0.875rem);
+	line-height: 1.4;
+	color: var(--color--body, #2a2826);
+	background-color: var(--color--transparent, transparent);
+	border: none;
+	/* border-bottom: 1px solid var(--color--slate--dark, #c6c6c3); */
+	border-radius: 0;
+	padding: 6px 0;
+	transition: border-color 0.2s ease;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) textarea {
+	min-height: 7rem;
+	resize: vertical;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input::placeholder,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	textarea::placeholder {
+	color: var(--color--charcoal--light, #7d7873);
+	opacity: 1;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input:focus,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	select:focus,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	textarea:focus {
+	outline: none;
+	/* border-bottom-color: var(--color--charcoal--dark, #2a2826); */
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="checkbox"],
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="radio"] {
+	width: 1.125rem;
+	height: 1.125rem;
+	margin: 0 var(--gap--gap-3xs, 0.25rem) 0 0;
+	accent-color: var(--color--charcoal--dark, #2a2826);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.location_list,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.referral_list {
+	margin-top: var(--padding--pad-xs, 0.75rem);
+	padding: 0;
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap: 8px var(--gap--gap-sm, 0.75rem);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.location_list
+	div,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.referral_list
+	div {
+	display: flex;
+	align-items: center;
+	gap: var(--gap--gap-3xs, 0.25rem);
+	margin-bottom: 8px;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.location_list
+	div:last-child,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.referral_list
+	div:last-child {
+	margin-bottom: 0;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.help-block,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) .danger {
+	font-size: var(--font-size--fs-12, 0.75rem);
+	line-height: var(--line-height--line-height-20, 1.25rem);
+	color: var(--color--charcoal--medium, #5e5b58);
+	margin-top: var(--gap--gap-3xs, 0.25rem);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) .danger {
+	color: var(--color--terracotta--medium, #c17878);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.errorExplanation,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.location_list.error,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input.error,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	textarea.error,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	select.error {
+	background-color: var(--color--terracotta--bg, #f6e9e9);
+	border-color: var(--color--terracotta--medium, #c17878);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.errorExplanation {
+	padding: var(--padding--pad-sm, 1rem);
+	border-radius: 4px;
+	margin-bottom: var(--padding--pad-sm, 1rem);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	#lead_form_submit,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.tripleseat_submit {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gap--gap-sm, 0.75rem);
+	padding-top: var(--padding--pad-md, 1.25rem);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input.button,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) button,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="submit"],
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	button[type="submit"] {
+	appearance: none;
+	background-color: var(--color--transparent, transparent);
+	color: var(--color--body, #2a2826);
+	border: 1px solid var(--color--body, #2a2826);
+	border-radius: 0;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	font-size: var(--font-size--fs-12, 0.75rem);
+	font-weight: 500;
+	line-height: 1;
+	padding: 12px 20px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--gap--gap-xs, 0.375rem);
+	cursor: pointer;
+	width: auto;
+	transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input.button:hover,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	button:hover,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="submit"]:hover,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	button[type="submit"]:hover {
+	background-color: var(--color--body, #2a2826);
+	color: var(--color--white, #ffffff);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input.button:focus,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	button:focus,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	input[type="submit"]:focus,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	button[type="submit"]:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--color--slate--light, #eaeae7);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	#submit_spinner {
+	width: 1.5rem;
+	height: 1.5rem;
+	background-size: contain;
+	margin-left: var(--gap--gap-sm, 0.75rem);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	#lead_form_submit
+	a,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.ts_powered_by
+	a {
+	margin-left: auto;
+	font-size: var(--font-size--fs-10, 0.625rem);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--color--charcoal--medium, #5e5b58);
+	text-decoration: none;
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	#lead_form_submit
+	a:hover,
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.ts_powered_by
+	a:hover {
+	color: var(--color--charcoal--light, #7d7873);
+}
+
+:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+	.g-recaptcha {
+	margin-top: var(--padding--pad-sm, 1rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) *,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+		*::before,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+		*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
+}
+
+#tripleseat_embed_form :is(#lead_phone_number, #lead_phone_number_extension) {
+	width: 100%;
+}
+
+.errorExplanation {
+	padding-inline: 1.25rem;
+	background: transparent;
+}
+
+.errorExplanation h2 {
+	font-size: var(--font-size--fs-14);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--color--charcoal--medium, #5e5b58);
+	text-decoration: none;
+}
+
+.errorExplanation li {
+	margin-bottom: 0.5em;
+}
+
+#tripleseat_embed_form :is(input.timeselect_input, input.hasDatepicker) {
+	background: none;
+}
+
+@media screen and (max-width: 767px) {
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) {
+		font-size: var(--font-size--fs-12);
+		line-height: var(--line-height--line-height-14);
+	}
+
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+		:is(h1, h2, h3, h4),
+	#tsLeadSuccessMessage {
+		font-size: var(--font-size--fs-18);
+		line-height: var(--line-height--line-height-24);
+	}
+
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) input,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"]) select,
+	:is(#tripleseat_embed_form, #tripleseat_embed_form_inline, [id^="tripleseat_embed_form"])
+		textarea {
+		min-height: 1.5rem;
+	}
+}
