@@ -109,7 +109,7 @@
 	line-height: 1.4;
 	color: var(--color--body, #2a2826);
 	background-color: var(--color--transparent, transparent);
-	border: none;
+	border: none !important;
 	/* border-bottom: 1px solid var(--color--slate--dark, #c6c6c3); */
 	border-radius: 0;
 	padding: 6px 0;
