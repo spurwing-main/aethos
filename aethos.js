@@ -2382,105 +2382,185 @@ function main() {
 				typeSplit.revert();
 			}
 
+			// Get all target elements
+			const targetElements = document.querySelectorAll("." + targetClass);
+
+			if (targetElements.length === 0) return;
+
 			// Create new SplitText instance
 			typeSplit = new SplitText("." + targetClass, {
 				types: "lines",
 				linesClass: linesClass,
 			});
 
-			// Append masks to each line
-			$("." + linesClass).append(`<div class="${maskClass}"></div>`);
+			// Append masks to each line and register elements for translation
+			targetElements.forEach((element) => {
+				const elementLines = element.querySelectorAll("." + linesClass);
+				elementLines.forEach((line) => {
+					const mask = document.createElement("div");
+					mask.className = maskClass;
+					line.appendChild(mask);
+				});
+
+				// Register element with translation system
+				if (aethos.translation) {
+					aethos.translation.registerElement(element, typeSplit, {
+						type: "splitText",
+						targetClass: targetClass,
+						linesClass: linesClass,
+						maskClass: maskClass,
+					});
+				}
+			});
 
 			// Create the animation once
 			createAnimation();
 		}
 
 		function createAnimation() {
-			const trigger = document.querySelector("." + targetClass);
-			const lines = $("." + linesClass);
+			const triggers = document.querySelectorAll("." + targetClass);
 
-			gsap
-				.timeline({
+			triggers.forEach((trigger) => {
+				const lines = trigger.querySelectorAll("." + linesClass);
+				const masks = trigger.querySelectorAll("." + maskClass);
+
+				const timeline = gsap.timeline({
 					scrollTrigger: {
 						trigger: trigger,
 						start: "top 90%",
 						end: "bottom 10%",
 						scrub: true,
 					},
-				})
-				.to(lines.find("." + maskClass), {
+				});
+
+				timeline.to(masks, {
 					width: "0%",
 					duration: 1,
 					ease: "power2.out",
 					stagger: 0.5,
 				});
+
+				// Update timeline reference in translation data
+				const elementData = aethos.translation?.splitTextElements?.get(trigger);
+				if (elementData) {
+					elementData.timeline = timeline;
+				}
+			});
+		}
+
+		// Initialize translation system first
+		if (aethos.translation && !aethos.translation.isWeglotReady) {
+			aethos.translation.init();
 		}
 
 		// Run the split and animation once
 		runSplit();
 
 		// Revert split on window resize without reanimating
-		let windowWidth = $(window).innerWidth();
+		let windowWidth = window.innerWidth;
 		window.addEventListener("resize", () => {
-			if (windowWidth !== $(window).innerWidth()) {
-				windowWidth = $(window).innerWidth();
+			if (windowWidth !== window.innerWidth) {
+				windowWidth = window.innerWidth;
 				if (typeSplit) {
+					// Unregister elements from translation system
+					const targetElements = document.querySelectorAll("." + targetClass);
+					targetElements.forEach((element) => {
+						if (aethos.translation) {
+							aethos.translation.unregisterElement(element);
+						}
+					});
+
 					typeSplit.revert();
 				}
+
+				// Re-run split after resize
+				setTimeout(runSplit, 100);
 			}
 		});
 	};
 
 	/* animated text effect 2 */
 	aethos.anim.splitTextBasic = function () {
-		const targets = document.querySelectorAll(".anim-split-basic");
+		let typeSplit;
+		const targetClass = "anim-split-basic";
 
-		function setupSplits() {
-			targets.forEach((target) => {
-				// Revert SplitText instance if it exists
-				if (target.split) {
-					target.split.revert();
+		function runSplit() {
+			// Revert any previous SplitText instance
+			if (typeSplit) {
+				typeSplit.revert();
+			}
+
+			// Get all target elements
+			const targetElements = document.querySelectorAll("." + targetClass);
+
+			if (targetElements.length === 0) return;
+
+			// Create new SplitText instance
+			typeSplit = new SplitText("." + targetClass, {
+				type: "lines",
+			});
+
+			// Register elements with translation system and set up animations
+			targetElements.forEach((element) => {
+				// Register element with translation system
+				if (aethos.translation) {
+					aethos.translation.registerElement(element, typeSplit, {
+						type: "splitTextBasic",
+						targetClass: targetClass,
+					});
 				}
 
-				// Create a new SplitText instance
-				target.split = new SplitText(target, {
-					type: "lines",
+				// Set up the animation
+				const timeline = gsap.from(element.split?.lines || typeSplit.lines, {
+					scrollTrigger: {
+						trigger: element,
+						start: "top 70%",
+						toggleActions: "play none none none",
+					},
+					opacity: 0,
+					duration: 1,
+					stagger: 1 / (element.split?.lines?.length || typeSplit.lines.length),
 				});
 
-				// Set up the animation once
-				if (!target.animInitialized) {
-					target.animInitialized = true;
-					gsap.from(target.split.lines, {
-						scrollTrigger: {
-							trigger: target,
-							start: "top 70%",
-							toggleActions: "play none none none",
-						},
-						opacity: 0,
-						duration: 1,
-						stagger: 1 / target.split.lines.length,
-					});
+				// Update timeline reference in translation data
+				const elementData = aethos.translation?.splitTextElements?.get(element);
+				if (elementData) {
+					elementData.timeline = timeline;
 				}
 			});
 		}
 
-		// Initialize splits once
-		setupSplits();
+		// Initialize translation system first
+		if (aethos.translation && !aethos.translation.isWeglotReady) {
+			aethos.translation.init();
+		}
 
-		// Revert on window resize without reanimating
+		// Run the split and animation once
+		runSplit();
+
+		// Revert split on window resize without reanimating
 		let windowWidth = window.innerWidth;
 		window.addEventListener("resize", () => {
 			if (windowWidth !== window.innerWidth) {
 				windowWidth = window.innerWidth;
-				targets.forEach((target) => {
-					if (target.split) {
-						target.split.revert();
+
+				// Unregister elements from translation system
+				const targetElements = document.querySelectorAll("." + targetClass);
+				targetElements.forEach((element) => {
+					if (aethos.translation) {
+						aethos.translation.unregisterElement(element);
 					}
 				});
+
+				if (typeSplit) {
+					typeSplit.revert();
+				}
+
+				// Re-run split after resize
+				setTimeout(runSplit, 100);
 			}
 		});
 	};
-
 	/* Carousel Animations */
 	aethos.anim.carousel = function () {
 		/* Utility Functions */
@@ -4295,6 +4375,393 @@ function main() {
 		});
 	};
 
+	// Translation management system for split text elements
+	aethos.translation = {
+		splitTextElements: new Map(), // Maps element to its translation data
+		isWeglotReady: false,
+		currentLanguage: "en", // Track current language
+
+		// Initialize translation system
+		init: function () {
+			if (typeof Weglot !== "undefined") {
+				this.isWeglotReady = true;
+				this.currentLanguage = Weglot.getCurrentLang() || "en";
+				this.setupWeglotListener();
+			} else {
+				// Wait for Weglot to load
+				const checkWeglot = () => {
+					if (typeof Weglot !== "undefined") {
+						this.isWeglotReady = true;
+						this.currentLanguage = Weglot.getCurrentLang() || "en";
+						this.setupWeglotListener();
+						// Check existing elements for translation sync
+						this.checkAllElementsForSync();
+					} else {
+						setTimeout(checkWeglot, 100);
+					}
+				};
+				checkWeglot();
+			}
+		},
+
+		// Set up Weglot language change listener
+		setupWeglotListener: function () {
+			Weglot.on("languageChanged", (newLang, prevLang) => {
+				aethos.log("Language changed from", prevLang, "to", newLang);
+				this.currentLanguage = newLang;
+				// Add a small delay to ensure Weglot has processed other translations
+				setTimeout(() => {
+					this.handleLanguageChange(newLang, prevLang);
+				}, 100);
+			});
+		},
+
+		// Register a split text element for translation management
+		registerElement: function (element, splitInstance, animationData) {
+			if (!element) return;
+
+			const elementData = {
+				element: element,
+				splitInstance: splitInstance,
+				animationData: animationData,
+				originalEnglishText: element.textContent, // Store the original English text
+				hiddenElement: null,
+				isAnimating: false,
+				timeline: null,
+			};
+
+			// Create hidden translation element
+			elementData.hiddenElement = this.createHiddenElement(element);
+
+			this.splitTextElements.set(element, elementData);
+			aethos.log("Registered split text element for translation:", element);
+
+			// Check if we need to sync with current language
+			if (this.isWeglotReady) {
+				this.checkElementForSync(elementData);
+			}
+		},
+
+		// Create hidden element for Weglot translation (always in English)
+		createHiddenElement: function (originalElement) {
+			const hiddenEl = document.createElement("div");
+			hiddenEl.textContent = originalElement.textContent;
+
+			// Exclude from automatic Weglot translation
+			hiddenEl.classList.add("weglot-exclude");
+			hiddenEl.classList.add("weglot-hidden-translation");
+
+			// Mark as English content - this should always be the original English text
+			hiddenEl.setAttribute("data-translation-lang", "en");
+			hiddenEl.setAttribute("data-wg-notranslate", "true");
+			hiddenEl.setAttribute("data-original-english", "true"); // Mark as containing original English
+
+			hiddenEl.style.cssText = `
+            position: absolute !important;
+            left: -9999px !important;
+            top: -9999px !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+            width: 1px !important;
+            height: 1px !important;
+        `;
+			hiddenEl.setAttribute("aria-hidden", "true");
+
+			// Insert into document body
+			document.body.appendChild(hiddenEl);
+
+			return hiddenEl;
+		},
+
+		// Check all elements for translation sync
+		checkAllElementsForSync: function () {
+			this.splitTextElements.forEach((data) => {
+				this.checkElementForSync(data);
+			});
+		},
+
+		// Check if an element needs translation sync
+		checkElementForSync: function (elementData) {
+			const { element, hiddenElement } = elementData;
+
+			if (!hiddenElement || !this.isWeglotReady) return;
+
+			const elementLang = element.getAttribute("data-translation-lang") || "en";
+
+			// If element's language doesn't match current site language, translate it
+			if (elementLang !== this.currentLanguage) {
+				aethos.log(
+					`Element out of sync. Element: ${elementLang}, Current: ${this.currentLanguage}. Translating...`
+				);
+				this.translateElement(elementData, this.currentLanguage);
+			} else {
+				aethos.log(`Element in sync with language: ${this.currentLanguage}`);
+			}
+		},
+
+		// Handle language change for all registered elements
+		handleLanguageChange: function (newLang, prevLang) {
+			aethos.log("Processing translation for", this.splitTextElements.size, "elements");
+
+			this.splitTextElements.forEach((data) => {
+				this.translateElement(data, newLang);
+			});
+		},
+
+		// Manually translate an element using Weglot's translate method
+		translateElement: function (elementData, targetLang) {
+			const { element, hiddenElement, originalEnglishText } = elementData;
+
+			if (!this.isWeglotReady) {
+				aethos.log("Cannot translate: Weglot not ready");
+				return;
+			}
+
+			// If target language is English, use stored original text
+			if (targetLang === "en") {
+				// Use the stored original English text, fallback to hidden element if needed
+				const originalText =
+					originalEnglishText || hiddenElement?.textContent || element.textContent;
+				aethos.log(`Translating back to English: "${originalText}"`);
+				this.updateElementContent(elementData, originalText, targetLang);
+				return;
+			}
+
+			// For non-English translations, we need the English source text
+			const sourceText = originalEnglishText || hiddenElement?.textContent;
+
+			if (!sourceText) {
+				aethos.log("Cannot translate: no source English text available");
+				return;
+			}
+
+			try {
+				// Format the text according to Weglot API requirements
+				const translatePayload = {
+					words: [{ t: 1, w: sourceText }],
+					languageTo: targetLang,
+				};
+
+				// Handle as a promise
+				const translationPromise = Weglot.translate(translatePayload);
+
+				translationPromise
+					.then((response) => {
+						// Check if response is an array with translated strings (new format)
+						if (Array.isArray(response) && response.length > 0) {
+							const translatedText = response[0]; // First (and only) translated string
+							aethos.log(
+								`Translation success: "${sourceText}" -> "${translatedText}" (${targetLang})`
+							);
+							this.updateElementContent(elementData, translatedText, targetLang);
+						}
+						// Fallback: check if response has the old object format
+						else if (
+							response &&
+							response.words &&
+							Array.isArray(response.words) &&
+							response.words.length > 0
+						) {
+							const translatedText = response.words[0].w;
+							aethos.log(
+								`Translation success (old format): "${sourceText}" -> "${translatedText}" (${targetLang})`
+							);
+							this.updateElementContent(elementData, translatedText, targetLang);
+						}
+						// No valid translation found
+						else {
+							console.error("Translation failed: Invalid response format", response);
+							// Fallback to original English text
+							this.updateElementContent(elementData, sourceText, "en");
+						}
+					})
+					.catch((error) => {
+						console.error("Weglot translation promise error:", error);
+						// Fallback to original English text
+						this.updateElementContent(elementData, sourceText, "en");
+					});
+			} catch (error) {
+				console.error("Weglot.translate method error:", error);
+				// Fallback to original English text
+				this.updateElementContent(elementData, sourceText, "en");
+			}
+		},
+
+		// Update element content and recreate animations
+		updateElementContent: function (elementData, translatedText, targetLang) {
+			const { element, splitInstance } = elementData;
+			const currentText = element.textContent;
+
+			// Only proceed if the text has actually changed
+			if (translatedText === currentText) {
+				aethos.log("No content change needed");
+				// Still update the language attribute
+				element.setAttribute("data-translation-lang", targetLang);
+				return;
+			}
+
+			aethos.log("Updating content from:", currentText, "to:", translatedText);
+
+			// Store animation state if currently animating
+			const wasAnimating = elementData.isAnimating;
+			let animationProgress = 0;
+
+			if (wasAnimating && elementData.timeline) {
+				animationProgress = elementData.timeline.progress();
+				elementData.timeline.kill();
+			}
+
+			// Revert split text
+			if (splitInstance) {
+				splitInstance.revert();
+			}
+
+			// Update element with translated text
+			element.textContent = translatedText;
+
+			// Mark both elements with current language
+			element.setAttribute("data-translation-lang", targetLang);
+			if (elementData.hiddenElement) {
+				elementData.hiddenElement.setAttribute("data-translation-source-lang", targetLang);
+			}
+
+			// Re-split and re-animate
+			this.recreateSplitAndAnimation(elementData, animationProgress);
+		},
+
+		// Recreate split text and animation after translation
+		recreateSplitAndAnimation: function (elementData, progress = 0) {
+			const { element, animationData } = elementData;
+
+			// Recreate SplitText based on original animation type
+			if (animationData.type === "splitText") {
+				this.recreateSplitTextAnimation(elementData, progress);
+			} else if (animationData.type === "splitTextBasic") {
+				this.recreateSplitTextBasicAnimation(elementData, progress);
+			}
+		},
+
+		// Recreate splitText animation (lines with masks)
+		recreateSplitTextAnimation: function (elementData, progress) {
+			const { element, animationData } = elementData;
+
+			// Only run on desktop
+			if (window.innerWidth < 768) return;
+
+			// Create new SplitText instance
+			const newSplit = new SplitText(element, {
+				types: "lines",
+				linesClass: animationData.linesClass,
+			});
+
+			// Append masks to each line
+			const lines = element.querySelectorAll("." + animationData.linesClass);
+			lines.forEach((line) => {
+				const mask = document.createElement("div");
+				mask.className = animationData.maskClass;
+				line.appendChild(mask);
+			});
+
+			// Create new animation
+			const masks = element.querySelectorAll("." + animationData.maskClass);
+			const newTimeline = gsap.timeline({
+				scrollTrigger: {
+					trigger: element,
+					start: "top 90%",
+					end: "bottom 10%",
+					scrub: true,
+				},
+			});
+
+			newTimeline.to(masks, {
+				width: "0%",
+				duration: 1,
+				ease: "power2.out",
+				stagger: 0.5,
+			});
+
+			// Update element data
+			elementData.splitInstance = newSplit;
+			elementData.timeline = newTimeline;
+
+			// Restore progress if was animating
+			if (progress > 0) {
+				newTimeline.progress(progress);
+			}
+
+			aethos.log("Recreated splitText animation for translated content");
+		},
+
+		// Recreate splitTextBasic animation (opacity stagger)
+		recreateSplitTextBasicAnimation: function (elementData, progress) {
+			const { element } = elementData;
+
+			// Create new SplitText instance
+			const newSplit = new SplitText(element, {
+				type: "lines",
+			});
+
+			// Create new animation
+			const newTimeline = gsap.from(newSplit.lines, {
+				scrollTrigger: {
+					trigger: element,
+					start: "top 70%",
+					toggleActions: "play none none none",
+				},
+				opacity: 0,
+				duration: 1,
+				stagger: 1 / newSplit.lines.length,
+			});
+
+			// Update element data
+			elementData.splitInstance = newSplit;
+			elementData.timeline = newTimeline;
+
+			// Restore progress if was animating
+			if (progress > 0 && newTimeline.scrollTrigger) {
+				newTimeline.scrollTrigger.refresh();
+			}
+
+			aethos.log("Recreated splitTextBasic animation for translated content");
+		},
+
+		// Clean up element registration
+		unregisterElement: function (element) {
+			const elementData = this.splitTextElements.get(element);
+			if (elementData) {
+				// Remove hidden element
+				if (elementData.hiddenElement && elementData.hiddenElement.parentNode) {
+					elementData.hiddenElement.parentNode.removeChild(elementData.hiddenElement);
+				}
+
+				// Clean up timeline
+				if (elementData.timeline) {
+					elementData.timeline.kill();
+				}
+
+				this.splitTextElements.delete(element);
+			}
+		},
+
+		// Debug method to check current state
+		debug: function () {
+			console.log("Translation debug info:");
+			console.log("Weglot ready:", this.isWeglotReady);
+			console.log("Current language:", this.currentLanguage);
+			console.log("Registered elements:", this.splitTextElements.size);
+
+			this.splitTextElements.forEach((data, element) => {
+				console.log("Element:", element);
+				console.log("Element lang:", element.getAttribute("data-translation-lang"));
+				console.log("Original English text:", data.originalEnglishText);
+				console.log("Current text:", element.textContent);
+				console.log("Hidden element text:", data.hiddenElement?.textContent);
+				console.log("---");
+			});
+		},
+	};
+
 	// Update elements with a certain attribute to the current language code on Weglot language change
 	aethos.functions.langUpdate = function () {
 		// Check if Weglot is defined
@@ -5454,6 +5921,10 @@ function main() {
 	aethos.anim.fadeUp();
 	aethos.anim.staggerIn();
 	aethos.functions.langUpdate();
+	// Initialize translation system for split text
+	if (aethos.translation) {
+		aethos.translation.init();
+	}
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
