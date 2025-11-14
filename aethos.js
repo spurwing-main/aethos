@@ -5931,6 +5931,8 @@ function main() {
 
 		aethos.log("[PromoPop] initializing...");
 
+		const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 		const holder = document.querySelector(".promopop-holder");
 		if (!holder) {
 			aethos.log("[PromoPop] skipped (no .promopop-holder found)");
@@ -6054,14 +6056,15 @@ function main() {
 			const closeBtn = popupEl.querySelector(".promopop_close");
 
 			holder.style.display = "flex";
-			aethos.helpers.pauseScroll(true);
 
-			// gsap.set(bg, { pointerEvents: "auto" });
-			// gsap.set(popupEl, { opacity: 0 });
+			if (isIOS) {
+				aethos.helpers.lockScrollIOS();
+				addTouchBlocker();
+			} else {
+				aethos.helpers.pauseScroll(true);
+			}
 
 			document.documentElement.classList.add("promopop-open");
-
-			const tl = gsap.timeline();
 
 			const close = () => closePopup(slug);
 
@@ -6072,28 +6075,31 @@ function main() {
 		}
 
 		function closePopup(slug) {
+			const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 			document.documentElement.classList.remove("promopop-open");
+
 			gsap.to(holder, {
 				autoAlpha: 0,
 				duration: 0.3,
 				onComplete: () => {
 					holder.style.display = "none";
-					aethos.helpers.pauseScroll(false);
+
+					if (isIOS) {
+						aethos.helpers.unlockScrollIOS();
+						removeTouchBlocker();
+					} else {
+						aethos.helpers.pauseScroll(false);
+					}
+
 					markAsShown(slug);
 					holder.innerHTML = "";
 
-					// refresh ScrollTrigger on the next frame to avoid reading styles of removed nodes
 					requestAnimationFrame(() => {
-						try {
-							ScrollTrigger.refresh();
-						} catch (err) {
-							aethos.log("[PromoPop] ScrollTrigger.refresh() failed:" + err);
-						}
+						ScrollTrigger.refresh();
 					});
 				},
 			});
-
-			gsap.to(bg, { autoAlpha: 0, duration: 0.3 });
 		}
 
 		// ---------------------------------------------------------
@@ -6164,6 +6170,35 @@ function main() {
 				})
 			);
 		}
+
+		function addTouchBlocker() {
+			document.addEventListener("touchmove", prevent, { passive: false });
+		}
+		function removeTouchBlocker() {
+			document.removeEventListener("touchmove", prevent);
+		}
+		function prevent(e) {
+			e.preventDefault();
+		}
+	};
+
+	aethos.helpers.lockScrollIOS = function () {
+		const scrollY = window.scrollY;
+		document.documentElement.dataset.scrollLock = scrollY; // store for later
+		document.body.style.position = "fixed";
+		document.body.style.top = `-${scrollY}px`;
+		document.body.style.left = "0";
+		document.body.style.right = "0";
+		document.body.style.width = "100%";
+	};
+	aethos.helpers.unlockScrollIOS = function () {
+		const scrollY = parseInt(document.documentElement.dataset.scrollLock || "0", 10);
+		document.body.style.position = "";
+		document.body.style.top = "";
+		document.body.style.left = "";
+		document.body.style.right = "";
+		document.body.style.width = "";
+		window.scrollTo(0, scrollY);
 	};
 
 	/******/
