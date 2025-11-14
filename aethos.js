@@ -324,7 +324,8 @@ function main() {
 		// clear localstorage - we use this to track whether we show second half of transition on a page load
 		localStorage.setItem("aethos_transition", "false");
 
-		aethos.transition = {};
+		aethos.transition = aethos.transition || {};
+		aethos.transition.isActive = false; // boolean to track if a transition is in progress
 		aethos.log("Running page transition setup");
 
 		aethos.transition.themes = {
@@ -524,6 +525,12 @@ function main() {
 		}
 
 		function playPageTransition(theme1, theme2, onComplete) {
+			// mark transition active and notify listeners
+			aethos.transition.isActive = true;
+			document.dispatchEvent(
+				new CustomEvent("aethos:transitionStart", { detail: { theme1, theme2 } })
+			);
+
 			// Hide the Lottie container initially
 			gsap.set(aethos.transition.container, { display: "none" });
 
@@ -558,6 +565,11 @@ function main() {
 				paused: true,
 				delay: 0,
 				onComplete: () => {
+					// mark transition finished and notify listeners before calling navigation callback
+					aethos.transition.isActive = false;
+					document.dispatchEvent(
+						new CustomEvent("aethos:transitionEnd", { detail: { theme1, theme2 } })
+					);
 					aethos.log("Transition complete.");
 					onComplete();
 				},
@@ -657,6 +669,10 @@ function main() {
 
 	/* site loader */
 	aethos.anim.loader = function () {
+		// loader state
+		aethos.loader = aethos.loader || {};
+		aethos.loader.isActive = false;
+
 		// Check if loader is enabled, if this is the user's first visit in 30 days,
 		// or if a specific URL parameter forces the loader.
 		const urlParams = new URLSearchParams(window.location.search);
@@ -690,6 +706,10 @@ function main() {
 		}
 
 		aethos.log("Page loader running");
+
+		// mark loader active and notify listeners
+		aethos.loader.isActive = true;
+		document.dispatchEvent(new CustomEvent("aethos:loaderStart"));
 
 		// hide HC
 		aethos.functions.showHC(false);
@@ -872,6 +892,10 @@ function main() {
 
 			// show HC
 			aethos.functions.showHC(true);
+
+			// mark loader finished and notify listeners
+			aethos.loader.isActive = false;
+			document.dispatchEvent(new CustomEvent("aethos:loaderEnd"));
 		}
 	};
 
@@ -5897,6 +5921,260 @@ function main() {
 		// window.addEventListener("resize", updateProp);
 	};
 
+	aethos.functions.promopop = function () {
+		// only run popups when explicitly enabled via URL (?popups=on)
+		const _urlParams = new URLSearchParams(window.location.search);
+		if (_urlParams.get("popups") !== "on") {
+			aethos.log("[PromoPop] skipped (use ?popups=on to enable)");
+			return;
+		}
+
+		aethos.log("[PromoPop] initializing...");
+
+		const holder = document.querySelector(".promopop-holder");
+		if (!holder) {
+			aethos.log("[PromoPop] skipped (no .promopop-holder found)");
+			return;
+		}
+
+		const bg = holder.querySelector(".promopop-holder_bg");
+		const bg_blur = holder.querySelector(".promopop-holder_bg-blur");
+		const bg_color = holder.querySelector(".promopop-holder_bg-color");
+		const sessionKey = "aethos_promopops_shown";
+
+		// Wait for loader or page transition to finish (use flags/events set by loader & pageTransition)
+		(function waitForStartup({ timeout = 10000 } = {}) {
+			function waitIfActive(flagObj, eventName) {
+				// if flag object exists and is active, wait for corresponding event
+				if (flagObj && flagObj.isActive) {
+					aethos.log("[PromoPop] waiting for " + eventName);
+					return new Promise((res) => {
+						document.addEventListener(eventName, () => res(), { once: true });
+					});
+				}
+				// otherwise resolve immediately
+				return Promise.resolve();
+			}
+
+			const p = Promise.all([
+				waitIfActive(aethos.loader, "aethos:loaderEnd"),
+				waitIfActive(aethos.transition, "aethos:transitionEnd"),
+			]);
+
+			// race with timeout so we never block indefinitely
+			Promise.race([p, new Promise((res) => setTimeout(res, timeout))]).then(() => {
+				aethos.log("[PromoPop] startup wait finished, running init()");
+				// call the existing init() (declared later)
+				try {
+					init();
+				} catch (err) {
+					aethos.log("[PromoPop] init() failed to start: " + err);
+				}
+			});
+		})();
+
+		// Keep reference to the ScrollTrigger pin so we can kill it on close
+		// let promopopPin = null;
+
+		function getShownPopups() {
+			try {
+				return JSON.parse(sessionStorage.getItem(sessionKey)) || [];
+			} catch {
+				aethos.log("[PromoPop] failed to parse shown popups from sessionStorage");
+				return [];
+			}
+		}
+
+		function markAsShown(slug) {
+			const shown = getShownPopups();
+			shown.push(slug);
+			sessionStorage.setItem(sessionKey, JSON.stringify(shown));
+			aethos.log("[PromoPop] marked as shown: " + slug);
+		}
+
+		// ---------------------------------------------------------
+		// FILTER POPUPS BASED ON PAGE CONTEXT
+		// ---------------------------------------------------------
+		function getEligiblePopups() {
+			const items = [...document.querySelectorAll(".promopop-data_item")];
+			if (!items.length) return [];
+
+			aethos.log("[PromoPop] found " + items.length + " popups");
+
+			const theme = aethos.settings.theme; // "" | "club" | destination
+			const destSlug = aethos.settings.destinationSlug;
+
+			return items.filter((item) => {
+				const type = item.dataset.promopopType || "";
+				const dest = item.dataset.promopopDest || "";
+
+				// All pages (no type)
+				if (!type) return true;
+
+				// Masterbrand pages
+				if (type === "Masterbrand" && theme === "") return true;
+
+				// Club pages
+				if (type === "Club" && theme === "club") return true;
+
+				// Destination pages
+				if (type === "Destination" && theme !== "" && theme !== "club") {
+					return dest === destSlug;
+				}
+
+				return false;
+			});
+		}
+
+		// ---------------------------------------------------------
+		// LOAD POPUP HTML
+		// ---------------------------------------------------------
+		async function fetchPopupHTML(slug) {
+			try {
+				const res = await fetch(`/pop-ups/${slug}`);
+				if (!res.ok) throw new Error("Failed to fetch popup");
+				const html = await res.text();
+
+				const temp = document.createElement("div");
+				temp.innerHTML = html;
+
+				return temp.querySelector(".c-promopop");
+			} catch (err) {
+				aethos.log("[PromoPop] load error:" + err);
+				return null;
+			}
+		}
+
+		// ---------------------------------------------------------
+		// OPEN / CLOSE
+		// ---------------------------------------------------------
+		function openPopup(popupEl, slug) {
+			holder.appendChild(popupEl);
+
+			const closeBtn = popupEl.querySelector(".promopop_close");
+
+			holder.style.display = "flex";
+			aethos.helpers.pauseScroll(true);
+
+			// gsap.set(bg, { pointerEvents: "auto" });
+			// gsap.set(popupEl, { opacity: 0 });
+
+			document.documentElement.classList.add("promopop-open");
+
+			const tl = gsap.timeline();
+
+			// fade in
+			// tl.fromTo([holder, popupEl], { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 0);
+			// tl.fromTo(bg_color, { autoAlpha: 0 }, { autoAlpha: 0.5, duration: 1 }, 0);
+			// tl.fromTo(
+			// 	bg_blur,
+			// 	{ backdropFilter: "blur(0px)" },
+			// 	{ backdropFilter: "blur(4px)", duration: 1 },
+			// 	0
+			// );
+
+			const close = () => closePopup(slug);
+
+			bg.addEventListener("click", close, { once: true });
+			if (closeBtn) closeBtn.addEventListener("click", close, { once: true });
+
+			aethos.log("[PromoPop] opened:" + slug);
+		}
+
+		function closePopup(slug) {
+			gsap.to(holder, {
+				autoAlpha: 0,
+				duration: 0.3,
+				onComplete: () => {
+					holder.style.display = "none";
+					aethos.helpers.pauseScroll(false);
+					markAsShown(slug);
+					holder.innerHTML = "";
+
+					// refresh ScrollTrigger on the next frame to avoid reading styles of removed nodes
+					requestAnimationFrame(() => {
+						try {
+							ScrollTrigger.refresh();
+						} catch (err) {
+							aethos.log("[PromoPop] ScrollTrigger.refresh() failed:" + err);
+						}
+					});
+				},
+			});
+
+			gsap.to(bg, { autoAlpha: 0, duration: 0.3 });
+		}
+
+		// ---------------------------------------------------------
+		// MAIN INITIALISATION
+		// ---------------------------------------------------------
+		async function init() {
+			aethos.log("[PromoPop] init");
+			const eligible = getEligiblePopups();
+			if (!eligible.length) return;
+			aethos.log("[PromoPop] eligible popups found");
+			const shown = getShownPopups();
+
+			// remove already-shown popups
+			const remaining = eligible.filter((item) => {
+				const slug = item.dataset.promopopSlug;
+				return slug && !shown.includes(slug);
+			});
+
+			if (!remaining.length) return;
+
+			// pick random
+			const choice = remaining[Math.floor(Math.random() * remaining.length)];
+			const slug = choice.dataset.promopopSlug;
+			if (!slug) return;
+
+			aethos.log("[PromoPop] Showing promopop:" + slug);
+
+			const popupEl = await fetchPopupHTML(slug);
+			if (!popupEl) return;
+
+			aethos.log("[PromoPop] Fetched promopop element");
+
+			// wait for images in the popup
+			await imagesLoaded(popupEl);
+
+			aethos.log("[PromoPop] Images loaded, opening promopop");
+
+			// Show after delay
+			setTimeout(() => {
+				openPopup(popupEl, slug);
+			}, 2500);
+		}
+
+		// util: wait for images to load
+		function imagesLoaded(root) {
+			const imgs = [...root.querySelectorAll("img")];
+			if (!imgs.length) return Promise.resolve();
+
+			return Promise.all(
+				imgs.map((img) => {
+					// prefer currentSrc if available (srcset support), fallback to src
+					const src = img.currentSrc || img.src;
+					if (!src) return Promise.resolve();
+
+					// If the image is already complete, resolve immediately
+					if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+
+					// Otherwise create a new Image to force load (works for detached nodes)
+					return new Promise((res) => {
+						const probe = new Image();
+						probe.onload = probe.onerror = () => res();
+						probe.src = src;
+						// In case the browser has it cached and 'complete' is already true
+						if (probe.complete) {
+							res();
+						}
+					});
+				})
+			);
+		}
+	};
+
 	/******/
 	/*** CALL FUNCTIONS ***/
 	/******/
@@ -5963,6 +6241,7 @@ function main() {
 	aethos.functions.observeBookingToggle();
 	aethos.functions.scrollbarWidth();
 	aethos.functions.updateFooterLinks();
+	aethos.functions.promopop();
 
 	// run either mews or hc
 	if (aethos.engine === "hc") {
