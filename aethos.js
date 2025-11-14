@@ -6063,16 +6063,6 @@ function main() {
 
 			const tl = gsap.timeline();
 
-			// fade in
-			// tl.fromTo([holder, popupEl], { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 0);
-			// tl.fromTo(bg_color, { autoAlpha: 0 }, { autoAlpha: 0.5, duration: 1 }, 0);
-			// tl.fromTo(
-			// 	bg_blur,
-			// 	{ backdropFilter: "blur(0px)" },
-			// 	{ backdropFilter: "blur(4px)", duration: 1 },
-			// 	0
-			// );
-
 			const close = () => closePopup(slug);
 
 			bg.addEventListener("click", close, { once: true });
@@ -6082,6 +6072,7 @@ function main() {
 		}
 
 		function closePopup(slug) {
+			document.documentElement.classList.remove("promopop-open");
 			gsap.to(holder, {
 				autoAlpha: 0,
 				duration: 0.3,

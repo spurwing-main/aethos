@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === CONFIGURATION ===
-BASE_URL = "https://api.letsway.com/v2/listings?limit=500"
+BASE_URL = "https://api.letsway.com/v1/listings?limit=500"
 
 # Toggle: Set to True to test only first brand, False to test all brands
 TEST_SINGLE_BRAND = False
