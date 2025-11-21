@@ -5944,6 +5944,16 @@ function main() {
 		const bg_color = holder.querySelector(".promopop-holder_bg-color");
 		const sessionKey = "aethos_promopops_shown";
 
+		// push events to GTM dataLayer
+		function trackPopup(eventName, data = {}) {
+			window.dataLayer = window.dataLayer || [];
+			window.dataLayer.push({
+				event: eventName,
+				...data,
+			});
+			aethos.log(`[PromoPop] tracking: ${eventName}`, "info");
+		}
+
 		// Wait for loader or page transition to finish (use flags/events set by loader & pageTransition)
 		(function waitForStartup({ timeout = 10000 } = {}) {
 			function waitIfActive(flagObj, eventName) {
@@ -6053,6 +6063,29 @@ function main() {
 		function openPopup(popupEl, slug) {
 			holder.appendChild(popupEl);
 
+			popupEl.addEventListener("click", (e) => {
+				// Find the closest .button element
+				const btn = e.target.closest(".button");
+				if (!btn) return;
+
+				// Extract href from .button_link inside the button
+				const linkEl = btn.querySelector(".button_link");
+				const href = linkEl ? linkEl.getAttribute("href") : null;
+
+				// Extract text from .button-text-sm inside the button
+				const textEl = btn.querySelector(".button-text-sm");
+				const label = textEl ? textEl.textContent.trim() : null;
+
+				// Push event to GTM
+				trackPopup("promopop_cta_click", {
+					popup_slug: slug,
+					cta_href: href,
+					cta_label: label,
+				});
+
+				aethos.log(`[PromoPop] CTA clicked: ${label} (${href})`, "info");
+			});
+
 			const closeBtn = popupEl.querySelector(".promopop_close");
 
 			holder.style.display = "flex";
@@ -6072,12 +6105,23 @@ function main() {
 			if (closeBtn) closeBtn.addEventListener("click", close, { once: true });
 
 			aethos.log("[PromoPop] opened:" + slug);
+
+			// push event to GTM
+			trackPopup("promopop_shown", {
+				popup_slug: slug,
+				popup_name: popupEl.dataset.promopopName || null,
+				popup_type: popupEl.dataset.promopopType || null,
+			});
 		}
 
 		function closePopup(slug) {
 			const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 			document.documentElement.classList.remove("promopop-open");
+
+			trackPopup("promopop_closed", {
+				popup_slug: slug,
+			});
 
 			gsap.to(holder, {
 				autoAlpha: 0,
