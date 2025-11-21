@@ -2503,88 +2503,167 @@ function main() {
 		});
 	};
 
-	/* animated text effect 2 */
+	// /* animated text effect 2 */
+	// aethos.anim.splitTextBasic = function () {
+	// 	let typeSplit;
+	// 	const targetClass = "anim-split-basic";
+
+	// 	function runSplit() {
+	// 		// Revert any previous SplitText instance
+	// 		if (typeSplit) {
+	// 			typeSplit.revert();
+	// 		}
+
+	// 		// Get all target elements
+	// 		const targetElements = document.querySelectorAll("." + targetClass);
+
+	// 		if (targetElements.length === 0) return;
+
+	// 		// Create new SplitText instance
+	// 		typeSplit = new SplitText("." + targetClass, {
+	// 			type: "lines",
+	// 		});
+
+	// 		// Register elements with translation system and set up animations
+	// 		targetElements.forEach((element) => {
+	// 			// Register element with translation system
+	// 			if (aethos.translation) {
+	// 				aethos.translation.registerElement(element, typeSplit, {
+	// 					type: "splitTextBasic",
+	// 					targetClass: targetClass,
+	// 				});
+	// 			}
+
+	// 			// Set up the animation
+	// 			const timeline = gsap.from(element.split?.lines || typeSplit.lines, {
+	// 				scrollTrigger: {
+	// 					trigger: element,
+	// 					start: "top 70%",
+	// 					toggleActions: "play none none none",
+	// 				},
+	// 				opacity: 0,
+	// 				duration: 1,
+	// 				stagger: 1 / (element.split?.lines?.length || typeSplit.lines.length),
+	// 			});
+
+	// 			// Update timeline reference in translation data
+	// 			const elementData = aethos.translation?.splitTextElements?.get(element);
+	// 			if (elementData) {
+	// 				elementData.timeline = timeline;
+	// 			}
+	// 		});
+	// 	}
+
+	// 	// Initialize translation system first
+	// 	if (aethos.translation && !aethos.translation.isWeglotReady) {
+	// 		aethos.translation.init();
+	// 	}
+
+	// 	// Run the split and animation once
+	// 	runSplit();
+
+	// 	// Revert split on window resize without reanimating
+	// 	let windowWidth = window.innerWidth;
+	// 	window.addEventListener("resize", () => {
+	// 		if (windowWidth !== window.innerWidth) {
+	// 			windowWidth = window.innerWidth;
+
+	// 			// Unregister elements from translation system
+	// 			const targetElements = document.querySelectorAll("." + targetClass);
+	// 			targetElements.forEach((element) => {
+	// 				if (aethos.translation) {
+	// 					aethos.translation.unregisterElement(element);
+	// 				}
+	// 			});
+
+	// 			if (typeSplit) {
+	// 				typeSplit.revert();
+	// 			}
+
+	// 			// Re-run split after resize
+	// 			setTimeout(runSplit, 100);
+	// 		}
+	// 	});
+	// };
+
 	aethos.anim.splitTextBasic = function () {
-		let typeSplit;
 		const targetClass = "anim-split-basic";
+		let splitInstances = [];
+		let resizeTimeout;
+		let lastWidth = window.innerWidth;
 
+		// --- core split function ---
 		function runSplit() {
-			// Revert any previous SplitText instance
-			if (typeSplit) {
-				typeSplit.revert();
-			}
+			// Fully revert old instances
+			splitInstances.forEach((inst) => inst.revert());
+			splitInstances = [];
 
-			// Get all target elements
-			const targetElements = document.querySelectorAll("." + targetClass);
+			const els = document.querySelectorAll("." + targetClass);
+			if (!els.length) return;
 
-			if (targetElements.length === 0) return;
+			els.forEach((el) => {
+				// new instance per element
+				const inst = new SplitText(el, { type: "lines" });
+				splitInstances.push(inst);
 
-			// Create new SplitText instance
-			typeSplit = new SplitText("." + targetClass, {
-				type: "lines",
-			});
-
-			// Register elements with translation system and set up animations
-			targetElements.forEach((element) => {
-				// Register element with translation system
+				// register with translation system (if present)
 				if (aethos.translation) {
-					aethos.translation.registerElement(element, typeSplit, {
+					aethos.translation.registerElement(el, inst, {
 						type: "splitTextBasic",
 						targetClass: targetClass,
 					});
 				}
 
-				// Set up the animation
-				const timeline = gsap.from(element.split?.lines || typeSplit.lines, {
+				const lines = inst.lines;
+
+				const tl = gsap.from(lines, {
+					opacity: 0,
+					duration: 1,
+					stagger: 1 / lines.length,
 					scrollTrigger: {
-						trigger: element,
+						trigger: el,
 						start: "top 70%",
 						toggleActions: "play none none none",
 					},
-					opacity: 0,
-					duration: 1,
-					stagger: 1 / (element.split?.lines?.length || typeSplit.lines.length),
 				});
 
-				// Update timeline reference in translation data
-				const elementData = aethos.translation?.splitTextElements?.get(element);
-				if (elementData) {
-					elementData.timeline = timeline;
-				}
+				// store timeline inside translation data (if used)
+				const data = aethos.translation?.splitTextElements?.get(el);
+				if (data) data.timeline = tl;
 			});
 		}
 
-		// Initialize translation system first
+		// --- initial translation init ---
 		if (aethos.translation && !aethos.translation.isWeglotReady) {
 			aethos.translation.init();
 		}
 
-		// Run the split and animation once
+		// --- first run ---
 		runSplit();
 
-		// Revert split on window resize without reanimating
-		let windowWidth = window.innerWidth;
+		// --- resize handling ---
 		window.addEventListener("resize", () => {
-			if (windowWidth !== window.innerWidth) {
-				windowWidth = window.innerWidth;
+			if (window.innerWidth === lastWidth) return;
+			lastWidth = window.innerWidth;
 
-				// Unregister elements from translation system
-				const targetElements = document.querySelectorAll("." + targetClass);
-				targetElements.forEach((element) => {
-					if (aethos.translation) {
-						aethos.translation.unregisterElement(element);
-					}
-				});
-
-				if (typeSplit) {
-					typeSplit.revert();
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(() => {
+				// unregister before revert
+				if (aethos.translation) {
+					const els = document.querySelectorAll("." + targetClass);
+					els.forEach((el) => aethos.translation.unregisterElement(el));
 				}
 
-				// Re-run split after resize
-				setTimeout(runSplit, 100);
-			}
+				// revert immediately
+				splitInstances.forEach((inst) => inst.revert());
+				splitInstances = [];
+
+				// re-run
+				runSplit();
+			}, 200);
 		});
 	};
+
 	/* Carousel Animations */
 	aethos.anim.carousel = function () {
 		/* Utility Functions */
