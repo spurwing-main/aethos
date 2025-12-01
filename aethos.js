@@ -6001,12 +6001,12 @@ function main() {
 	};
 
 	aethos.functions.promopop = function () {
-		// only run popups when explicitly enabled via URL (?popups=on)
-		const _urlParams = new URLSearchParams(window.location.search);
-		if (_urlParams.get("popups") !== "on") {
-			aethos.log("[PromoPop] skipped (use ?popups=on to enable)");
-			return;
-		}
+		// // only run popups when explicitly enabled via URL (?popups=on)
+		// const _urlParams = new URLSearchParams(window.location.search);
+		// if (_urlParams.get("popups") !== "on") {
+		// 	aethos.log("[PromoPop] skipped (use ?popups=on to enable)");
+		// 	return;
+		// }
 
 		aethos.log("[PromoPop] initializing...");
 
