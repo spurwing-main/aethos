@@ -6092,7 +6092,7 @@ function main() {
 
 			aethos.log("[PromoPop] found " + items.length + " popups");
 
-			const theme = aethos.settings.theme; // "" | "club" | destination
+			const theme = aethos.settings.theme; // "" | "default" | "club" | destination-specific
 			const destSlug = aethos.settings.destinationSlug;
 
 			return items.filter((item) => {
@@ -6102,14 +6102,18 @@ function main() {
 				// All pages (no type)
 				if (!type) return true;
 
+				const isMasterbrand = theme === "" || theme === "default";
+
 				// Masterbrand pages
-				if (type === "Masterbrand" && theme === "") return true;
+				if (type === "Masterbrand" && isMasterbrand) {
+					return true;
+				}
 
 				// Club pages
 				if (type === "Club" && theme === "club") return true;
 
 				// Destination pages
-				if (type === "Destination" && theme !== "" && theme !== "club") {
+				if (type === "Destination" && theme !== "" && theme !== "default" && theme !== "club") {
 					return dest === destSlug;
 				}
 
