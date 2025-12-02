@@ -6140,6 +6140,15 @@ function main() {
 			}
 		}
 
+		// Update links
+		function makePopupLinksExternal(popupEl) {
+			const links = popupEl.querySelectorAll("a[href]");
+			links.forEach((link) => {
+				link.setAttribute("target", "_blank");
+				link.setAttribute("rel", "noopener");
+			});
+		}
+
 		// ---------------------------------------------------------
 		// OPEN / CLOSE
 		// ---------------------------------------------------------
@@ -6258,6 +6267,9 @@ function main() {
 			if (!popupEl) return;
 
 			aethos.log("[PromoPop] Fetched promopop element");
+
+			// ensure all popup links open in new tabs
+			makePopupLinksExternal(popupEl);
 
 			// wait for images in the popup
 			await imagesLoaded(popupEl);
