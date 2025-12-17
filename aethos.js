@@ -6083,6 +6083,58 @@ function main() {
 			aethos.log("[PromoPop] marked as shown: " + slug);
 		}
 
+		// Helper: normalize a path (strip query/hash, trim trailing slash except root)
+		function normalizePath(p) {
+			if (!p) return "";
+			let out = p;
+			// If a full URL slips in, reduce to pathname
+			try {
+				const u = new URL(p, window.location.origin);
+				out = u.pathname || p;
+			} catch {
+				// leave as-is
+			}
+			out = out.split("?")[0].split("#")[0];
+			if (!out.startsWith("/")) return "";
+			if (out.length > 1 && out.endsWith("/")) out = out.slice(0, -1);
+			return out;
+		}
+
+		// NEW: parse per-popup CMS “allowed pages” list from data attribute
+		// Accepts comma-separated paths; ignores external URLs; reduces same-site absolute URLs to their pathname.
+		function parseAllowedPages(attrVal) {
+			if (!attrVal || typeof attrVal !== "string") return [];
+			const out = [];
+			attrVal.split(",").forEach((raw) => {
+				let s = raw.trim();
+				if (!s) return;
+				// Reduce to path
+				try {
+					if (/^https?:\/\//i.test(s)) {
+						const u = new URL(s);
+						// Only accept same-site URLs; external URLs are ignored
+						if (u.origin === window.location.origin) {
+							s = u.pathname;
+						} else {
+							return; // external, skip
+						}
+					} else {
+						// If they added query/hash on a relative path, strip via URL
+						const u = new URL(s, window.location.origin);
+						s = u.pathname;
+					}
+				} catch {
+					// Fallback: must start with "/" to be considered a path
+					if (!s.startsWith("/")) return;
+					s = s.split("?")[0].split("#")[0];
+				}
+				s = normalizePath(s);
+				if (s) out.push(s);
+			});
+			// dedupe
+			return Array.from(new Set(out));
+		}
+
 		// ---------------------------------------------------------
 		// FILTER POPUPS BASED ON PAGE CONTEXT
 		// ---------------------------------------------------------
@@ -6094,20 +6146,29 @@ function main() {
 
 			const theme = aethos.settings.theme; // "" | "default" | "club" | destination-specific
 			const destSlug = aethos.settings.destinationSlug;
+			const isMasterbrand = theme === "" || theme === "default";
+			const currentPath = normalizePath(window.location.pathname);
 
 			return items.filter((item) => {
+				// 3a: allowed-pages parsing
+				const allowedAttr = item.dataset.promopopAllowedPages || "";
+				console.log("allowedAttr:", allowedAttr);
+				const allowedPages = parseAllowedPages(allowedAttr);
+
+				// 3b/4: If allowedPages is non-empty, use it exclusively
+				if (allowedPages.length > 0) {
+					return allowedPages.includes(currentPath);
+				}
+
+				// Fall back to existing theme/destination rules
 				const type = item.dataset.promopopType || "";
 				const dest = item.dataset.promopopDest || "";
 
 				// All pages (no type)
 				if (!type) return true;
 
-				const isMasterbrand = theme === "" || theme === "default";
-
 				// Masterbrand pages
-				if (type === "Masterbrand" && isMasterbrand) {
-					return true;
-				}
+				if (type === "Masterbrand" && isMasterbrand) return true;
 
 				// Club pages
 				if (type === "Club" && theme === "club") return true;
@@ -6243,9 +6304,11 @@ function main() {
 		// ---------------------------------------------------------
 		async function init() {
 			aethos.log("[PromoPop] init");
+
 			const eligible = getEligiblePopups();
 			if (!eligible.length) return;
 			aethos.log("[PromoPop] eligible popups found");
+
 			const shown = getShownPopups();
 
 			// remove already-shown popups
