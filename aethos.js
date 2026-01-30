@@ -178,18 +178,18 @@ function main() {
 
 		if (!destinationSlug) {
 			aethos.log(
-				"Destination slug not found. Assuming this is not a destination page. Skipping relative links update."
+				"Destination slug not found. Assuming this is not a destination page. Skipping relative links update.",
 			);
 			return;
 		}
 
 		const relativeLinks = document.querySelectorAll(
-			'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"], a[aethos-relative-link][href^="https://./"]'
+			'a[aethos-relative-link][href^="./"], a[aethos-relative-link][href^="http://./"], a[aethos-relative-link][href^="https://./"]',
 		);
 
 		if (relativeLinks.length === 0) {
 			aethos.log(
-				"No links with aethos-relative-link attribute and './', 'http://./', or 'https://./' href found."
+				"No links with aethos-relative-link attribute and './', 'http://./', or 'https://./' href found.",
 			);
 			return;
 		}
@@ -433,11 +433,11 @@ function main() {
 
 				const { targetTheme, targetDestination } = getThemeAndDestinationFromUrl(
 					destinationUrl.pathname,
-					new URLSearchParams(destinationUrl.search)
+					new URLSearchParams(destinationUrl.search),
 				);
 
 				aethos.log(
-					`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`
+					`Going from theme: ${currentTheme}, destination: ${currentDestination} -> theme: ${targetTheme}, destination: ${targetDestination}`,
 				);
 
 				// Skip transition if both destinations are unknown AND themes are the same
@@ -447,7 +447,7 @@ function main() {
 					currentTheme === targetTheme
 				) {
 					aethos.log(
-						"Both current and target destinations are default, and themes are the same. Skipping transition."
+						"Both current and target destinations are default, and themes are the same. Skipping transition.",
 					);
 					setTimeout(() => {
 						window.location.assign(destinationUrl.href);
@@ -528,7 +528,7 @@ function main() {
 			// mark transition active and notify listeners
 			aethos.transition.isActive = true;
 			document.dispatchEvent(
-				new CustomEvent("aethos:transitionStart", { detail: { theme1, theme2 } })
+				new CustomEvent("aethos:transitionStart", { detail: { theme1, theme2 } }),
 			);
 
 			// Hide the Lottie container initially
@@ -568,7 +568,7 @@ function main() {
 					// mark transition finished and notify listeners before calling navigation callback
 					aethos.transition.isActive = false;
 					document.dispatchEvent(
-						new CustomEvent("aethos:transitionEnd", { detail: { theme1, theme2 } })
+						new CustomEvent("aethos:transitionEnd", { detail: { theme1, theme2 } }),
 					);
 					aethos.log("Transition complete.");
 					onComplete();
@@ -589,7 +589,7 @@ function main() {
 					onStart: () => aethos.log("Lottie animation started."),
 					onComplete: () => aethos.log("Lottie animation completed."),
 				},
-				0.6
+				0.6,
 			);
 
 			tl.fromTo(
@@ -599,7 +599,7 @@ function main() {
 					backgroundColor: aethos.transition.themes[theme2].background,
 					duration: 1,
 				},
-				1.6
+				1.6,
 			);
 
 			tl.set(
@@ -607,7 +607,7 @@ function main() {
 				{
 					display: "block",
 				},
-				0.1
+				0.1,
 			);
 
 			// Play the timeline
@@ -805,17 +805,17 @@ function main() {
 			tl.to(
 				".site-loader_img-clip.left, .site-loader_img-clip.right",
 				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
-				4.05
+				4.05,
 			);
 			tl.to(
 				".site-loader_img-clip.bottom",
 				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
-				4.05
+				4.05,
 			);
 			tl.to(
 				".site-loader_img-clip.top",
 				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
-				4.05
+				4.05,
 			);
 
 			// delete clip elements to avoid weirdness on resize
@@ -827,7 +827,7 @@ function main() {
 			tl.to(
 				".site-loader_lottie-spacer",
 				{ height: "100%", duration: 2, ease: "power4.inOut" },
-				4.05
+				4.05,
 			);
 
 			// show content
@@ -844,7 +844,7 @@ function main() {
 					duration: 1.5,
 					ease: "power4.inOut",
 				},
-				"<"
+				"<",
 			);
 
 			// shrink lottie to match real logo
@@ -856,7 +856,7 @@ function main() {
 					duration: 1.5,
 					ease: "power4.inOut",
 				},
-				"<"
+				"<",
 			);
 
 			// delete clip elements to avoid weirdness on resize
@@ -1222,7 +1222,7 @@ function main() {
 						duration: 0.8,
 						ease: "power4.out",
 					},
-					1.05
+					1.05,
 				)
 				.set([els.nav, els.bg], { display: "none" }, 1.85);
 		}
@@ -1241,7 +1241,7 @@ function main() {
 					duration: 0.4,
 					ease: "easeInOut",
 				},
-				0
+				0,
 			);
 
 			aethos.nav.timelines.burger.to(
@@ -1251,7 +1251,7 @@ function main() {
 					duration: 0.2,
 					ease: "easeInOut",
 				},
-				0
+				0,
 			); // Fade out slightly earlier
 
 			aethos.nav.timelines.burger.to(
@@ -1262,7 +1262,7 @@ function main() {
 					duration: 0.4,
 					ease: "easeInOut",
 				},
-				0
+				0,
 			);
 		}
 		setUpBurgerTimeline();
@@ -1722,7 +1722,7 @@ function main() {
 				function clonePrimary(primary) {
 					const clone = primary.element.cloneNode(true);
 					const cloneTextEl = clone.querySelector(
-						".dest-nav_link-text:not(.w-condition-invisible)"
+						".dest-nav_link-text:not(.w-condition-invisible)",
 					);
 					cloneTextEl.innerHTML = "All " + cloneTextEl.innerHTML; // append 'All' to clone link text
 					clone.classList.add("is-clone");
@@ -1788,7 +1788,7 @@ function main() {
 			// when dest menu button is clicked, toggle a class on the <body> so we can keep track
 			if (destMenuButton) {
 				destMenuButton.addEventListener("click", () =>
-					document.body.classList.toggle(aethos.helpers.destNavClass)
+					document.body.classList.toggle(aethos.helpers.destNavClass),
 				);
 			}
 		}
@@ -1796,7 +1796,7 @@ function main() {
 		function setupUnderlines() {
 			const menu_top = document.querySelector(topMenu_selector); // top menu
 			const menus_bottom = Array.from(document.querySelectorAll(bottomMenu_selector)).filter(
-				(menu) => menu.querySelector(".dest-nav_item")
+				(menu) => menu.querySelector(".dest-nav_item"),
 			); // all bottom menus that actually have links in
 			const currentPath = window.location.pathname; // current page path
 			let topActiveLink; // active link in top menu
@@ -1812,7 +1812,7 @@ function main() {
 					topMenu_underlineWidthProp,
 					topMenu_underlineOffsetProp,
 					topMenu_listSelector,
-					false
+					false,
 				);
 			} else {
 				// set offset to a reasonable starting pos
@@ -1837,7 +1837,7 @@ function main() {
 						bottomMenu_underlineWidthProp,
 						bottomMenu_underlineOffsetProp,
 						bottomMenu_listSelector,
-						false
+						false,
 					);
 
 					// rehide bottom menu
@@ -1854,7 +1854,7 @@ function main() {
 							topMenu_underlineWidthProp,
 							topMenu_underlineOffsetProp,
 							topMenu_listSelector,
-							false
+							false,
 						);
 					}
 				}
@@ -1915,7 +1915,7 @@ function main() {
 						parent.menu,
 						parent.link,
 						topMenu_underlineWidthProp,
-						topMenu_underlineOffsetProp
+						topMenu_underlineOffsetProp,
 					);
 				}
 			});
@@ -1937,7 +1937,7 @@ function main() {
 						underlineWidthProp,
 						underlineOffsetProp,
 						listClass,
-						false
+						false,
 					);
 				}
 			});
@@ -1949,7 +1949,7 @@ function main() {
 
 		function showSubnavOnHover() {
 			const primaryItems = document.querySelectorAll(
-				".dest-nav_item[aethos-nav-children='true']" // get primary items with children
+				".dest-nav_item[aethos-nav-children='true']", // get primary items with children
 			);
 
 			primaryItems.forEach((primaryItem) => {
@@ -1957,7 +1957,7 @@ function main() {
 
 				// Find the corresponding sub-navigation container
 				const subnav = primaryItem.querySelector(
-					`.dest-nav_child-list[aethos-nav-id="${primaryId}"]`
+					`.dest-nav_child-list[aethos-nav-id="${primaryId}"]`,
 				);
 
 				const subnav_wrapper = primaryItem.querySelector(".dest-nav_bottom");
@@ -1981,7 +1981,7 @@ function main() {
 								autoAlpha: 1,
 								height: "auto",
 								duration: 0.2,
-							}
+							},
 						)
 						.fromTo(
 							subnav.querySelectorAll(".dest-nav_link"),
@@ -1991,7 +1991,7 @@ function main() {
 								duration: 0.15,
 								stagger: 0.075,
 							},
-							0
+							0,
 						);
 
 					return tl;
@@ -2104,7 +2104,7 @@ function main() {
 		// when club menu button is clicked, toggle a class on the <body> so we can keep track
 		if (clubMenuButton) {
 			clubMenuButton.addEventListener("click", () =>
-				document.body.classList.toggle(aethos.helpers.clubNavClass)
+				document.body.classList.toggle(aethos.helpers.clubNavClass),
 			);
 		}
 	};
@@ -2239,7 +2239,7 @@ function main() {
 					duration: 1.5,
 					ease: "power1.inOut",
 				},
-				"<+=0.4"
+				"<+=0.4",
 			);
 
 			tl.from(
@@ -2249,7 +2249,7 @@ function main() {
 					duration: 1,
 					ease: "power1.inOut",
 				},
-				"<+=0.4"
+				"<+=0.4",
 			);
 
 			if (arch_logo) {
@@ -2260,7 +2260,7 @@ function main() {
 						duration: 1,
 						ease: "power1.inOut",
 					},
-					"<+=0.4"
+					"<+=0.4",
 				);
 			}
 		});
@@ -2301,7 +2301,7 @@ function main() {
 					duration: 1.5,
 					ease: "power1.inOut",
 				},
-				"<+=0.4"
+				"<+=0.4",
 			);
 
 			// scale clip path up
@@ -2312,7 +2312,7 @@ function main() {
 					duration: 1,
 					ease: "power1.inOut",
 				},
-				"<+=0.4"
+				"<+=0.4",
 			);
 		});
 	};
@@ -2733,7 +2733,7 @@ function main() {
 
 			const slides = Array.from(mediaList.querySelectorAll(config.slideSelector)).slice(
 				0,
-				config.maxSlides || Infinity
+				config.maxSlides || Infinity,
 			);
 			const slideCount = slides.length;
 
@@ -3223,7 +3223,7 @@ function main() {
 		mm.add(`(min-width: ${aethos.breakpoints.mbl + 1}px)`, () => {
 			// only make sticky on large screens
 			let parents = document.querySelectorAll(
-				".article-grid:not(.w-condition-invisible)" // exclude any sections that are unused/hidden
+				".article-grid:not(.w-condition-invisible)", // exclude any sections that are unused/hidden
 			);
 
 			parents.forEach((parent) => {
@@ -3302,7 +3302,7 @@ function main() {
 		const tileId = aethos.map.tileIds[theme] || aethos.map.tileIds.default;
 		const tileLayer = L.tileLayer(
 			"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
-			{ id: tileId, accessToken: aethos.map.accessToken }
+			{ id: tileId, accessToken: aethos.map.accessToken },
 		);
 
 		// Prepare feature groups
@@ -3396,7 +3396,7 @@ function main() {
 					name: destination.name,
 					slug: destination.slug,
 				}),
-				{ maxWidth: 300 }
+				{ maxWidth: 300 },
 			);
 
 			aethosLayer.addLayer(destination.marker);
@@ -3526,12 +3526,12 @@ function main() {
 			let media = gsap_section(".anim-load-hero_media"); // media element
 			let content_bg = gsap_section(".anim-load-hero_content-bg"); // bg element behind content - already exists on page
 			let section_bg_color = getComputedStyle(document.documentElement).getPropertyValue(
-				"--color--sand--light"
+				"--color--sand--light",
 			);
 
 			if (aethos.settings.theme == "club") {
 				section_bg_color = getComputedStyle(document.documentElement).getPropertyValue(
-					"--color--charcoal--dark"
+					"--color--charcoal--dark",
 				);
 			}
 
@@ -3565,7 +3565,7 @@ function main() {
 						duration: 0.6,
 						ease: "power2.inOut",
 					},
-					"<"
+					"<",
 				);
 			} else {
 				gsap.set(content, { autoAlpha: 1 });
@@ -3823,7 +3823,7 @@ function main() {
 						const [y, m, d] = s.slice(0, 10).split("-").map(Number);
 						const dt = new Date(y, m - 1, d);
 						return dt && dt.getMonth() + 1 === m && dt.getDate() === d ? dt : null;
-				  })()
+					})()
 				: null;
 
 		const root = document.querySelector(selector);
@@ -4129,7 +4129,7 @@ function main() {
 				el.textContent.split(",").forEach((ch) => {
 					const d = extractDate(ch.trim());
 					if (d) unique.add(d);
-				})
+				}),
 			);
 			if (!unique.size) return;
 			const arr = [...unique].sort();
@@ -4166,7 +4166,7 @@ function main() {
 					if (document.querySelector(SEL.DATE)) sendAvailableDates();
 				}, 50);
 			},
-			{ once: true }
+			{ once: true },
 		);
 
 		let firstRenderDone = false;
@@ -4293,7 +4293,7 @@ function main() {
 
 		// 2. Get the hidden .dest-data_item element that has the matching data-dest-slug attribute
 		const destinationElement = document.querySelector(
-			`.dest-data_item[aethos-destination-slug="${destinationName}"]`
+			`.dest-data_item[aethos-destination-slug="${destinationName}"]`,
 		);
 
 		if (!destinationElement) {
@@ -4595,7 +4595,7 @@ function main() {
 			// If element's language doesn't match current site language, translate it
 			if (elementLang !== this.currentLanguage) {
 				aethos.log(
-					`Element out of sync. Element: ${elementLang}, Current: ${this.currentLanguage}. Translating...`
+					`Element out of sync. Element: ${elementLang}, Current: ${this.currentLanguage}. Translating...`,
 				);
 				this.translateElement(elementData, this.currentLanguage);
 			} else {
@@ -4655,7 +4655,7 @@ function main() {
 						if (Array.isArray(response) && response.length > 0) {
 							const translatedText = response[0]; // First (and only) translated string
 							aethos.log(
-								`Translation success: "${sourceText}" -> "${translatedText}" (${targetLang})`
+								`Translation success: "${sourceText}" -> "${translatedText}" (${targetLang})`,
 							);
 							this.updateElementContent(elementData, translatedText, targetLang);
 						}
@@ -4668,7 +4668,7 @@ function main() {
 						) {
 							const translatedText = response.words[0].w;
 							aethos.log(
-								`Translation success (old format): "${sourceText}" -> "${translatedText}" (${targetLang})`
+								`Translation success (old format): "${sourceText}" -> "${translatedText}" (${targetLang})`,
 							);
 							this.updateElementContent(elementData, translatedText, targetLang);
 						}
@@ -4888,6 +4888,219 @@ function main() {
 	};
 
 	/* update things when CMS load fires */
+	aethos.functions.updateDestinationCardFacilityLinks = function (filterInstance, renderedItems) {
+		try {
+			if (!filterInstance) return;
+
+			const debugFacilityLinks =
+				new URLSearchParams(window.location.search).get("debugFacilityLinks") === "1";
+			const debugLog = (...args) => {
+				if (!debugFacilityLinks) return;
+				// eslint-disable-next-line no-console
+				console.log("[facility-link]", ...args);
+			};
+
+			// Safety guard: only run on destinations grid.
+			// This prevents accidental link rewriting on other cmsfilter lists elsewhere on the site.
+			const isWithinDestinationsGrid = (() => {
+				const getFirstRenderedElement = () => {
+					if (!Array.isArray(renderedItems)) return null;
+					for (const it of renderedItems) {
+						const el = it?.element || it?.el || it;
+						if (el && el.nodeType === 1) return el;
+					}
+					return null;
+				};
+
+				const firstEl = getFirstRenderedElement();
+				const firstCard =
+					firstEl?.closest?.(".card-grid_item.w-dyn-item") ||
+					(firstEl?.matches?.(".card-grid_item.w-dyn-item") ? firstEl : null);
+				if (firstCard?.closest?.(".c-destinations-grid")) return true;
+
+				const root =
+					filterInstance.formBlock ||
+					filterInstance.form ||
+					filterInstance.listInstance?.element ||
+					filterInstance.listInstance?.list ||
+					document;
+				const listEl = root?.querySelector?.("[fs-cmsfilter-element='list']") || null;
+				return Boolean(listEl?.closest?.(".c-destinations-grid"));
+			})();
+
+			if (!isWithinDestinationsGrid) {
+				debugLog("skip-non-destinations-grid");
+				return;
+			}
+
+			const normalize = (val) =>
+				String(val || "")
+					.trim()
+					.toLowerCase();
+			const getSingleFacilityValue = () => {
+				const filtersData = filterInstance.filtersData;
+				if (!Array.isArray(filtersData)) return null;
+
+				const facilityData = filtersData.find((fd) => {
+					const keys = Array.isArray(fd?.filterKeys) ? fd.filterKeys : [];
+					const originalKeys = Array.isArray(fd?.originalFilterKeys) ? fd.originalFilterKeys : [];
+					return keys.includes("facility") || originalKeys.includes("facility");
+				});
+				if (!facilityData?.values || !(facilityData.values instanceof Set)) return null;
+				if (facilityData.values.size !== 1) return null;
+				const raw = [...facilityData.values][0];
+				return normalize(raw) || null;
+			};
+
+			const facilityValue = getSingleFacilityValue();
+			debugLog("render", {
+				facilityValue,
+				renderedItemsType: Array.isArray(renderedItems) ? "array" : typeof renderedItems,
+				renderedItemsLength: Array.isArray(renderedItems) ? renderedItems.length : null,
+			});
+
+			const cardItemsFromEvent = Array.isArray(renderedItems)
+				? renderedItems
+						.map((it) => it?.element || it?.el || it)
+						.filter((el) => el && el.nodeType === 1)
+						.map((el) => {
+							if (el.matches?.(".card-grid_item.w-dyn-item")) return el;
+							return el.closest?.(".card-grid_item.w-dyn-item") || null;
+						})
+						.filter(Boolean)
+				: [];
+
+			// DOM fallback only if the event didn't provide items.
+			const cardItemsFromDOM = (() => {
+				if (cardItemsFromEvent.length) return [];
+				const root = filterInstance.formBlock || filterInstance.form || document;
+				const listEl = root.querySelector?.("[fs-cmsfilter-element='list']") || null;
+				debugLog("fallback", {
+					used: true,
+					root: root === document ? "document" : root?.className || root?.tagName,
+					listFound: Boolean(listEl),
+				});
+				if (!listEl) return [];
+				return Array.from(listEl.children).filter(
+					(el) => el.classList?.contains("card-grid_item") && el.classList?.contains("w-dyn-item"),
+				);
+			})();
+
+			const cardItems = (cardItemsFromEvent.length ? cardItemsFromEvent : cardItemsFromDOM).filter(
+				(item, idx, arr) => arr.indexOf(item) === idx,
+			);
+			debugLog("cards", {
+				fromEvent: cardItemsFromEvent.length,
+				fromDOM: cardItemsFromDOM.length,
+				total: cardItems.length,
+			});
+
+			const getRelativeLinkForFacility = (cardItem, facility) => {
+				const candidates = Array.from(
+					cardItem.querySelectorAll('a[data-facility-link][fs-cmsfilter-field="facility"]'),
+				);
+				debugLog("candidates", { count: candidates.length, facility });
+
+				const target = normalize(facility);
+				for (const a of candidates) {
+					const href = a.getAttribute("href") || "";
+					const match = href.match(/\/facilities\/([^/?#]+)/i);
+					if (!match) continue;
+					if (normalize(match[1]) !== target) continue;
+
+					const rel = a.getAttribute("data-facility-link");
+					if (!rel) return null;
+					const relTrim = rel.trim();
+					return relTrim.startsWith("/") ? relTrim : `/${relTrim}`;
+				}
+
+				return null;
+			};
+
+			const joinPaths = (baseHref, relativePath) => {
+				const base = String(baseHref || "");
+				const relTrim = String(relativePath || "").trim();
+				const rel = relTrim.startsWith("/") ? relTrim : `/${relTrim}`;
+
+				try {
+					const u = new URL(base, window.location.origin);
+					const basePath = (u.pathname || "").replace(/\/+$/, "");
+					return `${basePath}${rel}${u.search || ""}${u.hash || ""}`;
+				} catch (e) {
+					const [noHash, hash = ""] = base.split("#");
+					const [noQuery, query = ""] = noHash.split("?");
+					const basePath = String(noQuery || "").replace(/\/+$/, "");
+					const q = query ? `?${query}` : "";
+					const h = hash ? `#${hash}` : "";
+					return `${basePath}${rel}${q}${h}`;
+				}
+			};
+
+			let logged = 0;
+			cardItems.forEach((cardItem) => {
+				const isHidden =
+					cardItem.hidden ||
+					cardItem.getAttribute?.("aria-hidden") === "true" ||
+					cardItem.style?.display === "none";
+				if (isHidden) {
+					if (debugFacilityLinks && logged < 5) {
+						logged++;
+						debugLog("skip-hidden", {
+							tag: cardItem.tagName,
+							className: cardItem.className,
+							isConnected: cardItem.isConnected,
+							inlineDisplay: cardItem.style?.display || "",
+						});
+					}
+					return;
+				}
+
+				const linkCover = cardItem.querySelector("a.link-cover");
+				if (!linkCover) return;
+
+				const currentHref = linkCover.getAttribute("href") || "";
+				if (!linkCover.dataset.aethosOriginalHref && currentHref) {
+					linkCover.dataset.aethosOriginalHref = currentHref;
+				}
+
+				const originalHref = linkCover.dataset.aethosOriginalHref || currentHref;
+				if (!originalHref) return;
+
+				if (debugFacilityLinks && logged < 5) {
+					logged++;
+					debugLog("card", {
+						tag: cardItem.tagName,
+						className: cardItem.className,
+						isConnected: cardItem.isConnected,
+						currentHref,
+						originalHref,
+						facilityValue,
+					});
+				}
+
+				// If there's not exactly one facility active, always restore.
+				if (!facilityValue) {
+					if (currentHref !== originalHref) linkCover.setAttribute("href", originalHref);
+					return;
+				}
+
+				const relative = getRelativeLinkForFacility(cardItem, facilityValue);
+				if (!relative) {
+					debugLog("no-relative", { originalHref, facilityValue });
+					if (currentHref !== originalHref) linkCover.setAttribute("href", originalHref);
+					return;
+				}
+
+				const desiredHref = joinPaths(originalHref, relative);
+				debugLog("set", { desiredHref, relative, originalHref });
+				if (currentHref !== desiredHref) linkCover.setAttribute("href", desiredHref);
+			});
+		} catch (err) {
+			console.error("Failed to update destination card facility links", err);
+		}
+	};
+
+	/* update things when CMS load fires */
 	aethos.functions.handleCMSFilter = function () {
 		window.fsAttributes = window.fsAttributes || [];
 		window.fsAttributes.push([
@@ -4903,10 +5116,11 @@ function main() {
 					// The `renderitems` event runs whenever the list renders items after filtering.
 					filterInstance.listInstance.on("renderitems", (renderedItems) => {
 						aethos.log("CMS filter - render items - add event");
+						aethos.functions.updateDestinationCardFacilityLinks(filterInstance, renderedItems);
 						window.dispatchEvent(
 							new CustomEvent("cmsFilterRendered", {
 								detail: { items: renderedItems },
-							})
+							}),
 						);
 						aethos.helpers.refreshSticky(true); // hard refresh
 					});
@@ -5205,7 +5419,7 @@ function main() {
 								onComplete: () => {
 									ScrollTrigger.refresh();
 								},
-							}
+							},
 						);
 
 						// gsap.fromTo(
@@ -5247,13 +5461,13 @@ function main() {
 			.fromTo(
 				drawerWrap,
 				{ height: 0, opacity: 0 },
-				{ height: "10rem", opacity: 1, duration: 0.4, ease: "quart.inOut" }
+				{ height: "10rem", opacity: 1, duration: 0.4, ease: "quart.inOut" },
 			)
 			.fromTo(
 				closeBtn,
 				{ opacity: 0 },
 				{ opacity: 1, duration: 0.4, ease: "quart.inOut" },
-				"<" // Align with previous animation
+				"<", // Align with previous animation
 			);
 
 		// Event listeners
@@ -5350,7 +5564,7 @@ function main() {
 								isAnimating = false;
 								content.style.height = "auto"; // Reset height to auto after animation
 							},
-						}
+						},
 					);
 				}
 			});
@@ -5394,7 +5608,7 @@ function main() {
 			const clubSelected = !!selectedClub;
 			const otherClubsSelected = Array.from(otherClubsRadio).some((radio) => radio.checked);
 			const otherClubsYes = Array.from(otherClubsRadio).find(
-				(radio) => radio.value === "yes" && radio.checked
+				(radio) => radio.value === "yes" && radio.checked,
 			);
 			const partnerClubsSelected = Array.from(partnerClubsRadio).some((radio) => radio.checked);
 
@@ -5408,7 +5622,7 @@ function main() {
 		// Function to get calc data based on the selected club
 		const getCalcData = (club) => {
 			return Array.from(calcDataElements).find(
-				(el) => el.getAttribute("aethos-calc-name") === club
+				(el) => el.getAttribute("aethos-calc-name") === club,
 			);
 		};
 
@@ -5489,7 +5703,7 @@ function main() {
 						{
 							display: "block",
 							opacity: 1,
-						}
+						},
 					);
 					// partnerClubsRadioFieldset.style.display = "block";
 				}
@@ -5564,7 +5778,7 @@ function main() {
 					underlineWidthProp,
 					underlineOffsetProp,
 					listClass,
-					false // no transition for active link initially
+					false, // no transition for active link initially
 				);
 			} else {
 				// set offset to a reasonable starting pos
@@ -5595,7 +5809,7 @@ function main() {
 						underlineWidthProp,
 						underlineOffsetProp,
 						listClass,
-						false
+						false,
 					);
 				}
 			});
@@ -5685,7 +5899,7 @@ function main() {
 					aethos.log("Refreshing ScrollTrigger");
 					ScrollTrigger.refresh();
 				});
-			}, 500) // Adjust the debounce delay as necessary
+			}, 500), // Adjust the debounce delay as necessary
 		);
 
 		// Function to enable or disable the observer based on viewport size
@@ -5792,7 +6006,7 @@ function main() {
 					// Include any additional segments if present.
 					const extra = parts.slice(2).join("/");
 					normalizedLinkPath = normalizePath(
-						`/destinations/${destination}/${subpage}${extra ? "/" + extra : ""}`
+						`/destinations/${destination}/${subpage}${extra ? "/" + extra : ""}`,
 					);
 				}
 			}
@@ -5818,7 +6032,7 @@ function main() {
 		underlineWidthProp,
 		underlineOffsetProp,
 		listClass = "", // class of the list element, needed to disable transitioning
-		withTransition = true // if false, we don't transition
+		withTransition = true, // if false, we don't transition
 	) {
 		const menuRect = menu.getBoundingClientRect();
 		const targetRect = target.getBoundingClientRect();
@@ -5890,7 +6104,7 @@ function main() {
 							},
 							function (distributor) {
 								distributor.open();
-							}
+							},
 						);
 					}
 				});
@@ -5989,7 +6203,7 @@ function main() {
 		function updateProp() {
 			document.documentElement.style.setProperty(
 				"--scrollbar-width",
-				window.innerWidth - document.documentElement.offsetWidth + "px"
+				window.innerWidth - document.documentElement.offsetWidth + "px",
 			);
 			// console.log(getComputedStyle(document.documentElement).getPropertyValue("--scrollbar-width"));
 		}
@@ -6369,7 +6583,7 @@ function main() {
 							res();
 						}
 					});
-				})
+				}),
 			);
 		}
 
