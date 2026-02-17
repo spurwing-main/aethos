@@ -6227,6 +6227,7 @@ function main() {
 		const urlParams = new URLSearchParams(window.location.search);
 		const requestedPopupId = (urlParams.get("popup-id") || "").trim();
 		const popupsMode = (urlParams.get("popups") || "").trim().toLowerCase();
+		const sessionKey = "aethos_promopops_shown";
 
 		// Fallback suppression: cross-tab, short-lived TTL in case query params get stripped
 		// (e.g. redirects, client-side URL rewriting, or platform canonicalization)
@@ -6287,6 +6288,24 @@ function main() {
 			}
 		}
 
+		function importShownCacheIntoSession() {
+			const cachedId = consumeShownCacheId();
+			if (!cachedId) return;
+			try {
+				let shown = JSON.parse(sessionStorage.getItem(sessionKey)) || [];
+				if (!Array.isArray(shown)) shown = [];
+				if (shown.includes(cachedId)) return;
+				shown.push(cachedId);
+				sessionStorage.setItem(sessionKey, JSON.stringify(shown));
+				aethos.log("[PromoPop] imported shown-cache id into session: " + cachedId);
+			} catch {
+				// ignore
+			}
+		}
+
+		// Important: consume/import shown-cache before any early-return suppression.
+		importShownCacheIntoSession();
+
 		if ((popupsMode === "suppressed" || isSuppressedByTTL) && !requestedPopupId) {
 			aethos.log("[PromoPop] skipped (popups=suppressed)");
 			return;
@@ -6303,7 +6322,6 @@ function main() {
 		const bg = holder.querySelector(".promopop-holder_bg");
 		const bg_blur = holder.querySelector(".promopop-holder_bg-blur");
 		const bg_color = holder.querySelector(".promopop-holder_bg-color");
-		const sessionKey = "aethos_promopops_shown";
 
 		// push events to GTM dataLayer
 		function trackPopup(eventName, data = {}) {
@@ -6386,7 +6404,9 @@ function main() {
 				if (!Array.isArray(shown)) shown = [];
 
 				const cachedId = consumeShownCacheId();
+				aethos.log("Cached popup id from localStorage:", cachedId);
 				if (cachedId && !shown.includes(cachedId)) {
+					aethos.log("Importing cached popup id into sessionStorage:", cachedId);
 					shown.push(cachedId);
 					sessionStorage.setItem(sessionKey, JSON.stringify(shown));
 					aethos.log("[PromoPop] imported shown-cache id into session: " + cachedId);
