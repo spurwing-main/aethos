@@ -6224,6 +6224,9 @@ function main() {
 
 		aethos.log("[PromoPop] initializing...");
 
+		const urlParams = new URLSearchParams(window.location.search);
+		const requestedPopupId = (urlParams.get("popup-id") || "").trim();
+
 		const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 		const holder = document.querySelector(".promopop-holder");
@@ -6290,11 +6293,22 @@ function main() {
 			}
 		}
 
-		function markAsShown(slug) {
+		function markAsShown(id) {
 			const shown = getShownPopups();
-			shown.push(slug);
+			shown.push(id);
 			sessionStorage.setItem(sessionKey, JSON.stringify(shown));
-			aethos.log("[PromoPop] marked as shown: " + slug);
+			aethos.log("[PromoPop] marked as shown: " + id);
+		}
+
+		function isHiddenPopupItem(item) {
+			if (!item) return false;
+			if (!item.hasAttribute("data-promopop-hide")) return false;
+			const raw = item.getAttribute("data-promopop-hide");
+			// Attribute present with no value counts as true
+			if (raw === null || raw === "") return true;
+			const v = String(raw).trim().toLowerCase();
+			if (v === "0" || v === "false" || v === "no" || v === "off") return false;
+			return true;
 		}
 
 		// Helper: normalize a path (strip query/hash, trim trailing slash except root)
@@ -6352,7 +6366,7 @@ function main() {
 		// ---------------------------------------------------------
 		// FILTER POPUPS BASED ON PAGE CONTEXT
 		// ---------------------------------------------------------
-		function getEligiblePopups() {
+		function getEligiblePopups({ includeHidden = false, onlyId = "" } = {}) {
 			const items = [...document.querySelectorAll(".promopop-data_item")];
 			if (!items.length) return [];
 
@@ -6364,9 +6378,12 @@ function main() {
 			const currentPath = normalizePath(window.location.pathname);
 
 			return items.filter((item) => {
+				const id = (item.dataset.promopopId || "").trim();
+				if (onlyId && id !== onlyId) return false;
+				if (!includeHidden && isHiddenPopupItem(item)) return false;
+
 				// 3a: allowed-pages parsing
 				const allowedAttr = item.dataset.promopopAllowedPages || "";
-				console.log("allowedAttr:", allowedAttr);
 				const allowedPages = parseAllowedPages(allowedAttr);
 
 				// 3b/4: If allowedPages is non-empty, use it exclusively
@@ -6399,9 +6416,9 @@ function main() {
 		// ---------------------------------------------------------
 		// LOAD POPUP HTML
 		// ---------------------------------------------------------
-		async function fetchPopupHTML(slug) {
+		async function fetchPopupHTML(id) {
 			try {
-				const res = await fetch(`/pop-ups/${slug}`);
+				const res = await fetch(`/pop-ups/${id}`);
 				if (!res.ok) throw new Error("Failed to fetch popup");
 				const html = await res.text();
 
@@ -6427,7 +6444,7 @@ function main() {
 		// ---------------------------------------------------------
 		// OPEN / CLOSE
 		// ---------------------------------------------------------
-		function openPopup(popupEl, slug) {
+		function openPopup(popupEl, id) {
 			holder.appendChild(popupEl);
 
 			popupEl.addEventListener("click", (e) => {
@@ -6445,7 +6462,7 @@ function main() {
 
 				// Push event to GTM
 				trackPopup("promopop_cta_click", {
-					popup_slug: slug,
+					popup_id: id,
 					cta_href: href,
 					cta_label: label,
 				});
@@ -6466,28 +6483,28 @@ function main() {
 
 			document.documentElement.classList.add("promopop-open");
 
-			const close = () => closePopup(slug);
+			const close = () => closePopup(id);
 
 			bg.addEventListener("click", close, { once: true });
 			if (closeBtn) closeBtn.addEventListener("click", close, { once: true });
 
-			aethos.log("[PromoPop] opened:" + slug);
+			aethos.log("[PromoPop] opened:" + id);
 
 			// push event to GTM
 			trackPopup("promopop_shown", {
-				popup_slug: slug,
+				popup_id: id,
 				popup_name: popupEl.dataset.promopopName || null,
 				popup_type: popupEl.dataset.promopopType || null,
 			});
 		}
 
-		function closePopup(slug) {
+		function closePopup(id) {
 			const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 			document.documentElement.classList.remove("promopop-open");
 
 			trackPopup("promopop_closed", {
-				popup_slug: slug,
+				popup_id: id,
 			});
 
 			gsap.to(holder, {
@@ -6503,7 +6520,7 @@ function main() {
 						aethos.helpers.pauseScroll(false);
 					}
 
-					markAsShown(slug);
+					markAsShown(id);
 					holder.innerHTML = "";
 
 					requestAnimationFrame(() => {
@@ -6519,6 +6536,43 @@ function main() {
 		async function init() {
 			aethos.log("[PromoPop] init");
 
+			async function showPopupById(id) {
+				aethos.log("[PromoPop] Showing promopop:" + id);
+
+				const popupEl = await fetchPopupHTML(id);
+				if (!popupEl) return;
+
+				aethos.log("[PromoPop] Fetched promopop element");
+
+				// ensure all popup links open in new tabs
+				makePopupLinksExternal(popupEl);
+
+				// wait for images in the popup
+				await imagesLoaded(popupEl);
+
+				aethos.log("[PromoPop] Images loaded, opening promopop");
+
+				// Show after delay
+				setTimeout(() => {
+					openPopup(popupEl, id);
+				}, 2500);
+			}
+
+			// If popup-id is specified, try ONLY that popup (no fallback)
+			if (requestedPopupId) {
+				aethos.log("[PromoPop] popup-id requested: " + requestedPopupId);
+				const eligibleRequested = getEligiblePopups({
+					includeHidden: true,
+					onlyId: requestedPopupId,
+				});
+				if (!eligibleRequested.length) {
+					aethos.log("[PromoPop] popup-id not eligible on this page: " + requestedPopupId);
+					return;
+				}
+				await showPopupById(requestedPopupId);
+				return;
+			}
+
 			const eligible = getEligiblePopups();
 			if (!eligible.length) return;
 			aethos.log("[PromoPop] eligible popups found");
@@ -6527,36 +6581,18 @@ function main() {
 
 			// remove already-shown popups
 			const remaining = eligible.filter((item) => {
-				const slug = item.dataset.promopopSlug;
-				return slug && !shown.includes(slug);
+				const id = item.dataset.promopopId;
+				return id && !shown.includes(id);
 			});
 
 			if (!remaining.length) return;
 
 			// pick random
 			const choice = remaining[Math.floor(Math.random() * remaining.length)];
-			const slug = choice.dataset.promopopSlug;
-			if (!slug) return;
+			const id = (choice?.dataset?.promopopId || "").trim();
+			if (!id) return;
 
-			aethos.log("[PromoPop] Showing promopop:" + slug);
-
-			const popupEl = await fetchPopupHTML(slug);
-			if (!popupEl) return;
-
-			aethos.log("[PromoPop] Fetched promopop element");
-
-			// ensure all popup links open in new tabs
-			makePopupLinksExternal(popupEl);
-
-			// wait for images in the popup
-			await imagesLoaded(popupEl);
-
-			aethos.log("[PromoPop] Images loaded, opening promopop");
-
-			// Show after delay
-			setTimeout(() => {
-				openPopup(popupEl, slug);
-			}, 2500);
+			await showPopupById(id);
 		}
 
 		// util: wait for images to load
