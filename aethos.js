@@ -6304,8 +6304,8 @@ function main() {
 			if (!item) return false;
 			if (!item.hasAttribute("data-promopop-hide")) return false;
 			const raw = item.getAttribute("data-promopop-hide");
-			// Attribute present with no value counts as true
-			if (raw === null || raw === "") return true;
+			// Attribute present with no value counts as false
+			if (raw === null || raw === "") return false;
 			const v = String(raw).trim().toLowerCase();
 			if (v === "0" || v === "false" || v === "no" || v === "off") return false;
 			return true;
