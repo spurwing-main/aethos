@@ -6226,6 +6226,11 @@ function main() {
 
 		const urlParams = new URLSearchParams(window.location.search);
 		const requestedPopupId = (urlParams.get("popup-id") || "").trim();
+		const popupsMode = (urlParams.get("popups") || "").trim().toLowerCase();
+		if (popupsMode === "suppressed" && !requestedPopupId) {
+			aethos.log("[PromoPop] skipped (popups=suppressed)");
+			return;
+		}
 
 		const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -6248,6 +6253,37 @@ function main() {
 				...data,
 			});
 			aethos.log(`[PromoPop] tracking: ${eventName}`, "info");
+		}
+
+		function withPopupsSuppressed(href) {
+			const raw = (href || "").trim();
+			if (!raw) return href;
+
+			// Don’t touch non-navigational / special protocols
+			if (
+				raw.startsWith("#") ||
+				/^mailto:/i.test(raw) ||
+				/^tel:/i.test(raw) ||
+				/^javascript:/i.test(raw)
+			) {
+				return href;
+			}
+
+			let u;
+			try {
+				u = new URL(raw, window.location.origin);
+			} catch {
+				return href;
+			}
+
+			// Only mutate same-site URLs
+			if (u.origin !== window.location.origin) return href;
+
+			u.searchParams.set("popups", "suppressed");
+
+			// Preserve absolute vs relative style
+			if (/^https?:\/\//i.test(raw)) return u.href;
+			return `${u.pathname}${u.search}${u.hash}`;
 		}
 
 		// Wait for loader or page transition to finish (use flags/events set by loader & pageTransition)
@@ -6438,6 +6474,10 @@ function main() {
 			links.forEach((link) => {
 				link.setAttribute("target", "_blank");
 				link.setAttribute("rel", "noopener");
+
+				const oldHref = link.getAttribute("href");
+				const newHref = withPopupsSuppressed(oldHref);
+				if (newHref && newHref !== oldHref) link.setAttribute("href", newHref);
 			});
 		}
 
