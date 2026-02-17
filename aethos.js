@@ -6231,6 +6231,8 @@ function main() {
 		// Fallback suppression: cross-tab, short-lived TTL in case query params get stripped
 		// (e.g. redirects, client-side URL rewriting, or platform canonicalization)
 		const suppressKey = "aethos_promopop_suppress_until";
+		const shownCacheKey = "aethos_promopop_shown_cache";
+		const shownCacheTtlMs = 30000;
 		let isSuppressedByTTL = false;
 		try {
 			const untilRaw = localStorage.getItem(suppressKey);
@@ -6240,6 +6242,49 @@ function main() {
 			}
 		} catch {
 			// ignore
+		}
+
+		let shownCacheChecked = false;
+		function consumeShownCacheId() {
+			// One-time: read a popup id from localStorage and clear it.
+			// Used to mark the popup as shown in a newly opened tab (sessionStorage is per-tab).
+			if (shownCacheChecked) return "";
+			shownCacheChecked = true;
+
+			try {
+				const raw = localStorage.getItem(shownCacheKey);
+				if (!raw) return "";
+
+				let id = "";
+				let until = 0;
+
+				console.log("Raw shown cache data:", raw);
+
+				try {
+					const parsed = JSON.parse(raw);
+					if (parsed && typeof parsed === "object") {
+						id = typeof parsed.id === "string" ? parsed.id.trim() : "";
+						until =
+							typeof parsed.until === "number" ? parsed.until : parseInt(parsed.until, 10) || 0;
+					}
+				} catch {
+					// Backward-compatible: allow raw string id
+					id = String(raw || "").trim();
+					until = Date.now() + shownCacheTtlMs;
+				}
+
+				// always clear to avoid leaking state across unrelated navigations
+				localStorage.removeItem(shownCacheKey);
+
+				if (!id) return "";
+				if (!Number.isFinite(until) || until <= Date.now()) {
+					console.log("Shown cache id expired:", id);
+					return "";
+				}
+				return id;
+			} catch {
+				return "";
+			}
 		}
 
 		if ((popupsMode === "suppressed" || isSuppressedByTTL) && !requestedPopupId) {
@@ -6337,7 +6382,17 @@ function main() {
 
 		function getShownPopups() {
 			try {
-				return JSON.parse(sessionStorage.getItem(sessionKey)) || [];
+				let shown = JSON.parse(sessionStorage.getItem(sessionKey)) || [];
+				if (!Array.isArray(shown)) shown = [];
+
+				const cachedId = consumeShownCacheId();
+				if (cachedId && !shown.includes(cachedId)) {
+					shown.push(cachedId);
+					sessionStorage.setItem(sessionKey, JSON.stringify(shown));
+					aethos.log("[PromoPop] imported shown-cache id into session: " + cachedId);
+				}
+
+				return shown;
 			} catch {
 				aethos.log("[PromoPop] failed to parse shown popups from sessionStorage");
 				return [];
@@ -6348,6 +6403,7 @@ function main() {
 			const shown = getShownPopups();
 			shown.push(id);
 			sessionStorage.setItem(sessionKey, JSON.stringify(shown));
+
 			aethos.log("[PromoPop] marked as shown: " + id);
 		}
 
@@ -6516,6 +6572,10 @@ function main() {
 				// This covers cases where query params are removed between click and promopop init.
 				try {
 					localStorage.setItem(suppressKey, String(Date.now() + 15000));
+					localStorage.setItem(
+						shownCacheKey,
+						JSON.stringify({ id, until: Date.now() + shownCacheTtlMs }),
+					);
 				} catch {
 					// ignore
 				}
