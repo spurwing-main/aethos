@@ -6227,7 +6227,22 @@ function main() {
 		const urlParams = new URLSearchParams(window.location.search);
 		const requestedPopupId = (urlParams.get("popup-id") || "").trim();
 		const popupsMode = (urlParams.get("popups") || "").trim().toLowerCase();
-		if (popupsMode === "suppressed" && !requestedPopupId) {
+
+		// Fallback suppression: cross-tab, short-lived TTL in case query params get stripped
+		// (e.g. redirects, client-side URL rewriting, or platform canonicalization)
+		const suppressKey = "aethos_promopop_suppress_until";
+		let isSuppressedByTTL = false;
+		try {
+			const untilRaw = localStorage.getItem(suppressKey);
+			const until = untilRaw ? parseInt(untilRaw, 10) : 0;
+			if (Number.isFinite(until) && until > Date.now()) {
+				isSuppressedByTTL = true;
+			}
+		} catch {
+			// ignore
+		}
+
+		if ((popupsMode === "suppressed" || isSuppressedByTTL) && !requestedPopupId) {
 			aethos.log("[PromoPop] skipped (popups=suppressed)");
 			return;
 		}
@@ -6470,14 +6485,19 @@ function main() {
 
 		// Update links
 		function makePopupLinksExternal(popupEl) {
-			const links = popupEl.querySelectorAll("a[href]");
-			links.forEach((link) => {
-				link.setAttribute("target", "_blank");
-				link.setAttribute("rel", "noopener");
+			// Webflow buttons sometimes store href on nested elements; rewrite all likely targets.
+			const hrefEls = popupEl.querySelectorAll(
+				"a[href], .button[href], .button_link[href], [data-promopop-cta][href]",
+			);
+			hrefEls.forEach((el) => {
+				if (el.tagName === "A") {
+					el.setAttribute("target", "_blank");
+					el.setAttribute("rel", "noopener");
+				}
 
-				const oldHref = link.getAttribute("href");
+				const oldHref = el.getAttribute("href");
 				const newHref = withPopupsSuppressed(oldHref);
-				if (newHref && newHref !== oldHref) link.setAttribute("href", newHref);
+				if (newHref && newHref !== oldHref) el.setAttribute("href", newHref);
 			});
 		}
 
@@ -6491,6 +6511,14 @@ function main() {
 				// Find the closest .button element
 				const btn = e.target.closest(".button");
 				if (!btn) return;
+
+				// Cross-tab suppression fallback: set a short TTL before navigation happens.
+				// This covers cases where query params are removed between click and promopop init.
+				try {
+					localStorage.setItem(suppressKey, String(Date.now() + 15000));
+				} catch {
+					// ignore
+				}
 
 				// Extract href from .button_link inside the button
 				const linkEl = btn.querySelector(".button_link");
@@ -6621,13 +6649,18 @@ function main() {
 
 			const shown = getShownPopups();
 
+			console.log("Already shown popups in this session:", shown);
+
 			// remove already-shown popups
 			const remaining = eligible.filter((item) => {
 				const id = item.dataset.promopopId;
 				return id && !shown.includes(id);
 			});
 
-			if (!remaining.length) return;
+			if (!remaining.length) {
+				aethos.log("[PromoPop] no remaining eligible popups to show");
+				return;
+			}
 
 			// pick random
 			const choice = remaining[Math.floor(Math.random() * remaining.length)];
