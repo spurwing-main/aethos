@@ -6468,6 +6468,8 @@ function main() {
 				});
 
 				aethos.log(`[PromoPop] CTA clicked: ${label} (${href})`, "info");
+
+				closePopup(id);
 			});
 
 			const closeBtn = popupEl.querySelector(".promopop_close");

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === CONFIGURATION ===
-BASE_URL = "https://api.letsway.com/v1/listings?limit=500"
+BASE_URL = "https://api.letsway.com/v2/listings?limit=500"
 
 # Toggle: Set to True to test only first brand, False to test all brands
 TEST_SINGLE_BRAND = False
@@ -85,7 +85,7 @@ def hash_response(json_data):
     return hashlib.sha256(normalized.encode()).hexdigest()
 
 
-def save_response(brand, run_number, data, status_code):
+def save_response(brand, run_number, data, status_code, cover_summary=None):
     """Save the API response to a JSON file."""
     # Create output directory if it doesn't exist
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -106,6 +106,7 @@ def save_response(brand, run_number, data, status_code):
         "status_code": status_code,
         "data": data if status_code == 200 else None,
         "error": data if status_code != 200 else None,
+        "cover_resolution_summary": cover_summary,
     }
 
     try:
@@ -114,6 +115,65 @@ def save_response(brand, run_number, data, status_code):
         print(f"  💾 Saved to: {filepath}")
     except Exception as e:
         print(f"  ❌ Failed to save file: {e}")
+
+
+def summarize_cover_resolutions(items):
+    """Summarize cover image resolution availability across listings."""
+    summary = {
+        "total_items": len(items),
+        "missing_cover": [],
+        "missing_720": [],
+        "missing_1080": [],
+    }
+
+    for item in items:
+        title = item.get("title") or item.get("id") or "Untitled listing"
+        cover_links = (item.get("coverMedia") or {}).get("links") or []
+
+        if not cover_links:
+            summary["missing_cover"].append(title)
+            summary["missing_720"].append(title)
+            summary["missing_1080"].append(title)
+            continue
+
+        resolutions = {
+            link.get("resolution")
+            for link in cover_links
+            if link.get("type") == "image" and link.get("resolution")
+        }
+
+        if "720" not in resolutions:
+            summary["missing_720"].append(title)
+        if "1080" not in resolutions:
+            summary["missing_1080"].append(title)
+
+    summary["all_have_cover"] = not summary["missing_cover"] and summary["total_items"] > 0
+    summary["all_have_720"] = not summary["missing_720"] and summary["total_items"] > 0
+    summary["all_have_1080"] = not summary["missing_1080"] and summary["total_items"] > 0
+
+    return summary
+
+
+def log_cover_summary(summary):
+    """Print a concise summary of cover image resolutions."""
+
+    def line(label, missing_list):
+        total = summary["total_items"]
+        if total == 0:
+            return f"  {label}: no items"
+        if not missing_list:
+            return f"  {label}: ✅ {total}/{total} listings have it"
+        preview = ", ".join(missing_list[:5])
+        suffix = "…" if len(missing_list) > 5 else ""
+        return f"  {label}: ⚠️ missing {len(missing_list)} (e.g. {preview}{suffix})"
+
+    print("  Cover images:")
+    if summary["missing_cover"]:
+        print(line("cover", summary["missing_cover"]))
+    else:
+        print("  cover: ✅ present for all listings")
+    print(line("1080 resolution", summary["missing_1080"]))
+    print(line("720 resolution", summary["missing_720"]))
 
 
 def main():
@@ -145,12 +205,14 @@ def main():
                     actual_items = len(data.get("items", []))
                     # Get the API's reported total
                     reported_total = data.get("meta", {}).get("totalItems", "unknown")
+                    cover_summary = summarize_cover_resolutions(data.get("items", []))
 
                     print(
                         f"Run {i+1}: {resp.status_code} - {actual_items} items returned of total {reported_total} items"
                     )
                     print(f"  → hash: {digest[:12]}…")
-                    save_response(brand, i + 1, data, resp.status_code)
+                    log_cover_summary(cover_summary)
+                    save_response(brand, i + 1, data, resp.status_code, cover_summary)
                 else:
                     error_data = resp.text
                     print(f"Run {i+1}: {resp.status_code}")
