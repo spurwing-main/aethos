@@ -261,6 +261,26 @@ function main() {
 		}
 	};
 
+	/* helper: determine whether the site loader should run (no side effects) */
+	aethos.helpers.shouldRunSiteLoader = function ({ loaderEl } = {}) {
+		const loader = loaderEl || document.querySelector(".site-loader");
+		if (!loader) return false;
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const forceLoader = urlParams.has("forceLoader");
+		const suppressLoader = urlParams.has("suppressLoader");
+
+		const siteLoaderEnabled = aethos?.settings?.siteLoader === "enabled";
+
+		const lastVisit = localStorage.getItem("aethos_last_visit");
+		const lastVisitMs = lastVisit ? Number.parseInt(lastVisit, 10) : NaN;
+		const hasRecentVisit =
+			Number.isFinite(lastVisitMs) && Date.now() - lastVisitMs < 30 * 60 * 1000; // 30 minutes in ms
+
+		if (!forceLoader && (suppressLoader || !siteLoaderEnabled || hasRecentVisit)) return false;
+		return true;
+	};
+
 	/******/
 	/*** GSAP INIT ***/
 	/******/
@@ -363,6 +383,47 @@ function main() {
 			autoplay: false,
 			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67508beb66c783b283415ad0_page-transition-logo-v3.json",
 		});
+
+		// -------------------------------------------------
+		// Page transition versioning (v1/v2)
+		// v2 is enabled by query param and persisted in sessionStorage
+		// so subsequent navigations in the same tab/session stay in v2.
+		// -------------------------------------------------
+		const transitionVersionSessionKey = "aethos_page_transition_version";
+
+		function normalizePageTransitionVersion(version) {
+			if (version == null) return "v1";
+			const normalized = String(version).trim().toLowerCase();
+			if (normalized === "v2") return "v2";
+			return "v1";
+		}
+
+		function getActivePageTransitionVersion() {
+			// v2 is enabled by `?pageTransition=v2` and persisted for this tab/session.
+			const versionParam =
+				(typeof getParam === "function" && getParam("pageTransition")) || undefined;
+
+			if (versionParam != null) {
+				const normalized = normalizePageTransitionVersion(versionParam);
+				try {
+					sessionStorage.setItem(transitionVersionSessionKey, normalized);
+				} catch {
+					// ignore
+				}
+				return normalized;
+			}
+
+			try {
+				return normalizePageTransitionVersion(
+					sessionStorage.getItem(transitionVersionSessionKey) || "v1",
+				);
+			} catch {
+				return "v1";
+			}
+		}
+
+		aethos.transition.version = getActivePageTransitionVersion();
+		aethos.log("Page transition version:", aethos.transition.version);
 
 		// Keep track of prefetched links
 		const prefetchedLinks = new Set();
@@ -547,6 +608,9 @@ function main() {
 		}
 
 		function startLottieAnimation(theme1, theme2, onComplete) {
+			const version = aethos?.transition?.version || "v1";
+			const isV2 = version === "v2";
+
 			// hide HC. It will be shown by default on new page load
 			aethos.functions.showHC(false);
 
@@ -577,11 +641,22 @@ function main() {
 
 			// Play the Lottie animation
 			let playhead = { frame: 0 };
+			const fullEndFrame = Math.max(1, aethos.transition.lottie.totalFrames - 1);
+			// v2 plays only the first half of the Lottie (skip second half)
+			const v2CutoffRatio = 0.5;
+			const endFrame = isV2 ? Math.max(1, Math.floor(fullEndFrame * v2CutoffRatio)) : fullEndFrame;
+			const fullDuration = 3.16;
+			// keep animation speed consistent by scaling duration to the frame range
+			const lottieDuration = fullDuration * (endFrame / fullEndFrame);
+			const lottieStartAt = 0.6;
+			// v1 starts background morph at 1.6s; scale this offset for v2
+			const bgMorphStartAt = lottieStartAt + (1.6 - lottieStartAt) * (endFrame / fullEndFrame);
+
 			tl.to(
 				playhead,
 				{
-					frame: aethos.transition.lottie.totalFrames - 1,
-					duration: 3.16,
+					frame: endFrame,
+					duration: lottieDuration,
 					ease: "none",
 					onUpdate: () => {
 						aethos.transition.lottie.goToAndStop(playhead.frame, true);
@@ -589,7 +664,7 @@ function main() {
 					onStart: () => aethos.log("Lottie animation started."),
 					onComplete: () => aethos.log("Lottie animation completed."),
 				},
-				0.6,
+				lottieStartAt,
 			);
 
 			tl.fromTo(
@@ -599,7 +674,7 @@ function main() {
 					backgroundColor: aethos.transition.themes[theme2].background,
 					duration: 1,
 				},
-				1.6,
+				bgMorphStartAt,
 			);
 
 			tl.set(
@@ -673,39 +748,48 @@ function main() {
 		aethos.loader = aethos.loader || {};
 		aethos.loader.isActive = false;
 
-		// Check if loader is enabled, if this is the user's first visit in 30 days,
-		// or if a specific URL parameter forces the loader.
-		const urlParams = new URLSearchParams(window.location.search);
-		const forceLoader = urlParams.has("forceLoader");
-		const suppressLoader = urlParams.has("suppressLoader");
+		function normalizeSiteLoaderVersion(version) {
+			if (version == null) return "v1";
+			if (typeof version === "number") return version === 2 ? "v2" : "v1";
+			const normalized = String(version).trim().toLowerCase();
+			if (normalized === "2" || normalized === "v2" || normalized === "version2") return "v2";
+			return "v1";
+		}
+
+		function getActiveSiteLoaderVersion() {
+			// allow URL param override for client testing
+			const versionParam =
+				(typeof getParam === "function" &&
+					(getParam("siteLoaderVersion") || getParam("loaderVersion"))) ||
+				undefined;
+			return normalizeSiteLoaderVersion(versionParam);
+		}
 
 		let loader = document.querySelector(".site-loader");
 		if (!loader) {
 			return;
 		}
 
-		// Check last visit time (30-minute window)
-		function hasRecentVisit() {
-			const lastVisit = localStorage.getItem("aethos_last_visit");
-			if (!lastVisit) return false;
-			return Date.now() - parseInt(lastVisit, 10) < 30 * 60 * 1000; // 30 minutes in ms
-		}
-
-		if (
-			!forceLoader &&
-			(suppressLoader || aethos.settings.siteLoader !== "enabled" || hasRecentVisit())
-		) {
+		if (!aethos.helpers.shouldRunSiteLoader({ loaderEl: loader })) {
 			aethos.log("Page loader not running");
 			// Store current visit time
 			localStorage.setItem("aethos_last_visit", Date.now().toString());
-			gsap.to(loader, { autoAlpha: 0, duration: 0.4, delay: 0.2 });
+			/* if the hero has a video (which we determine by the presence of a vimeo id), make the loader delay a bit to allow the video to load and avoid flash of unstyled content */
+			const heroVideo = document.querySelector(
+				".section-hero-home [aethos-vimeo-id]:not([aethos-vimeo-id=''])",
+			);
+			if (heroVideo) {
+				gsap.to(loader, { autoAlpha: 0, duration: 0.6, delay: 1 });
+			} else {
+				gsap.to(loader, { autoAlpha: 0, duration: 0.6, delay: 0.2 });
+			}
 			// var tl_hide = gsap.timeline();
 			// tl_hide.to(loader, { autoAlpha: 0, duration: 0.3 });
 			// tl_hide.set(loader, { display: "none" });
 			return;
 		}
 
-		aethos.log("Page loader running");
+		// version-specific logs happen below
 
 		// mark loader active and notify listeners
 		aethos.loader.isActive = true;
@@ -756,115 +840,225 @@ function main() {
 			path: "https://cdn.prod.website-files.com/668fecec73afd3045d3dc567/67a389b78b1e2fe99b624193_aethoslogo_Siteloader_v4.json",
 		});
 
-		gsap.set(loader, { display: "flex" }); // show loader
-		gsap.set(".header-bar", { y: "-100%" }); // hide header buttons offscreen at first
-		gsap.set(".site-loader_lottie-spacer", { height: 0 }); // this is spacer that pushes logo up. At first it occupies no space, then later we will animate its height to push logo up
-		gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
-		gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
-		gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
-		gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
+		const activeVersion = getActiveSiteLoaderVersion();
 
-		// when lottie loads
-		loader_lottie.addEventListener("DOMLoaded", () => {
-			// Calculate clip block sizes
-			let lottie_rect = lottie_container.getBoundingClientRect();
-			const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
-			let lottie_w = lottie_rect.height / logoRatio;
-			let screen_w = window.innerWidth;
-			let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
-			gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
-				width: clip_w + "%",
+		function runLoaderV1() {
+			gsap.set(loader, { display: "flex" }); // show loader
+			gsap.set(".header-bar", { y: "-100%" }); // hide header buttons offscreen at first
+			gsap.set(".site-loader_lottie-spacer", { height: 0 }); // pushes logo up later
+			gsap.set(".section-hero-home", { autoAlpha: 0 }); // hide hero at first
+			gsap.set(".hero-home_content", { autoAlpha: 0 }); // hide hero content at first
+			gsap.set(".hero-home_media-wrap", { scale: 0.75 }); // hero img starts off smaller
+			gsap.set(header_logo, { opacity: 0 }); // hide actual header logo at first
+
+			// when lottie loads
+			loader_lottie.addEventListener("DOMLoaded", () => {
+				// Calculate clip block sizes
+				let lottie_rect = lottie_container.getBoundingClientRect();
+				const logoRatio = 0.3; // ratio of h to w of logo, used for setting image crop sizes
+				let lottie_w = lottie_rect.height / logoRatio;
+				let screen_w = window.innerWidth;
+				let clip_w = (50 * (screen_w - lottie_w + 0.2 * lottie_w)) / screen_w;
+				gsap.set(".site-loader_img-clip.left, .site-loader_img-clip.right", {
+					width: clip_w + "%",
+				});
+
+				gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+
+				let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
+
+				let playhead = { frame: 0 };
+
+				// play lottie
+				tl.to(playhead, {
+					frame: loader_lottie.totalFrames - 1,
+					duration: 3.5,
+					ease: "none",
+					onUpdate: () => {
+						loader_lottie.goToAndStop(playhead.frame, true);
+					},
+				});
+
+				// change bg color
+				tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
+
+				// show hero (only img is visible at first)
+				tl.to(".section-hero-home", { autoAlpha: 1, duration: 1, ease: "power4.in" }, 3);
+
+				// Scale image up
+				tl.to(".hero-home_media-wrap", { scale: 1, duration: 1.5, ease: "power4.inOut" }, 3.75);
+
+				// shrink the clip elements. top clip stays bigger to allow for larger logo
+				tl.to(
+					".site-loader_img-clip.left, .site-loader_img-clip.right",
+					{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
+					4.05,
+				);
+				tl.to(
+					".site-loader_img-clip.bottom",
+					{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
+					4.05,
+				);
+				tl.to(
+					".site-loader_img-clip.top",
+					{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
+					4.05,
+				);
+
+				// delete clip elements to avoid weirdness on resize
+				tl.call(removeElement(".site-loader_img-clip.left"));
+				tl.call(removeElement(".site-loader_img-clip.right"));
+				tl.call(removeElement(".site-loader_img-clip.bottom"));
+
+				// scale up the lottie spacer to force lottie up to header position
+				tl.to(
+					".site-loader_lottie-spacer",
+					{ height: "100%", duration: 2, ease: "power4.inOut" },
+					4.05,
+				);
+
+				// show content
+				tl.to(".hero-home_content", { autoAlpha: 1, duration: 1.5, ease: "power4.inOut" }, 4.5);
+
+				// bring in header buttons
+				tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, 5);
+
+				// get rid of extra space at top
+				tl.to(
+					".site-loader_img-clip.top",
+					{
+						height: 0,
+						duration: 1.5,
+						ease: "power4.inOut",
+					},
+					"<",
+				);
+
+				// shrink lottie to match real logo
+				tl.to(
+					lottie_container,
+					{
+						height: adjusted_logo_h,
+						marginTop: logo_marginTop,
+						duration: 1.5,
+						ease: "power4.inOut",
+					},
+					"<",
+				);
+
+				// delete clip elements to avoid weirdness on resize
+				tl.call(removeElement(".site-loader_img-clip.top"));
+
+				// Play the timeline
+				tl.play();
 			});
+		}
 
-			gsap.set(".site-loader_img-clip", { display: "block" }); // show blocks that clip hero image
+		function runLoaderV2() {
+			const fallbackProgress = 0.38;
+			const lottieFadeInDuration = 0.15;
+			const lottiePausePercent = 0.85;
 
-			let tl = gsap.timeline({ paused: true, onComplete: loaderEnds });
+			// v2: no clip/mask reveal; hero fades in at full scale
+			gsap.set(loader, { display: "flex" }); // show loader
+			gsap.set(".header-bar", { y: "-100%" }); // hide header buttons offscreen at first
+			gsap.set(".site-loader_lottie-spacer", { height: 0 }); // pushes logo up later
+			gsap.set(".section-hero-home", { autoAlpha: 0 });
+			gsap.set(".hero-home_content", { autoAlpha: 0 });
+			gsap.set(".hero-home_media-wrap", { scale: 1 });
+			// gsap.set(header_logo, { opacity: 0 });
+			gsap.set(".site-loader_img-clip", { display: "none" });
+			gsap.set(lottie_container, { autoAlpha: 0 });
 
-			let playhead = { frame: 0 };
+			loader_lottie.addEventListener("DOMLoaded", () => {
+				const totalFrames = loader_lottie.totalFrames;
 
-			// play lottie
-			tl.to(playhead, {
-				frame: loader_lottie.totalFrames - 1,
-				duration: 3.5,
-				ease: "none",
-				onUpdate: () => {
-					loader_lottie.goToAndStop(playhead.frame, true);
-				},
+				const startFrameParamRaw =
+					(typeof getParam === "function" && getParam("siteLoaderStartFrame")) || undefined;
+				const startFrameParam = startFrameParamRaw ? Number.parseInt(startFrameParamRaw, 10) : NaN;
+				const startFrameSetting = Number.isFinite(aethos?.settings?.siteLoaderV2StartFrame)
+					? aethos.settings.siteLoaderV2StartFrame
+					: NaN;
+
+				let startFrame = Number.isFinite(startFrameParam)
+					? startFrameParam
+					: Number.isFinite(startFrameSetting)
+						? startFrameSetting
+						: Math.round((totalFrames - 1) * fallbackProgress);
+
+				startFrame = Math.max(0, Math.min(totalFrames - 1, startFrame));
+				const startProgress = totalFrames > 1 ? startFrame / (totalFrames - 1) : 0;
+				const remainingDuration = 3.5 * (1 - startProgress);
+				const revealAt = Math.max(0, remainingDuration - 0) + 0.75;
+
+				// only play lottie until a certain point, defined by lottiePausePercent
+				const pauseFrame = Math.round((totalFrames - 1) * lottiePausePercent);
+
+				console.log(
+					`Site loader v2: startFrame=${startFrame}, startProgress=${(startProgress * 100).toFixed(
+						2,
+					)}%, remainingDuration=${remainingDuration.toFixed(2)}, revealAt=${revealAt.toFixed(2)}`,
+				);
+
+				// pause at the desired start point, then fade in, then play
+				loader_lottie.goToAndStop(startFrame, true);
+
+				let tl = gsap.timeline({ paused: true, onComplete: loaderEnds_v2 });
+
+				// basic fade in of the (paused) lottie
+				tl.to(
+					lottie_container,
+					{ autoAlpha: 1, duration: lottieFadeInDuration, ease: "power2.out" },
+					0,
+				);
+
+				let playhead = { frame: startFrame };
+				tl.to(
+					playhead,
+					{
+						frame: pauseFrame,
+						duration: remainingDuration,
+						ease: "none",
+						onUpdate: () => {
+							loader_lottie.goToAndStop(playhead.frame, true);
+						},
+					},
+					lottieFadeInDuration,
+				);
+
+				// change bg color near end
+				tl.to(loader, { backgroundColor: "transparent", duration: 1.5 }, revealAt - 0.25);
+
+				// hero fades in (no mask/multi-step reveal; already at full scale)
+				tl.to(
+					".section-hero-home",
+					{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
+					revealAt + 0,
+				);
+
+				// show content
+				tl.to(
+					".hero-home_content",
+					{ autoAlpha: 1, duration: 1.5, ease: "power4.inOut" },
+					revealAt - 0.25,
+				);
+
+				// bring in header buttons
+				tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, revealAt - 0.25);
+
+				tl.to(loader, { autoAlpha: 0, duration: 0.5, ease: "power2.out" }, revealAt + 0);
+
+				tl.play();
 			});
+		}
 
-			// change bg color
-			tl.to(loader, { backgroundColor: "transparent", duration: 1 }, 3);
-
-			// show hero (only img is visible at first)
-			tl.to(".section-hero-home", { autoAlpha: 1, duration: 1, ease: "power4.in" }, 3);
-
-			// Scale image up
-			tl.to(".hero-home_media-wrap", { scale: 1, duration: 1.5, ease: "power4.inOut" }, 3.75);
-
-			// shrink the clip elements. top clip stays bigger to allow for larger logo
-			tl.to(
-				".site-loader_img-clip.left, .site-loader_img-clip.right",
-				{ scaleX: 0, duration: 1.5, ease: "power4.inOut" },
-				4.05,
-			);
-			tl.to(
-				".site-loader_img-clip.bottom",
-				{ scaleY: 0, duration: 1.5, ease: "power4.inOut" },
-				4.05,
-			);
-			tl.to(
-				".site-loader_img-clip.top",
-				{ height: "4.5rem", duration: 1.5, ease: "power4.inOut" },
-				4.05,
-			);
-
-			// delete clip elements to avoid weirdness on resize
-			tl.call(removeElement(".site-loader_img-clip.left"));
-			tl.call(removeElement(".site-loader_img-clip.right"));
-			tl.call(removeElement(".site-loader_img-clip.bottom"));
-
-			// scale up the lottie spacer to force lottie up to header position
-			tl.to(
-				".site-loader_lottie-spacer",
-				{ height: "100%", duration: 2, ease: "power4.inOut" },
-				4.05,
-			);
-
-			// show content
-			tl.to(".hero-home_content", { autoAlpha: 1, duration: 1.5, ease: "power4.inOut" }, 4.5);
-
-			// bring in header buttons
-			tl.to(".header-bar", { y: 0, duration: 1.5, ease: "power4.inOut" }, 5);
-
-			// get rid of extra space at top
-			tl.to(
-				".site-loader_img-clip.top",
-				{
-					height: 0,
-					duration: 1.5,
-					ease: "power4.inOut",
-				},
-				"<",
-			);
-
-			// shrink lottie to match real logo
-			tl.to(
-				lottie_container,
-				{
-					height: adjusted_logo_h,
-					marginTop: logo_marginTop,
-					duration: 1.5,
-					ease: "power4.inOut",
-				},
-				"<",
-			);
-
-			// delete clip elements to avoid weirdness on resize
-			tl.call(removeElement(".site-loader_img-clip.top"));
-
-			// Play the timeline
-			tl.play();
-		});
+		if (activeVersion === "v2") {
+			aethos.log("Page loader running (v2)");
+			runLoaderV2();
+		} else {
+			aethos.log("Page loader running (v1)");
+			runLoaderV1();
+		}
 
 		function removeElement(element) {
 			if (typeof element === "string") {
@@ -883,6 +1077,22 @@ function main() {
 			header_logo_wrap.prepend(lottie_container);
 			// header_logo.style.display = "none";
 			// gsap.set(header_logo, { opacity: 1 }); // show actual header logo
+			gsap.set(loader, { display: "none" }); // hide loader
+
+			// resume scroll
+			requestAnimationFrame(() => {
+				aethos.helpers.pauseScroll(false);
+			});
+
+			// show HC
+			aethos.functions.showHC(true);
+
+			// mark loader finished and notify listeners
+			aethos.loader.isActive = false;
+			document.dispatchEvent(new CustomEvent("aethos:loaderEnd"));
+		}
+		// enable scrolling
+		function loaderEnds_v2() {
 			gsap.set(loader, { display: "none" }); // hide loader
 
 			// resume scroll
@@ -3681,6 +3891,14 @@ function main() {
 			const imgs = section.querySelectorAll(".img-cover"); // Fallback/thumbnail images
 
 			let player; // Declare player for reuse
+			let isInView = false;
+			let hasPlayed = false;
+
+			// Play scheduling helper (in-view guard)
+			const schedulePlay = (callback) => {
+				if (!isInView) return;
+				callback();
+			};
 
 			// Debounce helper
 			let debounceTimer;
@@ -3700,19 +3918,32 @@ function main() {
 				start: "top 90%",
 				end: "bottom 10%",
 				onEnter: () => {
+					isInView = true;
 					if (!player) {
 						debounce(() => {
-							player = initVimeo(vimeoInnerContainer, vimeoId, imgs);
+							player = initVimeo(vimeoInnerContainer, vimeoId, imgs, schedulePlay, () => {
+								hasPlayed = true;
+							});
 						});
 					} else {
 						debounce(() => {
-							player.play().catch((error) => {
-								console.error(`Error resuming video ${vimeoId}:`, error);
+							if (!isInView) return;
+							if (hasPlayed) {
+								player.play().catch((error) => {
+									console.error(`Error resuming video ${vimeoId}:`, error);
+								});
+								return;
+							}
+							schedulePlay(() => {
+								player.play().catch((error) => {
+									console.error(`Error resuming video ${vimeoId}:`, error);
+								});
 							});
 						});
 					}
 				},
 				onLeave: () => {
+					isInView = false;
 					if (player) {
 						debounce(() => {
 							player.pause().catch((error) => {
@@ -3722,15 +3953,32 @@ function main() {
 					}
 				},
 				onEnterBack: () => {
-					if (player) {
+					isInView = true;
+					if (!player) {
 						debounce(() => {
+							player = initVimeo(vimeoInnerContainer, vimeoId, imgs, schedulePlay, () => {
+								hasPlayed = true;
+							});
+						});
+						return;
+					}
+					debounce(() => {
+						if (!isInView) return;
+						if (hasPlayed) {
+							player.play().catch((error) => {
+								console.error(`Error resuming video ${vimeoId}:`, error);
+							});
+							return;
+						}
+						schedulePlay(() => {
 							player.play().catch((error) => {
 								console.error(`Error resuming video ${vimeoId}:`, error);
 							});
 						});
-					}
+					});
 				},
 				onLeaveBack: () => {
+					isInView = false;
 					if (player) {
 						debounce(() => {
 							player.pause().catch((error) => {
@@ -3742,14 +3990,14 @@ function main() {
 			});
 		});
 
-		function initVimeo(vimeoInnerContainer, vimeoId, imgs) {
+		function initVimeo(vimeoInnerContainer, vimeoId, imgs, schedulePlay, onFirstPlay) {
 			const options = {
 				id: vimeoId,
 				byline: false,
 				title: false,
 				muted: true,
 				controls: false,
-				autoplay: true,
+				autoplay: false,
 				loop: true,
 				background: true,
 				responsive: true,
@@ -3758,9 +4006,11 @@ function main() {
 			const player = new Vimeo.Player(vimeoInnerContainer, options);
 
 			player.on("loaded", function () {
-				// Attempt to play the video
-				player.play().catch((error) => {
-					console.error(`Error playing video ${vimeoId}:`, error);
+				// Attempt to play the video (optionally delayed)
+				schedulePlay(() => {
+					player.play().catch((error) => {
+						console.error(`Error playing video ${vimeoId}:`, error);
+					});
 				});
 
 				// Transition from image to video
@@ -3769,6 +4019,7 @@ function main() {
 			});
 
 			player.on("play", function () {
+				onFirstPlay?.();
 				aethos.log(`Video ${vimeoId} is playing.`);
 			});
 
