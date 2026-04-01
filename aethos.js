@@ -103,8 +103,6 @@ function main() {
 			const status = item.getAttribute("aethos-status") || "active";
 			const instagram = item.getAttribute("aethos-destination-ig");
 			const facebook = item.getAttribute("aethos-destination-fb");
-			const mewsId = item.getAttribute("aethos-destination-mews-id");
-			const cityId = item.getAttribute("aethos-destination-city-id");
 
 			aethos.destinations[slug] = {
 				name: name,
@@ -113,8 +111,6 @@ function main() {
 				status: status,
 				instagram: instagram,
 				facebook: facebook,
-				mewsId: mewsId,
-				cityId: cityId,
 			};
 
 			if (slug == aethos.settings.destinationSlug) {
@@ -123,8 +119,6 @@ function main() {
 				aethos.settings.destinationStatus = status;
 				aethos.settings.destinationInstagram = instagram;
 				aethos.settings.destinationFacebook = facebook;
-				aethos.settings.destinationMewsId = mewsId;
-				aethos.settings.destinationCityId = cityId;
 			}
 		});
 
@@ -144,8 +138,7 @@ function main() {
 				aethos.settings.destinationStatus = destination.status;
 				aethos.settings.destinationInstagram = destination.instagram;
 				aethos.settings.destinationFacebook = destination.facebook;
-				aethos.settings.destinationMewsId = destination.mewsId;
-				aethos.settings.destinationCityId = destination.cityId;
+
 				aethos.log("Destination data loaded from destination param");
 			}
 		}
@@ -5894,114 +5887,215 @@ function main() {
 		window.addEventListener("resize", adjustHeight);
 	};
 
-	aethos.functions.mews = function () {
-		if (aethos.bookingEngine !== "mews") {
-			return;
-		}
-		// If on a destination-specific page, open Mews for that destination
-		if (aethos.settings.destinationMewsId) {
-			aethos.log("Setting up Mews for destination", aethos.settings.destinationMewsId);
-			Mews.Distributor({
-				configurationIds: [aethos.settings.destinationMewsId],
-				openElements: ".reservenow",
-			});
-		} else {
-			aethos.log("Setting up Mews for all destinations");
-			// On the masterbrand page, listen for clicks on hotels in the booking modal
-			document.querySelectorAll(".booking_link").forEach((el) => {
-				el.addEventListener("click", function () {
-					const mewsId = this.getAttribute("aethos-destination-mews-id");
+	aethos.functions.hc = function () {
+		const hcLog = (...args) => {
+			try {
+				console.log("[HC]", ...args);
+			} catch {
+				// ignore
+			}
+		};
 
-					// Only proceed if a valid mewsId is found
-					if (mewsId) {
-						Mews.Distributor(
-							{
-								configurationIds: [mewsId],
-							},
-							function (distributor) {
-								distributor.open();
-							},
-						);
-					}
-				});
-			});
+		hcLog("init hc() intent handlers");
+
+		// Delegate so it works for buttons added later (CMS, dynamic content, etc)
+		const SELECTOR = ".button.reservenow";
+
+		// Prewarm on hover/touch (fetch-only; doesn’t execute or open modal)
+		let prewarmed = false;
+		function prewarmHC() {
+			if (prewarmed) return;
+			prewarmed = true;
+			hcLog("prewarm: preloadHotelChamp() start");
+			try {
+				aethos.helpers.preloadHotelChamp();
+			} catch (err) {
+				hcLog("prewarm: preloadHotelChamp() failed", err);
+			}
 		}
+
+		// Hover intent (bubbles; unlike pointerenter)
+		document.addEventListener(
+			"pointerover",
+			(e) => {
+				const btn = e.target?.closest?.(SELECTOR);
+				if (!btn) return;
+				prewarmHC();
+			},
+			{ capture: true },
+		);
+
+		// Touch intent (bubbles)
+		document.addEventListener(
+			"touchstart",
+			(e) => {
+				const btn = e.target?.closest?.(SELECTOR);
+				if (!btn) return;
+				prewarmHC();
+			},
+			{ passive: true, capture: true },
+		);
+
+		// Click = ensure loaded, then open HC
+		document.addEventListener(
+			"click",
+			async (e) => {
+				const btn = e.target?.closest?.(SELECTOR);
+				if (!btn) return;
+
+				hcLog("click: reserve button", {
+					href: btn.getAttribute("href") || null,
+					text: (btn.textContent || "").trim().slice(0, 80) || null,
+				});
+
+				e.preventDefault();
+
+				// Make sure HC isn't hidden (you hide it during loader/transition)
+				if (typeof aethos?.functions?.showHC === "function") {
+					hcLog("click: showHC(true)");
+					aethos.functions.showHC(true);
+				}
+
+				hcLog("click: ensureHotelChampLoaded() start");
+				const ok = await aethos.helpers.ensureHotelChampLoaded();
+				hcLog("click: ensureHotelChampLoaded() result", ok);
+
+				if (ok && window.__HC__?.ibe?.search) {
+					hcLog("opening HC (window.__HC__.ibe.search())");
+					window.__HC__.ibe.search();
+					return;
+				}
+
+				hcLog("click: HC not ready; not opening", {
+					ok,
+					hasSearch: Boolean(window.__HC__?.ibe?.search),
+				});
+			},
+			{ capture: true },
+		);
 	};
 
-	aethos.functions.hc = function () {
-		const HCbuttons = document.querySelectorAll(".button.reservenow");
+	// HotelChamp lazy loader (loads HC only on user intent)
+	// State is stored on aethos.hotelChampLazy
+	aethos.hotelChampLazy = aethos.hotelChampLazy || {
+		loadPromise: null,
+	};
 
-		// function openOnButtonClick(buttons) {
-		// 	buttons.forEach((button) => {
-		// 		button.addEventListener("click", (e) => {
-		// 			e.preventDefault();
-		// 			aethos.log("opening HC");
-		// 			window.__HC__.ibe.search();
-		// 		});
-		// 	});
-		// }
+	// Fetch-only warmup for HC module (does not execute)
+	aethos.helpers.preloadHotelChamp = function preloadHotelChamp({
+		src = "https://ibe.hotelchamp.io/pub/latest/index.js",
+	} = {}) {
+		const hcLog = (...args) => {
+			try {
+				console.log("[HC]", ...args);
+			} catch {
+				// ignore
+			}
+		};
 
-		// function enableButtons(buttons) {
-		// 	buttons.forEach((button) => {
-		// 		button.removeAttribute("disabled");
-		// 	});
-		// 	clearTimeout(window.__hcFallbackTimeout);
-		// 	openOnButtonClick(buttons); // Move this here so it's only added once they're active
-		// }
-
-		function enableButtons(buttons) {
-			waitForHotelChampAPI(() => {
-				buttons.forEach((button) => {
-					button.removeAttribute("disabled");
-					button.addEventListener("click", (e) => {
-						e.preventDefault();
-						aethos.log("opening HC");
-						window.__HC__.ibe.search();
-					});
-				});
-				clearTimeout(window.__hcFallbackTimeout);
-			});
+		// If HC is already ready, no need to preload.
+		if (window.__HC__?.ibe?.search) {
+			hcLog("preloadHotelChamp: already ready");
+			return;
 		}
 
-		function watchForHotelChampLoad() {
-			// Immediate check in case HC loaded early
-			if (document.querySelector("hc-ibe")) {
-				enableButtons(HCbuttons);
-				return;
+		// Avoid duplicates.
+		const existing =
+			document.querySelector('link[data-aethos-hc-preload="true"]') ||
+			document.querySelector(`link[rel="modulepreload"][href="${src}"]`);
+		if (existing) {
+			hcLog("preloadHotelChamp: already present");
+			return;
+		}
+
+		// modulepreload = fetch-only for module graphs in supporting browsers.
+		const link = document.createElement("link");
+		link.rel = "modulepreload";
+		link.href = src;
+		link.crossOrigin = "anonymous";
+		link.dataset.aethosHcPreload = "true";
+		document.head.appendChild(link);
+		hcLog("preloadHotelChamp: inserted modulepreload", { src });
+	};
+
+	aethos.helpers.ensureHotelChampLoaded = function ensureHotelChampLoaded({
+		src = "https://ibe.hotelchamp.io/pub/latest/index.js",
+		timeoutMs = 10000,
+		pollIntervalMs = 50,
+	} = {}) {
+		const hcLog = (...args) => {
+			try {
+				console.log("[HC]", ...args);
+			} catch {
+				// ignore
+			}
+		};
+
+		// already available
+		if (window.__HC__?.ibe?.search) {
+			hcLog("ensureHotelChampLoaded: already ready");
+			return Promise.resolve(true);
+		}
+
+		// already in-flight
+		if (aethos.hotelChampLazy.loadPromise) {
+			hcLog("ensureHotelChampLoaded: reusing in-flight promise");
+			return aethos.hotelChampLazy.loadPromise;
+		}
+
+		// ensure config object exists (head embed should set propertyGroupId etc)
+		window.__HC__ = window.__HC__ || {};
+		window.__HC__.ibe = window.__HC__.ibe || {};
+		hcLog("ensureHotelChampLoaded: starting load", { src, timeoutMs, pollIntervalMs });
+
+		aethos.hotelChampLazy.loadPromise = new Promise((resolve) => {
+			let resolved = false;
+			const finish = (ok, meta = {}) => {
+				if (resolved) return;
+				resolved = true;
+				hcLog("ensureHotelChampLoaded: finished", { ok, ...meta });
+				resolve(ok);
+			};
+
+			// if the script tag already exists, don’t inject again
+			const existing =
+				document.querySelector('script[data-aethos-hc="true"]') ||
+				document.querySelector(`script[type="module"][src="${src}"]`);
+
+			if (!existing) {
+				hcLog("ensureHotelChampLoaded: injecting module script");
+				const s = document.createElement("script");
+				s.type = "module";
+				s.async = true;
+				s.crossOrigin = "anonymous";
+				s.src = src;
+				s.dataset.aethosHc = "true";
+				s.addEventListener("error", (e) => {
+					finish(false, { reason: "script-error", error: e?.message || null });
+				});
+				document.head.appendChild(s);
+			} else {
+				hcLog("ensureHotelChampLoaded: script already present; waiting", {
+					matched: existing.getAttribute("data-aethos-hc") ? "data-aethos-hc" : "src",
+				});
 			}
 
-			// Otherwise, watch for it
-			const observer = new MutationObserver((mutations, obs) => {
-				if (document.querySelector("hc-ibe")) {
-					enableButtons(HCbuttons);
-					obs.disconnect();
-				}
-			});
-
-			observer.observe(document.body, { childList: true, subtree: true });
-		}
-
-		function waitForHotelChampAPI(callback, fallbackDelay = 5000) {
+			const start = Date.now();
 			const poll = setInterval(() => {
 				if (window.__HC__?.ibe?.search) {
 					clearInterval(poll);
-					callback();
+					finish(true, { ms: Date.now() - start });
+					return;
 				}
-			}, 100);
 
-			setTimeout(() => {
-				clearInterval(poll);
-				if (window.__HC__?.ibe?.search) callback();
-			}, fallbackDelay);
-		}
+				if (Date.now() - start >= timeoutMs) {
+					clearInterval(poll);
+					finish(false, { reason: "timeout", ms: Date.now() - start });
+				}
+			}, pollIntervalMs);
+		});
 
-		// Disable buttons immediately and set fallback
-		HCbuttons.forEach((button) => button.setAttribute("disabled", "true"));
-		window.__hcFallbackTimeout = setTimeout(() => {
-			enableButtons(HCbuttons);
-		}, 5000);
-
-		watchForHotelChampLoad();
+		return aethos.hotelChampLazy.loadPromise;
 	};
 
 	aethos.functions.showHC = function (show = true) {
@@ -6632,6 +6726,13 @@ function main() {
 		return;
 	}
 
+	// Booking engine handlers should bind ASAP so early clicks are captured.
+	aethos.hotelChampLazy = aethos.hotelChampLazy || { loadPromise: null };
+	if (!aethos.hotelChampLazy.bound) {
+		aethos.functions.hc();
+		aethos.hotelChampLazy.bound = true;
+	}
+
 	aethos.anim.smoothScroll();
 	aethos.anim.loader();
 	aethos.functions.nav();
@@ -6691,13 +6792,6 @@ function main() {
 	aethos.functions.scrollbarWidth();
 	aethos.functions.updateFooterLinks();
 	aethos.functions.promopop();
-
-	// run either mews or hc
-	if (aethos.engine === "hc") {
-		aethos.functions.hc();
-	} else {
-		aethos.functions.mews();
-	}
 
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
