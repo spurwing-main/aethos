@@ -5901,16 +5901,36 @@ function main() {
 		// Delegate so it works for buttons added later (CMS, dynamic content, etc)
 		const SELECTOR = ".button.reservenow";
 
-		// Prewarm on hover/touch (fetch-only; doesn’t execute or open modal)
-		let prewarmed = false;
-		function prewarmHC() {
-			if (prewarmed) return;
-			prewarmed = true;
-			hcLog("prewarm: preloadHotelChamp() start");
+		// Prewarm stages:
+		// - fetch: download module bytes (modulepreload)
+		// - execute: execute/init HC module (ensureHotelChampLoaded)
+		let prewarmStage = 0; // 0=none, 1=fetch started, 2=execute started
+		function prewarmFetch() {
+			if (prewarmStage >= 1) return;
+			prewarmStage = 1;
+			hcLog("prewarm(fetch): preloadHotelChamp() start");
 			try {
 				aethos.helpers.preloadHotelChamp();
 			} catch (err) {
-				hcLog("prewarm: preloadHotelChamp() failed", err);
+				hcLog("prewarm(fetch): preloadHotelChamp() failed", err);
+			}
+		}
+		function prewarmExecute(reason = "") {
+			if (prewarmStage >= 2) return;
+			prewarmStage = 2;
+			hcLog("prewarm(execute): ensureHotelChampLoaded() start", { reason });
+			Promise.resolve()
+				.then(() => aethos.helpers.ensureHotelChampLoaded())
+				.catch((err) => hcLog("prewarm(execute): ensureHotelChampLoaded() failed", err));
+		}
+		function shouldExecuteOnIntent(pointerType) {
+			// Desktop intent: execute on hover for mouse/pen (keeps lazy semantics, removes HC loading UI)
+			if (pointerType === "mouse" || pointerType === "pen") return true;
+			// Fallback: if browser reports hover + fine pointer, treat as desktop.
+			try {
+				return window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+			} catch {
+				return false;
 			}
 		}
 
@@ -5920,7 +5940,20 @@ function main() {
 			(e) => {
 				const btn = e.target?.closest?.(SELECTOR);
 				if (!btn) return;
-				prewarmHC();
+				if (shouldExecuteOnIntent(e.pointerType)) prewarmExecute("pointerover");
+				else prewarmFetch();
+			},
+			{ capture: true },
+		);
+
+		// Pointer down intent (gives an extra head start before click)
+		document.addEventListener(
+			"pointerdown",
+			(e) => {
+				const btn = e.target?.closest?.(SELECTOR);
+				if (!btn) return;
+				if (shouldExecuteOnIntent(e.pointerType)) prewarmExecute("pointerdown");
+				else prewarmFetch();
 			},
 			{ capture: true },
 		);
@@ -5931,7 +5964,9 @@ function main() {
 			(e) => {
 				const btn = e.target?.closest?.(SELECTOR);
 				if (!btn) return;
-				prewarmHC();
+				// On touch devices we keep this as fetch-only;
+				// mobile gets execute-on-first-interaction anywhere (below).
+				prewarmFetch();
 			},
 			{ passive: true, capture: true },
 		);
@@ -5950,10 +5985,10 @@ function main() {
 
 				e.preventDefault();
 
-				// Make sure HC isn't hidden (you hide it during loader/transition)
+				// Keep HC hidden while we load/initialize to avoid showing HC's internal loading UI.
 				if (typeof aethos?.functions?.showHC === "function") {
-					hcLog("click: showHC(true)");
-					aethos.functions.showHC(true);
+					hcLog("click: showHC(false) (suppress HC loading UI)");
+					aethos.functions.showHC(false);
 				}
 
 				hcLog("click: ensureHotelChampLoaded() start");
@@ -5963,6 +5998,11 @@ function main() {
 				if (ok && window.__HC__?.ibe?.search) {
 					hcLog("opening HC (window.__HC__.ibe.search())");
 					window.__HC__.ibe.search();
+					// Reveal HC only after we trigger open.
+					if (typeof aethos?.functions?.showHC === "function") {
+						hcLog("click: showHC(true)");
+						aethos.functions.showHC(true);
+					}
 					return;
 				}
 
@@ -5973,6 +6013,31 @@ function main() {
 			},
 			{ capture: true },
 		);
+
+		// Desktop: execute HC on first interaction anywhere (mouse/trackpad move), once.
+		// This keeps lazy semantics (not on page view) but avoids quick-click showing HC loader.
+		try {
+			const isDesktopHoverFine = window.matchMedia
+				? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+				: window.innerWidth >= 768;
+			if (isDesktopHoverFine) {
+				aethos.hotelChampLazy = aethos.hotelChampLazy || { loadPromise: null };
+				if (!aethos.hotelChampLazy.desktopInteractionWarmBound) {
+					aethos.hotelChampLazy.desktopInteractionWarmBound = true;
+					document.addEventListener(
+						"pointermove",
+						(e) => {
+							// only for real desktop pointers
+							if (e.pointerType && e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+							prewarmExecute("pointermove-anywhere");
+						},
+						{ passive: true, capture: true, once: true },
+					);
+				}
+			}
+		} catch (err) {
+			hcLog("desktop warm: failed to set up", err);
+		}
 
 		// Mobile: execute HC on first interaction anywhere (once)
 		// This keeps "lazy" semantics (not on page view), but reduces first-tap latency.
