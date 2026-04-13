@@ -5973,6 +5973,44 @@ function main() {
 			},
 			{ capture: true },
 		);
+
+		// Mobile: execute HC on first interaction anywhere (once)
+		// This keeps "lazy" semantics (not on page view), but reduces first-tap latency.
+		try {
+			const isMobile = window.matchMedia
+				? window.matchMedia("(max-width: 767px)").matches
+				: window.innerWidth < 768;
+			if (isMobile) {
+				aethos.hotelChampLazy = aethos.hotelChampLazy || { loadPromise: null };
+				const startWarm = (reason) => {
+					if (aethos.hotelChampLazy.interactionWarmStarted) return;
+					if (window.__HC__?.ibe?.search) return;
+					aethos.hotelChampLazy.interactionWarmStarted = true;
+					hcLog("mobile warm: first interaction → ensureHotelChampLoaded()", { reason });
+					Promise.resolve()
+						.then(() => aethos.helpers.ensureHotelChampLoaded())
+						.catch((err) => hcLog("mobile warm: ensureHotelChampLoaded() failed", err));
+				};
+
+				// First touch anywhere
+				document.addEventListener("touchstart", () => startWarm("touchstart"), {
+					passive: true,
+					capture: true,
+					once: true,
+				});
+
+				// First *user* scroll anywhere (guard against early non-user scroll events)
+				const scrollBoundAt = Date.now();
+				const onFirstScroll = () => {
+					if (Date.now() - scrollBoundAt < 1000) return;
+					window.removeEventListener("scroll", onFirstScroll, false);
+					startWarm("scroll");
+				};
+				window.addEventListener("scroll", onFirstScroll, { passive: true });
+			}
+		} catch (err) {
+			hcLog("mobile warm: failed to set up", err);
+		}
 	};
 
 	// HotelChamp lazy loader (loads HC only on user intent)
