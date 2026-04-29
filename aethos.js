@@ -6872,6 +6872,7 @@ function main() {
 	if (aethos.translation) {
 		aethos.translation.init();
 	}
+	aethos.functions.customFormSubmit();
 	aethos.anim.filterDrawerOpenClose();
 	aethos.anim.HoverTrigger();
 	aethos.anim.arch();
@@ -6911,7 +6912,6 @@ function main() {
 	aethos.functions.scrollbarWidth();
 	aethos.functions.updateFooterLinks();
 	aethos.functions.promopop();
-	aethos.functions.customFormSubmit();
 
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
