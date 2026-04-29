@@ -6820,6 +6820,22 @@ function main() {
 		document.body.style.width = "";
 		window.scrollTo(0, scrollY);
 	};
+	aethos.functions.customFormSubmit = function () {
+		document.querySelectorAll("form").forEach((form) => {
+			if (!form.querySelector("[data-custom-submit='trigger']")) return;
+
+			form.addEventListener("click", (event) => {
+				const trigger = event.target.closest("[data-custom-submit='trigger']");
+				if (!trigger || !form.contains(trigger)) return;
+
+				const nativeSubmit = form.querySelector("[data-custom-submit='target']");
+				if (!nativeSubmit || nativeSubmit.disabled) return;
+
+				event.preventDefault();
+				nativeSubmit.click();
+			});
+		});
+	};
 
 	/******/
 	/*** CALL FUNCTIONS ***/
@@ -6895,6 +6911,7 @@ function main() {
 	aethos.functions.scrollbarWidth();
 	aethos.functions.updateFooterLinks();
 	aethos.functions.promopop();
+	aethos.functions.customFormSubmit();
 
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
 }
