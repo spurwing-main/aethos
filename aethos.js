@@ -6798,6 +6798,8 @@ function main() {
 			document.removeEventListener("touchmove", prevent);
 		}
 		function prevent(e) {
+			// Keep the page locked, but allow the popup's own scroll container to move on iOS.
+			if (e.target instanceof Element && e.target.closest(".promopop_inner")) return;
 			e.preventDefault();
 		}
 	};
