@@ -6468,9 +6468,9 @@ function main() {
 			return out;
 		}
 
-		// NEW: parse per-popup CMS “allowed pages” list from data attribute
-		// Accepts comma-separated paths; ignores external URLs; reduces same-site absolute URLs to their pathname.
-		function parseAllowedPages(attrVal) {
+		// Helper: parse a comma-separated page list from CMS.
+		// Ignores external URLs and reduces same-site absolute URLs to their pathname.
+		function parsePageList(attrVal) {
 			if (!attrVal || typeof attrVal !== "string") return [];
 			const out = [];
 			attrVal.split(",").forEach((raw) => {
@@ -6503,6 +6503,14 @@ function main() {
 			return Array.from(new Set(out));
 		}
 
+		function parseAllowedPages(attrVal) {
+			return parsePageList(attrVal);
+		}
+
+		function parseExcludedPages(attrVal) {
+			return parsePageList(attrVal);
+		}
+
 		// ---------------------------------------------------------
 		// FILTER POPUPS BASED ON PAGE CONTEXT
 		// ---------------------------------------------------------
@@ -6522,13 +6530,27 @@ function main() {
 				if (onlyId && id !== onlyId) return false;
 				if (!includeHidden && isHiddenPopupItem(item)) return false;
 
+				// 3a: excluded-pages parsing
+				const excludedAttr = item.dataset.promopopExcludedPages || "";
+				const excludedPages = parseExcludedPages(excludedAttr);
+				if (excludedPages.length > 0 && excludedPages.includes(currentPath)) {
+					aethos.log(
+						`[PromoPop] excluded popup "${id}" on "${currentPath}" via excluded-pages: ${excludedPages.join(", ")}`,
+					);
+					return false;
+				}
+
 				// 3a: allowed-pages parsing
 				const allowedAttr = item.dataset.promopopAllowedPages || "";
 				const allowedPages = parseAllowedPages(allowedAttr);
 
 				// 3b/4: If allowedPages is non-empty, use it exclusively
 				if (allowedPages.length > 0) {
-					return allowedPages.includes(currentPath);
+					const allowed = allowedPages.includes(currentPath);
+					aethos.log(
+						`[PromoPop] popup "${id}" allowed-pages check on "${currentPath}": ${allowed ? "allowed" : "blocked"} (${allowedPages.join(", ")})`,
+					);
+					return allowed;
 				}
 
 				// Fall back to existing theme/destination rules
