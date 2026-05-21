@@ -3235,14 +3235,12 @@ function main() {
 
 		// Add layer toggle for Partner Clubs
 		if (theme === "club") {
-			// L.control
-			// 	.layers(null, { "Partner Clubs": partnerLayer }, { collapsed: false })
-			// 	.addTo(aethos.map.map);
-
-			// add custom control
-			const partnerControl = document.createElement("div");
-			partnerControl.setAttribute("aria-label", "Toggle Partner Clubs Layer");
-			partnerControl.innerHTML = `
+			let addControl = false; // removed partner control toggle as per latest brief, but leaving code in place in case we want to add it back in future
+			if (addControl) {
+				// add custom control
+				const partnerControl = document.createElement("div");
+				partnerControl.setAttribute("aria-label", "Toggle Partner Clubs Layer");
+				partnerControl.innerHTML = `
 				<div class="club-map_radio-header">PARTNER CLUBS</div>
 				<div class="club-map_radio-row">
 					<div class="club-map_radio-field">
@@ -3254,24 +3252,27 @@ function main() {
 						<label for="club-map-partners-show" class="club-map_radio-label">Show</label>
 					</div>
 				</div>`;
-			partnerControl.className = "club-map_control";
-			//add to DOM
+				partnerControl.className = "club-map_control";
+				//add to DOM
 
-			aethos.map.mapElement.querySelector(".leaflet-control-container").appendChild(partnerControl);
+				aethos.map.mapElement
+					.querySelector(".leaflet-control-container")
+					.appendChild(partnerControl);
 
-			// add event listeners
-			const hideRadio = partnerControl.querySelector("#club-map-partners-hide");
-			const showRadio = partnerControl.querySelector("#club-map-partners-show");
-			hideRadio.addEventListener("change", () => {
-				if (hideRadio.checked) {
-					aethos.map.map.removeLayer(partnerLayer);
-				}
-			});
-			showRadio.addEventListener("change", () => {
-				if (showRadio.checked) {
-					aethos.map.map.addLayer(partnerLayer);
-				}
-			});
+				// add event listeners
+				const hideRadio = partnerControl.querySelector("#club-map-partners-hide");
+				const showRadio = partnerControl.querySelector("#club-map-partners-show");
+				hideRadio.addEventListener("change", () => {
+					if (hideRadio.checked) {
+						aethos.map.map.removeLayer(partnerLayer);
+					}
+				});
+				showRadio.addEventListener("change", () => {
+					if (showRadio.checked) {
+						aethos.map.map.addLayer(partnerLayer);
+					}
+				});
+			}
 
 			// set leaflet container background color to same as map sea, to avoid grey background on mobile
 			gsap.set(".leaflet-container", { backgroundColor: "#434342" });
