@@ -6248,6 +6248,7 @@ function main() {
 		const suppressKey = "aethos_promopop_suppress_until";
 		const shownCacheKey = "aethos_promopop_shown_cache";
 		const shownCacheTtlMs = 30000;
+		const disableShownTracking = false; // temporary testing flag
 		let isSuppressedByTTL = false;
 		try {
 			const untilRaw = localStorage.getItem(suppressKey);
@@ -6303,6 +6304,7 @@ function main() {
 		}
 
 		function importShownCacheIntoSession() {
+			if (disableShownTracking) return;
 			const cachedId = consumeShownCacheId();
 			if (!cachedId) return;
 			try {
@@ -6378,6 +6380,75 @@ function main() {
 			return `${u.pathname}${u.search}${u.hash}`;
 		}
 
+		function getLocalAnchorTarget(href) {
+			const raw = (href || "").trim();
+			if (!raw) return null;
+
+			const hashMatch = raw.match(/#(.+)$/);
+			const hashId = hashMatch ? decodeURIComponent(hashMatch[1]) : "";
+			if (hashId) {
+				const localTarget =
+					document.getElementById(hashId) || document.getElementsByName(hashId)[0] || null;
+				if (localTarget) return localTarget;
+			}
+
+			try {
+				const url = new URL(raw, window.location.href);
+				if (url.origin !== window.location.origin || !url.hash) return null;
+
+				const id = decodeURIComponent(url.hash.slice(1));
+				if (!id) return null;
+
+				return document.getElementById(id) || document.getElementsByName(id)[0] || null;
+			} catch {
+				if (!raw.startsWith("#")) return null;
+
+				const id = decodeURIComponent(raw.slice(1));
+				if (!id) return null;
+
+				return document.getElementById(id) || document.getElementsByName(id)[0] || null;
+			}
+		}
+
+		function isLocalAnchorHref(href) {
+			const raw = (href || "").trim();
+			if (!raw) return false;
+			if (raw.startsWith("#")) return true;
+
+			try {
+				const url = new URL(raw, window.location.href);
+				return (
+					url.origin === window.location.origin &&
+					normalizePath(url.pathname) === normalizePath(window.location.pathname) &&
+					!!url.hash
+				);
+			} catch {
+				return false;
+			}
+		}
+
+		function scrollToAnchorTarget(anchorTarget) {
+			if (!anchorTarget) return;
+
+			const offsetY = document.querySelector(".header")?.offsetHeight || 0;
+
+			// Use ScrollSmoother if present so we stay inside the site's scroll system.
+			// if (aethos.smoother && typeof aethos.smoother.scrollTo === "function") {
+			// 	aethos.smoother.scrollTo(anchorTarget, true, "top " + offsetY);
+			// 	return;
+			// }
+
+			gsap.to(window, {
+				scrollTo: {
+					y: anchorTarget,
+					offsetY,
+					autoKill: false,
+				},
+				duration: 2,
+				ease: "power1.out",
+			});
+		}
+
 		// Wait for loader or page transition to finish (use flags/events set by loader & pageTransition)
 		(function waitForStartup({ timeout = 10000 } = {}) {
 			function waitIfActive(flagObj, eventName) {
@@ -6413,6 +6484,7 @@ function main() {
 		// let promopopPin = null;
 
 		function getShownPopups() {
+			if (disableShownTracking) return [];
 			try {
 				let shown = JSON.parse(sessionStorage.getItem(sessionKey)) || [];
 				if (!Array.isArray(shown)) shown = [];
@@ -6434,6 +6506,7 @@ function main() {
 		}
 
 		function markAsShown(id) {
+			if (disableShownTracking) return;
 			const shown = getShownPopups();
 			shown.push(id);
 			sessionStorage.setItem(sessionKey, JSON.stringify(shown));
@@ -6602,14 +6675,21 @@ function main() {
 				"a[href], .button[href], .button_link[href], [data-promopop-cta][href]",
 			);
 			hrefEls.forEach((el) => {
-				if (el.tagName === "A") {
+				const oldHref = el.getAttribute("href");
+				const isLocalAnchor = isLocalAnchorHref(oldHref);
+
+				if (el.tagName === "A" && !isLocalAnchor) {
 					el.setAttribute("target", "_blank");
 					el.setAttribute("rel", "noopener");
+				} else if (isLocalAnchor) {
+					el.setAttribute("data-promopop-anchor-href", oldHref || "");
+					el.removeAttribute("href");
+					el.removeAttribute("target");
+					el.removeAttribute("rel");
 				}
 
-				const oldHref = el.getAttribute("href");
 				const newHref = withPopupsSuppressed(oldHref);
-				if (newHref && newHref !== oldHref) el.setAttribute("href", newHref);
+				if (!isLocalAnchor && newHref && newHref !== oldHref) el.setAttribute("href", newHref);
 			});
 		}
 
@@ -6619,42 +6699,83 @@ function main() {
 		function openPopup(popupEl, id) {
 			holder.appendChild(popupEl);
 
-			popupEl.addEventListener("click", (e) => {
-				// Find the closest .button element
-				const btn = e.target.closest(".button");
-				if (!btn) return;
-
-				// Cross-tab suppression fallback: set a short TTL before navigation happens.
-				// This covers cases where query params are removed between click and promopop init.
-				try {
-					localStorage.setItem(suppressKey, String(Date.now() + 15000));
-					localStorage.setItem(
-						shownCacheKey,
-						JSON.stringify({ id, until: Date.now() + shownCacheTtlMs }),
+			popupEl.addEventListener(
+				"click",
+				(e) => {
+					const actionEl = e.target.closest(
+						"a[href], .button[href], .button_link[href], [data-promopop-cta][href], [data-promopop-anchor-href]",
 					);
-				} catch {
-					// ignore
-				}
+					const btn = e.target.closest(".button");
+					if (!actionEl && !btn) return;
 
-				// Extract href from .button_link inside the button
-				const linkEl = btn.querySelector(".button_link");
-				const href = linkEl ? linkEl.getAttribute("href") : null;
+					// Cross-tab suppression fallback: set a short TTL before navigation happens.
+					// This covers cases where query params are removed between click and promopop init.
+					try {
+						localStorage.setItem(suppressKey, String(Date.now() + 15000));
+						localStorage.setItem(
+							shownCacheKey,
+							JSON.stringify({ id, until: Date.now() + shownCacheTtlMs }),
+						);
+					} catch {
+						// ignore
+					}
 
-				// Extract text from .button-text-sm inside the button
-				const textEl = btn.querySelector(".button-text-sm");
-				const label = textEl ? textEl.textContent.trim() : null;
+					// Extract href from the clicked CTA, falling back to the inner button link.
+					const linkEl =
+						actionEl &&
+						actionEl.matches(
+							"a[href], .button_link[href], [data-promopop-cta][href], [data-promopop-anchor-href]",
+						)
+							? actionEl
+							: btn?.querySelector(".button_link");
+					const href = linkEl
+						? linkEl.getAttribute("data-promopop-anchor-href") || linkEl.getAttribute("href")
+						: actionEl?.getAttribute("href") || null;
+					const anchorTarget = getLocalAnchorTarget(href);
 
-				// Push event to GTM
-				trackPopup("promopop_cta_click", {
-					popup_id: id,
-					cta_href: href,
-					cta_label: label,
-				});
+					// Extract text from .button-text-sm inside the button
+					const textEl = btn?.querySelector(".button-text-sm");
+					const label = textEl
+						? textEl.textContent.trim()
+						: (actionEl?.textContent || "").trim() || null;
 
-				aethos.log(`[PromoPop] CTA clicked: ${label} (${href})`, "info");
+					// Push event to GTM
+					trackPopup("promopop_cta_click", {
+						popup_id: id,
+						cta_href: href,
+						cta_label: label,
+					});
 
-				closePopup(id);
-			});
+					aethos.log(`[PromoPop] CTA clicked: ${label} (${href})`, "info");
+
+					if (anchorTarget) {
+						e.preventDefault();
+						const hash = anchorTarget.id
+							? `#${encodeURIComponent(anchorTarget.id)}`
+							: linkEl?.hash || href || "";
+
+						closePopup(id, {
+							onClosed: () => {
+								history.pushState(
+									null,
+									"",
+									`${window.location.pathname}${window.location.search}${hash}`,
+								);
+								const performScroll = () => scrollToAnchorTarget(anchorTarget);
+								requestAnimationFrame(() => {
+									requestAnimationFrame(() => {
+										setTimeout(performScroll, 300);
+									});
+								});
+							},
+						});
+						return;
+					}
+
+					closePopup(id);
+				},
+				true,
+			);
 
 			const closeBtn = popupEl.querySelector(".promopop_close");
 
@@ -6684,7 +6805,7 @@ function main() {
 			});
 		}
 
-		function closePopup(id) {
+		function closePopup(id, { onClosed } = {}) {
 			const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 			document.documentElement.classList.remove("promopop-open");
@@ -6711,6 +6832,10 @@ function main() {
 
 					requestAnimationFrame(() => {
 						ScrollTrigger.refresh();
+
+						if (typeof onClosed === "function") {
+							onClosed();
+						}
 					});
 				},
 			});
