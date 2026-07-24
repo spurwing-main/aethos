@@ -3080,13 +3080,17 @@ function main() {
 		const primarySlug = aethos.map.mapElement.getAttribute("aethos-map-primary-dest");
 
 		// Popup generator for Aethos locations
+		// Contact link is only rendered when a destination slug is available - some clubs
+		// may not have an associated destination page to link to.
 		const createPopupContent = ({ imageUrl, address, name, slug }) => `
     <div class="popup">
       <div class="popup_media"><img src="${imageUrl}" alt="${name}" class="img-cover"></div>
       <div class="popup_content">
         <div class="popup_header"><div class="label-heading">${name}</div></div>
         <div class="popup_body"><div class="body-xxs">${address}</div></div>
-        <a class="popup_footer" href="/destinations/${slug}/contact" aria-label="Contact Aethos ${name}">
+        ${
+					slug
+						? `<a class="popup_footer" href="/destinations/${slug}/contact" aria-label="Contact Aethos ${name}">
           <div class="button-text-xs">Contact</div>
           <div class="popup_icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
@@ -3094,7 +3098,9 @@ function main() {
               <path d="M20.547 11.5574L20.5471 11.5946V12.3879L3 12.3878L3.00001 11.5574L20.547 11.5574Z" fill="currentColor"/>
             </svg>
           </div>
-        </a>
+        </a>`
+						: ""
+				}
       </div>
     </div>
   `;
@@ -3121,7 +3127,7 @@ function main() {
 			destination.name = destEl.getAttribute("aethos-dest-name");
 			destination.address = destEl.getAttribute("aethos-dest-address");
 			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
-			destination.theme = destEl.getAttribute("aethos-dest-theme");
+			destination.theme = destEl.getAttribute("aethos-dest-theme") || "default";
 			destination.slug = destEl.getAttribute("aethos-dest-slug");
 			destination.themeColor = aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
 
