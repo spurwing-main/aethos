@@ -3080,27 +3080,49 @@ function main() {
 		const primarySlug = aethos.map.mapElement.getAttribute("aethos-map-primary-dest");
 
 		// Popup generator for Aethos locations
-		// Contact link is only rendered when a destination slug is available - some clubs
-		// may not have an associated destination page to link to.
-		const createPopupContent = ({ imageUrl, address, name, slug }) => `
-    <div class="popup">
-      <div class="popup_media"><img src="${imageUrl}" alt="${name}" class="img-cover"></div>
-      <div class="popup_content">
-        <div class="popup_header"><div class="label-heading">${name}</div></div>
-        <div class="popup_body"><div class="body-xxs">${address}</div></div>
-        ${
-					slug
-						? `<a class="popup_footer" href="/destinations/${slug}/contact" aria-label="Contact Aethos ${name}">
-          <div class="button-text-xs">Contact</div>
+		const createPopupFooter = ({ name, slug, link, linkText }) => {
+			const hasCustomLink = link?.trim() && linkText?.trim();
+			if (!hasCustomLink && !slug) {
+				return "";
+			}
+
+			const footerLink = hasCustomLink ? link : `/destinations/${slug}/contact`;
+			const footerText = hasCustomLink ? linkText : "Contact";
+			const ariaLabel = hasCustomLink ? `${linkText} Aethos ${name}` : `Contact Aethos ${name}`;
+			let externalLinkAttributes = "";
+
+			if (hasCustomLink) {
+				try {
+					const linkUrl = new URL(link, window.location.href);
+					if (
+						["http:", "https:"].includes(linkUrl.protocol) &&
+						linkUrl.origin !== window.location.origin
+					) {
+						externalLinkAttributes = ' target="_blank" rel="noopener noreferrer"';
+					}
+				} catch (error) {
+					aethos.log("Invalid map link:", link);
+				}
+			}
+
+			return `<a class="popup_footer" href="${footerLink}" aria-label="${ariaLabel}"${externalLinkAttributes}>
+          <div class="button-text-xs">${footerText}</div>
           <div class="popup_icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon">
               <path d="M20.9939 11.9938L13.5689 19.9876L13.0001 19.3752L19.8563 11.9938L13.0001 4.61234L13.5689 4L20.9939 11.9938Z" fill="currentColor"/>
               <path d="M20.547 11.5574L20.5471 11.5946V12.3879L3 12.3878L3.00001 11.5574L20.547 11.5574Z" fill="currentColor"/>
             </svg>
           </div>
-        </a>`
-						: ""
-				}
+        </a>`;
+		};
+
+		const createPopupContent = ({ imageUrl, address, name, slug, link, linkText }) => `
+    <div class="popup">
+      <div class="popup_media"><img src="${imageUrl}" alt="${name}" class="img-cover"></div>
+      <div class="popup_content">
+        <div class="popup_header"><div class="label-heading">${name}</div></div>
+        <div class="popup_body"><div class="body-xxs">${address}</div></div>
+        ${createPopupFooter({ name, slug, link, linkText })}
       </div>
     </div>
   `;
@@ -3129,6 +3151,8 @@ function main() {
 			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
 			destination.theme = destEl.getAttribute("aethos-dest-theme") || "default";
 			destination.slug = destEl.getAttribute("aethos-dest-slug");
+			destination.mapLink = destEl.getAttribute("aethos-map-link");
+			destination.mapLinkText = destEl.getAttribute("aethos-map-link-text");
 			destination.themeColor = aethos.themes[destination.theme.toLowerCase()]?.dark || "#000"; // Default to black if theme is undefined
 
 			// choose the primary destination
@@ -3169,6 +3193,8 @@ function main() {
 					address: destination.address,
 					name: destination.name,
 					slug: destination.slug,
+					link: destination.mapLink,
+					linkText: destination.mapLinkText,
 				}),
 				{ maxWidth: 300 },
 			);
