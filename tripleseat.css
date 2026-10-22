@@ -507,3 +507,70 @@
 		width: 100%;
 	}
 }
+
+/* Opt-in proposal modal: retain vendor layout, conditional visibility and specialised controls. */
+.proposal-modal [data-proposal-modal-content] {
+ font-family: var(--fonts--secondary, "Fakt", sans-serif);
+ color: var(--color--charcoal--dark, #2a2826);
+ overflow-wrap: anywhere;
+}
+.proposal-modal [data-proposal-modal-content] :is(input[type="text"], input[type="email"], input[type="tel"], textarea) {
+ max-width: 100%; min-width: 0;
+}
+.proposal-modal [data-proposal-modal-content] :is(input, select, textarea, button, a):focus-visible {
+ outline: 2px solid var(--color--charcoal--dark, #2a2826) !important;
+ outline-offset: 3px;
+}
+.proposal-modal [data-proposal-modal-content] :is(.tripleseat-dlf-help-text, .tripleseat-dlf-error) { line-height: 1.5; }
+.proposal-modal [data-proposal-modal-content] :is(button[type="submit"], input[type="submit"]) {
+ border: 1px solid var(--color--sky--dark, #72818b) !important;
+ border-radius: 0; min-height: 44px;
+}
+@media (max-width: 767px) {
+ .proposal-modal [data-proposal-modal-content] :is(input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], select, textarea) { font-size: max(16px, 1rem); }
+}
+
+
+/* Proposal modal shell */
+/* Proposal modal shell. This readiness flag prevents enhancement before its CSS loads. */
+[data-proposal-modal="enabled"] { --proposal-modal-ready: 1; }
+.proposal-modal[hidden] { display: none !important; }
+.proposal-modal {
+ position: fixed; inset: 0; z-index: 99990;
+ display: flex; align-items: center; justify-content: center; padding: 24px;
+ background: rgb(0 0 0 / .5); backdrop-filter: blur(4px);
+ color: var(--color--charcoal--dark, #2a2826);
+ font-family: var(--fonts--secondary, "Fakt", sans-serif);
+ animation: proposal-modal-enter 160ms ease-out;
+}
+.proposal-modal_panel {
+ display: flex; flex-direction: column; width: 100%; max-width: 52rem;
+ max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px);
+ min-width: 0; background: var(--color--cream--medium, #f9f4ef);
+}
+.proposal-modal_header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 24px 32px; flex: none; border-bottom: 1px solid var(--color--slate--light, #eaeae7); }
+.proposal-modal_title { font-family: var(--fonts--primary, serif); font-size: 24px; line-height: 32px; font-weight: 400; text-transform: uppercase; margin: 0; }
+.proposal-modal_close { flex: none; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--color--sky--dark, #72818b); background: transparent; color: inherit; font: 32px/1 sans-serif; cursor: pointer; }
+.proposal-modal_body { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; min-height: 0; padding: 0 32px 32px; }
+.proposal-modal :focus-visible { outline: 2px solid var(--color--charcoal--dark, #2a2826) !important; outline-offset: 3px; }
+.proposal-modal_body [data-proposal-modal-content] { display: block !important; width: 100%; min-width: 0; }
+html.proposal-modal-open > body > .timeselect { z-index: 100001 !important; }
+@keyframes proposal-modal-enter { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 767px) {
+ .proposal-modal { padding: 0; }
+ .proposal-modal_panel { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; max-width: none; }
+ .proposal-modal_header { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); gap: 16px; }
+ .proposal-modal_body { padding: 0 max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+}
+@media (prefers-reduced-motion: reduce) { .proposal-modal { animation: none; } }
+
+/* The legacy vendor calendar is a body sibling, owned only while its enquiry is open. */
+html.proposal-modal-open > body > .proposal-modal_calendar {
+ position: fixed !important;
+ left: var(--proposal-calendar-left) !important;
+ top: var(--proposal-calendar-top) !important;
+ z-index: 100002 !important;
+ max-width: calc(100vw - 16px);
+ max-height: calc(100dvh - 16px);
+ overflow: auto;
+}
