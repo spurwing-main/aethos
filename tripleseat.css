@@ -540,18 +540,18 @@
 	min-height: 44px;
 }
 @media (max-width: 767px) {
-	.proposal-modal
-		[data-proposal-modal-content]
+	/* Keep editable fields at the iOS focus-zoom threshold, including untyped inputs. */
+	:is(
+		[id^="tripleseat_embed_form"],
+		#tripleseat_dynamic_embed_form,
+		.proposal-modal [data-proposal-modal-content]
+	)
 		:is(
-			input[type="text"],
-			input[type="email"],
-			input[type="tel"],
-			input[type="number"],
-			input[type="date"],
+			input:not([type="hidden"], [type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="image"], [type="range"], [type="color"]),
 			select,
 			textarea
 		) {
-		font-size: max(16px, 1rem);
+		font-size: max(16px, 1rem) !important;
 	}
 }
 
@@ -658,6 +658,10 @@ html.proposal-modal-open > body > .timeselect {
 		padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 16px
 			max(16px, env(safe-area-inset-left));
 		gap: 16px;
+	}
+	/* The heading receives opening focus for screen readers; it is not a control. */
+	.proposal-modal .proposal-modal_title:focus {
+		outline: none !important;
 	}
 	.proposal-modal_body {
 		padding: 0 max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
