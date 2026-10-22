@@ -6729,6 +6729,9 @@ function main() {
 		// OPEN / CLOSE
 		// ---------------------------------------------------------
 		function openPopup(popupEl, id) {
+			// Enquiries own focus and scrolling until closed; skip this promotional display.
+			if (aethos.proposalModal?.open || aethos.proposalModal?.pending) return;
+			aethos.helpers.closePromoForProposal = () => new Promise(resolve => closePopup(id, { onClosed: resolve }));
 			holder.appendChild(popupEl);
 
 			popupEl.addEventListener(
@@ -6838,6 +6841,9 @@ function main() {
 		}
 
 		function closePopup(id, { onClosed } = {}) {
+			aethos.helpers.closePromoForProposal = null;
+			let resolveClosing;
+			aethos.helpers.promoClosePromise = new Promise(resolve => { resolveClosing = resolve; });
 			const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 			document.documentElement.classList.remove("promopop-open");
@@ -6861,6 +6867,8 @@ function main() {
 
 					markAsShown(id);
 					holder.innerHTML = "";
+					aethos.helpers.promoClosePromise = null;
+					resolveClosing();
 
 					requestAnimationFrame(() => {
 						ScrollTrigger.refresh();
@@ -7002,6 +7010,242 @@ function main() {
 		document.body.style.width = "";
 		window.scrollTo(0, scrollY);
 	};
+	/* PROPOSAL MODAL START */
+	// Explicit enhancement only. Keep the vendor wrapper intact, including scripts and success output.
+	aethos.functions.proposalModal = function () {
+		if (aethos.proposalModal) return aethos.proposalModal;
+		const section = document.querySelector('[data-proposal-modal="enabled"]');
+		if (!section || !section.id || !('inert' in HTMLElement.prototype)) return;
+		// Designer can reinitialise the site namespace while an embed is still loading.
+		if (section._aethosProposalModal) return (aethos.proposalModal = section._aethosProposalModal);
+		if (getComputedStyle(section).getPropertyValue('--proposal-modal-ready').trim() !== '1') return;
+		const content = section.querySelector('[data-proposal-modal-content]');
+		if (!content || section.querySelector('form.proposal-form')) return;
+		const state = { open: false, ready: false };
+		aethos.proposalModal = state;
+		section._aethosProposalModal = state;
+		let overlay, title, scrollBody, invoker, restoreScroll, observer, timer;
+		let backdropDown = false;
+		let lastTimeInput = null;
+		let lastDateInput = null;
+		const inertState = new Map();
+		const originalParent = content.parentNode;
+		const originalNext = content.nextSibling;
+		const heading = section.querySelector('h2,h3,h1');
+		const visible = (el) => !!el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
+		const focusable = (root) => [...root.querySelectorAll('a[href],button,input,select,textarea,iframe,[tabindex]')]
+			.filter(el => el.tabIndex >= 0 && !el.disabled && !el.closest('[inert]') && visible(el));
+		const isTargetHash = () => { try { return decodeURIComponent(location.hash.slice(1)) === section.id; } catch { return false; } };
+		const busy = () => [document.documentElement,document.body].some(el=>el.matches('.promopop-open,.nav-open,.dest-nav-open,.club-nav-open,.booking-open,.lang-open,.lang-switcher-open')) ||
+			!!document.querySelector('.booking_dd-toggle.w--open,.lang-switcher_dd-toggle.w--open') ||
+			[...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].some(el => el !== overlay && !overlay?.contains(el) && visible(el) && getComputedStyle(el).opacity !== '0');
+		function calendarWidget() {
+			if (!lastDateInput || !content.contains(lastDateInput)) return null;
+			const jq = window.TS?.jQuery;
+			if (!jq?.fn?.datepicker) return null;
+			try { return jq(lastDateInput).datepicker('widget')[0] || null; } catch { return null; }
+		}
+		function dismissCalendar() {
+			const widget = calendarWidget();
+			if (!widget) return;
+			// Use the vendor's own jQuery instance and public Datepicker method.
+			window.TS.jQuery(lastDateInput).datepicker('hide');
+			widget.classList.remove('proposal-modal_calendar');
+			widget.style.removeProperty('--proposal-calendar-left');
+			widget.style.removeProperty('--proposal-calendar-top');
+		}
+		function positionCalendar(widget) {
+			if (!widget.classList.contains('proposal-modal_calendar')) widget.classList.add('proposal-modal_calendar');
+			const field = lastDateInput.getBoundingClientRect(), box = widget.getBoundingClientRect();
+			const left = Math.max(8, Math.min(field.left, window.innerWidth - box.width - 8));
+			const below = field.bottom + 4;
+			const top = Math.max(8, Math.min(below + box.height <= window.innerHeight - 8 ? below : field.top - box.height - 4, window.innerHeight - box.height - 8));
+			for (const [name,value] of [['--proposal-calendar-left',left+'px'],['--proposal-calendar-top',top+'px']]) {
+				if (widget.style.getPropertyValue(name) !== value) widget.style.setProperty(name,value);
+			}
+		}
+		function vendorRoots() {
+			const roots = [];
+			// Only the challenge frame belonging to a page with reCAPTCHA inside THIS form is exempted.
+			if (content.querySelector('iframe[src*="/recaptcha/"],.g-recaptcha')) {
+				document.querySelectorAll('iframe[src]').forEach(frame => {
+					let url; try { url = new URL(frame.src); } catch { return; }
+					if (!['www.google.com','www.recaptcha.net'].includes(url.hostname) || !/^\/recaptcha\/(api2|enterprise)\/bframe$/.test(url.pathname)) return;
+					let root = frame; while (root.parentElement && root.parentElement !== document.body) root = root.parentElement;
+					if (root.parentElement === document.body && root !== overlay && visible(root)) roots.push(root);
+				});
+			}
+			if (lastTimeInput && content.contains(lastTimeInput)) document.querySelectorAll('body > .timeselect').forEach(el => { if (visible(el)) roots.push(el); });
+			const calendar = calendarWidget();
+			if (calendar && calendar.parentElement === document.body && visible(calendar)) {
+				positionCalendar(calendar);
+				roots.push(calendar);
+			}
+			return roots;
+		}
+		function isolate() {
+			if (!state.open) return;
+			const allowed = vendorRoots();
+			for (const el of document.body.children) {
+				if (el === overlay || /^(SCRIPT|STYLE|LINK)$/.test(el.tagName)) continue;
+				if (!inertState.has(el)) inertState.set(el, el.inert);
+				const next = allowed.includes(el) ? false : true;
+				if (el.inert !== next) el.inert = next;
+			}
+		}
+		function lockScroll() {
+			const x = window.scrollX, y = window.scrollY;
+			const props = ['position','top','left','right','width','overflow','padding-right'];
+			const saved = props.map(p => [p, document.body.style.getPropertyValue(p), document.body.style.getPropertyPriority(p)]);
+			const htmlOverflow = [document.documentElement.style.getPropertyValue('overflow'),document.documentElement.style.getPropertyPriority('overflow')];
+			const smoother = aethos.smoother;
+			const paused = smoother?.paused();
+			const gap = window.innerWidth - document.documentElement.clientWidth;
+			const padding = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+			Object.assign(document.body.style, {position:'fixed',top:`-${y}px`,left:`-${x}px`,right:'0',width:'100%',overflow:'hidden',paddingRight:`${padding + gap}px`});
+			document.documentElement.style.overflow = 'hidden';
+			smoother?.paused(true);
+			return () => {
+				saved.forEach(([p,v,priority]) => v ? document.body.style.setProperty(p,v,priority) : document.body.style.removeProperty(p));
+				if(htmlOverflow[0]) document.documentElement.style.setProperty('overflow',...htmlOverflow); else document.documentElement.style.removeProperty('overflow');
+				smoother?.paused(paused);
+				const oldBehavior = document.documentElement.style.scrollBehavior;
+				document.documentElement.style.scrollBehavior = 'auto';
+				window.scrollTo(x,y);
+				document.documentElement.style.scrollBehavior = oldBehavior;
+			};
+		}
+		function requestOpen(trigger) {
+			if (!state.ready) {
+				if (state.failed) { section.querySelector('.proposal-modal_fallback a')?.focus(); return true; }
+				state.requestedTrigger = trigger;
+				state.requested = true;
+				if (!section.querySelector('.proposal-modal_status')) {
+					const status = document.createElement('p'); status.className='proposal-modal_status'; status.setAttribute('role','status'); status.textContent='Loading enquiry form…'; section.append(status);
+				}
+				return true;
+			}
+			if (state.pending) return true;
+			if (aethos.helpers.promoClosePromise || (document.documentElement.classList.contains('promopop-open') && aethos.helpers.closePromoForProposal)) {
+				state.pending = true;
+				Promise.resolve(aethos.helpers.promoClosePromise || aethos.helpers.closePromoForProposal()).then(() => {state.pending=false;open(trigger);},()=>{state.pending=false;});
+				return true;
+			}
+			return open(trigger);
+		}
+		function open(trigger) {
+			if (!state.ready || state.open || busy()) return false;
+			invoker = trigger || document.activeElement;
+			restoreScroll = lockScroll();
+			state.open = true;
+			overlay.hidden = false;
+			document.documentElement.classList.add('proposal-modal-open');
+			isolate();
+			observer.observe(document.body, {childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+			title.focus({preventScroll:true});
+			section.dispatchEvent(new CustomEvent('proposal-modal:open',{bubbles:true}));
+			return true;
+		}
+		function close() {
+			if (!state.open) return;
+			// Keep the enclosing modal open while the vendor owns an active CAPTCHA challenge.
+			if (vendorRoots().some(el => el.querySelector('iframe[src*="/bframe"]'))) return;
+			dismissCalendar();
+			state.open = false;
+			observer.disconnect();
+			overlay.hidden = true;
+			document.documentElement.classList.remove('proposal-modal-open');
+			inertState.forEach((value,el) => { el.inert = value; }); inertState.clear();
+			restoreScroll?.();
+			if (isTargetHash()) history.replaceState(history.state,'',location.pathname + location.search);
+			if (invoker?.isConnected && !invoker.closest('[inert]')) invoker.focus({preventScroll:true});
+			section.dispatchEvent(new CustomEvent('proposal-modal:close',{bubbles:true}));
+		}
+		function fail() {
+			if (state.ready) return;
+			clearTimeout(timer);
+			// Keep watching: a slow vendor response can still recover after the fallback appears.
+			state.failed = true;
+			section.querySelector('.proposal-modal_status')?.remove();
+			// Leave the original inline source in place, with a verified contact-page fallback.
+			if (!section.querySelector('.proposal-modal_fallback')) {
+				const p = document.createElement('p'); p.className = 'proposal-modal_fallback'; p.setAttribute('role','status');
+				p.append('If the enquiry form does not load, please ');
+				const a = document.createElement('a'); a.href = '/contact'; a.textContent = 'contact Aethos'; p.append(a); section.append(p);
+			}
+		}
+		function enhance() {
+			if (state.ready || !content.querySelector('form, [id^="tripleseat_embed_form"] :is(input:not([type="hidden"]),select,textarea,button)')) return;
+			try {
+				overlay = document.createElement('div'); overlay.className = 'proposal-modal'; overlay.hidden = true;
+				overlay.innerHTML = '<section class="proposal-modal_panel" role="dialog" aria-modal="true"><header class="proposal-modal_header"><h2 class="proposal-modal_title" tabindex="-1"></h2><button class="proposal-modal_close" type="button" aria-label="Close enquiry form">×</button></header><div class="proposal-modal_body"></div></section>';
+				title = overlay.querySelector('h2'); title.id = `${section.id}-modal-title`; title.textContent = heading?.textContent || 'Request a proposal';
+				overlay.querySelector('[role="dialog"]').setAttribute('aria-labelledby',title.id);
+				scrollBody = overlay.querySelector('.proposal-modal_body');
+				// Preserve inherited theme tokens when leaving a themed smooth-content ancestor.
+				const styles = getComputedStyle(section);
+				for (let i=0;i<styles.length;i++) { const p=styles[i]; if(p.startsWith('--')) overlay.style.setProperty(p,styles.getPropertyValue(p)); }
+				document.body.append(overlay);
+				scrollBody.append(content);
+				section.classList.add('proposal-modal-ready');
+				state.ready = true; state.failed = false; clearTimeout(timer); observer.disconnect();
+				section.querySelector('.proposal-modal_fallback')?.remove();
+				section.querySelector('.proposal-modal_status')?.remove();
+				overlay.querySelector('.proposal-modal_close').addEventListener('click',close);
+				overlay.addEventListener('pointerdown',e => {backdropDown=e.target===overlay;});
+				overlay.addEventListener('pointerup',e => {if(backdropDown && e.target===overlay) close();backdropDown=false;});
+				overlay.addEventListener('focusin',e => {
+					lastTimeInput=e.target.matches('input.timeselect_input')?e.target:null;
+					if(e.target.matches('input.hasDatepicker')) lastDateInput=e.target;
+				});
+				scrollBody.addEventListener('scroll',() => {
+					const calendar=calendarWidget();
+					if(calendar&&visible(calendar)){
+						const field=lastDateInput.getBoundingClientRect(), area=scrollBody.getBoundingClientRect();
+						if(field.bottom<=area.top||field.top>=area.bottom)dismissCalendar();else positionCalendar(calendar);
+					}
+					if(lastTimeInput) { lastTimeInput.blur(); document.querySelectorAll('body > .timeselect').forEach(el=>{el.style.display='none';}); lastTimeInput=null; }
+				},{passive:true});
+				document.addEventListener('keydown',e => {
+					if(!state.open) return;
+					const vendors=vendorRoots();
+					if(e.key==='Escape') {
+						if(e.defaultPrevented)return;
+						const calendar=calendarWidget();
+						if(calendar&&visible(calendar)){e.preventDefault();e.stopImmediatePropagation();dismissCalendar();return;}
+						if(vendors.length)return;e.preventDefault();close();
+					}
+					if(e.key==='Tab') {const els=[...focusable(overlay),...vendors.flatMap(focusable)];const index=els.indexOf(document.activeElement);if(!els.length){e.preventDefault();title.focus();}else if(index<0||(!e.shiftKey&&index===els.length-1)||(e.shiftKey&&index===0)){e.preventDefault();els[e.shiftKey?els.length-1:0].focus();}}
+				},true);
+				document.addEventListener('focusin',e=>{if(state.open&&!overlay.contains(e.target)&&!vendorRoots().some(root=>root.contains(e.target)))title.focus({preventScroll:true});});
+
+				window.addEventListener('hashchange',()=>{if(isTargetHash())requestOpen();else if(state.open)close();});
+				const requestedTrigger=state.requestedTrigger, wasRequested=state.requested;
+				state.requested=false; state.requestedTrigger=null;
+				if(wasRequested || isTargetHash())requestOpen(requestedTrigger);
+			} catch(error) {
+				originalParent.insertBefore(content,originalNext?.parentNode===originalParent?originalNext:null);
+				overlay?.remove();section.classList.remove('proposal-modal-ready');state.ready=false;observer.disconnect();fail();
+				console.warn('[Proposal modal] Kept inline after enhancement failed',error);
+			}
+		}
+		document.addEventListener('click',e=>{
+			if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+			const action=e.target.closest('a[href],button');
+			const trigger=action?.closest('[data-proposal-modal-open]') || e.target.closest('[data-proposal-modal-open]') || action;if(!trigger)return;
+			let matches=trigger.dataset.proposalModalOpen===section.id;
+			if(!matches&&trigger.matches('a[href]')) {const url=new URL(trigger.href,location.href);try{matches=url.origin===location.origin&&url.pathname===location.pathname&&url.search===location.search&&decodeURIComponent(url.hash.slice(1))===section.id;}catch{}}
+			if(matches&&requestOpen(action || trigger)){e.preventDefault();e.stopImmediatePropagation();}
+		},true);
+		window.addEventListener('resize',()=>{if(state.open)dismissCalendar();});
+		observer = new MutationObserver(()=>state.ready?isolate():enhance());
+		observer.observe(content,{childList:true,subtree:true});
+		timer=setTimeout(fail,15000);
+		enhance();
+		return state;
+	};
+	/* PROPOSAL MODAL END */
+
 	aethos.functions.customFormSubmit = function () {
 		document.querySelectorAll("form").forEach((form) => {
 			if (!form.querySelector("[data-custom-submit='trigger']")) return;
@@ -7093,6 +7337,7 @@ function main() {
 	aethos.functions.observeBookingToggle();
 	aethos.functions.scrollbarWidth();
 	aethos.functions.updateFooterLinks();
+	aethos.functions.proposalModal();
 	aethos.functions.promopop();
 
 	aethos.aethosScriptsLoaded = true; // Confirms external script executed
