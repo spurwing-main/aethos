@@ -1,0 +1,21 @@
+# Machine-specific files and generated evidence belong in ../local/.
+.DS_Store
+.vscode/
+.playwright-cli/
+.superpowers/
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+*.log
+.env
+.env.*
+!.env.example
+/local/
+/private/
+/dev/
+/archive/
+/local-overrides/
+/outputs/
+/way-dev/

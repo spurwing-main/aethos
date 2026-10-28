@@ -2469,7 +2469,7 @@ function main() {
 		}
 
 		// Initialize Splide for a carousel
-		function initializeSplide(carousel, pagination, counters) {
+		function initializeSplide(carousel, pagination, counters, options = {}, beforeMount) {
 			const splideInstance = new Splide(carousel, {
 				type: "loop",
 				perPage: 1,
@@ -2478,7 +2478,8 @@ function main() {
 				pagination: false,
 				arrows: true,
 				drag: true,
-			}).mount();
+				...options,
+			});
 
 			splideInstance.on("move", (newIndex) => {
 				if (counters) {
@@ -2491,7 +2492,10 @@ function main() {
 				}
 			});
 
+			if (beforeMount) beforeMount(splideInstance);
+			splideInstance.mount();
 			aethos.log("Splide carousel initialized.");
+			return splideInstance;
 		}
 
 		// Generic carousel initializer
@@ -2602,10 +2606,224 @@ function main() {
 			});
 		}
 
+		/* Gallery plus text: static slot or rendered CMS rich-text components. */
+		function galleryTextCarousels() {
+			const sectionSelector = ".s-gallery-text";
+			const slideSelector = ".amenity-gallery-slide";
+			const captionSelector = ".amenity-gallery-slide_content";
+			const sections = document.querySelectorAll(sectionSelector);
+			if (!sections.length) return;
+
+			// State and control styles live in Header > Global Styles > css-components.
+
+			sections.forEach((section) => {
+				if (section._aethosGalleryText) return;
+				const owned = (selector) => [...section.querySelectorAll(selector)].filter((el) => el.closest(sectionSelector) === section);
+				const slider = owned(".gallery-text_slider")[0];
+				const list = owned(".gallery-text_list")[0];
+				const gallery = owned(".gallery-text_gallery")[0];
+				if (!slider || !list || !gallery) return;
+				const source = owned("[data-gallery-text-source]")[0];
+				const visibleSlide = (slide) => !slide.hidden && !slide.classList.contains("w-condition-invisible") && getComputedStyle(slide).display !== "none";
+				const sourceSlides = source ? [...source.querySelectorAll(slideSelector)].filter((slide) =>
+					slide.closest(sectionSelector) === section && !slide.parentElement.closest(slideSelector) && visibleSlide(slide),
+				) : [];
+				if (sourceSlides.length) list.replaceChildren(...sourceSlides);
+				if (source) source.hidden = true;
+				const slides = [...list.children].filter((slide) => slide.matches(slideSelector) && visibleSlide(slide));
+				// Hidden authored slides must be excluded from both Splide's index and the flex layout.
+				[...list.children].filter((slide) => slide.matches(slideSelector) && !visibleSlide(slide))
+					.forEach((slide) => slide.classList.remove("splide__slide"));
+				let pagination = owned(".gallery-text_pagination")[0];
+				const originalCaptions = new Map(owned(captionSelector).map((caption) =>
+					[caption, { inert: caption.inert, ariaHidden: caption.getAttribute("aria-hidden") }],
+				));
+				const restoreCaptions = () => {
+					originalCaptions.forEach((original, caption) => {
+						caption.inert = original.inert;
+						if (original.ariaHidden === null) caption.removeAttribute("aria-hidden");
+						else caption.setAttribute("aria-hidden", original.ariaHidden);
+						caption.removeAttribute("data-gallery-text-current");
+					});
+				};
+				const fallback = () => {
+					section.removeAttribute("data-gallery-text-ready");
+					section.removeAttribute("data-gallery-text-hover");
+					section.setAttribute("data-gallery-text-fallback", "");
+					restoreCaptions();
+					if (pagination) pagination.hidden = true;
+				};
+				if (!slides.length) {
+					section.hidden = true;
+					section.setAttribute("data-gallery-text-empty", "");
+					if (pagination) pagination.hidden = true;
+					return;
+				}
+				if (section.hasAttribute("data-gallery-text-empty")) {
+					section.hidden = false;
+					section.removeAttribute("data-gallery-text-empty");
+				}
+				if (slides.length < 2 || typeof Splide !== "function" || aethos.settings.dev.splide === false) {
+					fallback();
+					return;
+				}
+				section.removeAttribute("data-gallery-text-fallback");
+				slides.forEach((slide) => slide.classList.add("splide__slide"));
+				if (!pagination || pagination.tagName !== "UL") {
+					const replacement = document.createElement("ul");
+					if (pagination) {
+						for (const { name, value } of [...pagination.attributes]) replacement.setAttribute(name, value);
+						pagination.replaceWith(replacement);
+					}
+					pagination = replacement;
+				}
+				pagination.className = "gallery-text_pagination splide__pagination";
+				pagination.replaceChildren();
+				pagination.hidden = false;
+				slider.append(pagination);
+				const arrows = document.createElement("div");
+				arrows.className = "gallery-text_arrows splide__arrows";
+				for (const direction of ["prev", "next"]) {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = `splide__arrow splide__arrow--${direction}`;
+					button.setAttribute("aria-label", direction === "prev" ? "Previous slide" : "Next slide");
+					button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.9939 11.9938L13.5689 19.9876L13.0001 19.3752L19.8563 11.9938L13.0001 4.61234L13.5689 4L20.9939 11.9938Z M20.547 11.5574L20.5471 11.5946V12.3879L3 12.3878L3.00001 11.5574L20.547 11.5574Z"/></svg>';
+					arrows.append(button);
+				}
+				slider.append(arrows);
+				const state = { splide: null, dragging: false, moving: false, current: null, frame: 0, destroyed: false };
+				section._aethosGalleryText = state;
+				const allCaptions = () => owned(captionSelector);
+				const hideCaptions = () => {
+					allCaptions().forEach((caption) => {
+						if (caption.contains(document.activeElement)) slider.focus({ preventScroll: true });
+						caption.removeAttribute("data-gallery-text-current");
+						caption.setAttribute("aria-hidden", "true");
+						caption.inert = true;
+					});
+				};
+				const updateLayout = () => {
+					if (state.destroyed) return;
+					const frame = slider.getBoundingClientRect();
+					const image = (state.current || slides[0]).querySelector(".amenity-gallery-slide_media");
+					const height = image ? image.getBoundingClientRect().height : 0;
+					gallery.style.setProperty("--gallery-text-media-height", `${height.toFixed(3)}px`);
+					gallery.style.setProperty("--gallery-text-frame-width", `${frame.width.toFixed(3)}px`);
+					const touchControls = window.matchMedia("(max-width:767px), (hover:none)").matches;
+					gallery.style.setProperty("--gallery-text-controls-height", `${Math.max(touchControls ? 44 : 32, pagination.offsetHeight)}px`);
+					const area = gallery.getBoundingClientRect();
+					const gap = parseFloat(getComputedStyle(slides[0]).marginRight) || 0;
+					const leftCentre = (area.left + Math.max(area.left, frame.left - gap)) / 2;
+					const rightCentre = (area.right + Math.min(area.right, frame.right + gap)) / 2;
+					gallery.style.setProperty("--gallery-text-prev-x", `${leftCentre - frame.left - 22}px`);
+					gallery.style.setProperty("--gallery-text-next-x", `${rightCentre - frame.left - 22}px`);
+				};
+				const settle = () => {
+					cancelAnimationFrame(state.frame);
+					state.frame = requestAnimationFrame(() => {
+						if (state.destroyed || state.dragging || state.moving) return;
+						const frame = slider.getBoundingClientRect();
+						const centre = frame.left + frame.width / 2;
+						state.current = owned(slideSelector).filter((slide) => slide.closest(".gallery-text_list") === list && visibleSlide(slide))
+							.reduce((nearest, slide) => {
+								const rect = slide.getBoundingClientRect();
+								const distance = Math.abs(rect.left + rect.width / 2 - centre);
+								return rect.width && (!nearest || distance < nearest.distance) ? { slide, distance } : nearest;
+							}, null)?.slide;
+						hideCaptions();
+						const caption = state.current?.querySelector(captionSelector);
+						if (caption) {
+							caption.inert = false;
+							caption.removeAttribute("aria-hidden");
+							caption.setAttribute("data-gallery-text-current", "");
+						}
+						updateLayout();
+					});
+				};
+				const hover = (event) => {
+					const frame = slider.getBoundingClientRect();
+					const height = parseFloat(gallery.style.getPropertyValue("--gallery-text-media-height")) || 0;
+					const overImage = event.clientY >= frame.top && event.clientY <= frame.top + height;
+					const direction = overImage && event.clientX < frame.left ? "previous" : overImage && event.clientX > frame.right ? "next" : "";
+					if (direction) section.setAttribute("data-gallery-text-hover", direction);
+					else section.removeAttribute("data-gallery-text-hover");
+				};
+				const leave = () => section.removeAttribute("data-gallery-text-hover");
+				const clickPreview = (event) => {
+					if (event.defaultPrevented || state.dragging || state.moving) return;
+					const image = event.target.closest(".amenity-gallery-slide_media");
+					const slide = image?.closest(slideSelector);
+					if (!slide || slide.closest(sectionSelector) !== section || slide === state.current) return;
+					const frame = slider.getBoundingClientRect();
+					const rect = slide.getBoundingClientRect();
+					event.preventDefault();
+					state.splide.go(rect.left + rect.width / 2 < frame.left + frame.width / 2 ? "<" : ">");
+				};
+				let observer;
+				const cleanup = () => {
+					if (state.destroyed) return;
+					state.destroyed = true;
+					cancelAnimationFrame(state.frame);
+					observer?.disconnect();
+					gallery.removeEventListener("pointermove", hover);
+					gallery.removeEventListener("pointerleave", leave);
+					gallery.removeEventListener("click", clickPreview);
+					section.removeEventListener("load", updateLayout, true);
+					window.removeEventListener("resize", settle);
+					arrows.remove();
+					delete section._aethosGalleryText;
+					if (aethos.splides) aethos.splides = aethos.splides.filter((instance) => instance !== state.splide);
+					fallback();
+				};
+				state.destroy = () => { try { state.splide?.destroy(true); } finally { cleanup(); } };
+				try {
+					slider.setAttribute("tabindex", "-1");
+					const heading = owned(".gallery-text_header h2")[0];
+					const label = heading?.textContent.trim() || "Gallery";
+					section.setAttribute("data-gallery-text-ready", "");
+					hideCaptions();
+					initializeSplide(slider, null, null, {
+						type: "loop", perPage: 1, perMove: 1, autoWidth: false, focus: "center", trimSpace: false,
+						drag: true, snap: true, autoplay: false, pagination: true, arrows: true, updateOnMove: false,
+						waitForTransition: true, speed: 500, gap: "2rem", label,
+						breakpoints: { 767: { gap: "1rem" } },
+						reducedMotion: { speed: 0, rewindSpeed: 0, autoplay: false },
+					}, (instance) => {
+						state.splide = instance;
+						instance.on("drag", () => { state.dragging = true; hideCaptions(); });
+						instance.on("move scroll", () => { state.moving = true; hideCaptions(); });
+						instance.on("dragged", () => { state.dragging = false; settle(); });
+						instance.on("moved scrolled", () => { state.moving = false; settle(); });
+						instance.on("mounted resized refresh", settle);
+						instance.on("destroy", cleanup);
+					});
+					gallery.addEventListener("pointermove", hover);
+					gallery.addEventListener("pointerleave", leave);
+					gallery.addEventListener("click", clickPreview);
+					section.addEventListener("load", updateLayout, true);
+					window.addEventListener("resize", settle);
+					if (typeof ResizeObserver === "function") {
+						observer = new ResizeObserver(updateLayout);
+						observer.observe(slider);
+						observer.observe(pagination);
+					}
+					aethos.splides = aethos.splides || [];
+					aethos.splides.push(state.splide);
+					settle();
+				} catch (error) {
+					try { state.splide?.destroy(true); } catch (_) { /* Partially mounted library. */ }
+					cleanup();
+					console.warn("Gallery plus text kept its readable fallback:", error);
+				}
+			});
+		}
+
 		/* Initialize All Carousels */
 		blockCarousel();
 		roomCardCarousel();
 		loadCMSCarousels();
+		galleryTextCarousels();
 	};
 
 	aethos.anim.loadSliders = function () {

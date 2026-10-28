@@ -239,3 +239,70 @@ a:not([class]):hover {
 svg.logo {
 	overflow: visible !important;
 }
+
+/* Gallery plus text: controls and enhancement states (Header > Global Styles > css-components). */
+.s-gallery-text[data-gallery-text-fallback] .gallery-text_list {
+ display:grid; gap:2rem;
+}
+.s-gallery-text[hidden], .s-gallery-text [data-gallery-text-source][hidden],
+.s-gallery-text .amenity-gallery-slide[hidden], .s-gallery-text .amenity-gallery-slide.w-condition-invisible {
+ display:none !important;
+}
+.s-gallery-text[data-gallery-text-ready] .amenity-gallery-slide_content {
+ padding-top:calc(var(--gallery-text-controls-height, 32px) + 1rem);
+ opacity:0; visibility:hidden; pointer-events:none; transition:opacity 200ms ease;
+}
+.s-gallery-text[data-gallery-text-ready] .amenity-gallery-slide_content[data-gallery-text-current] {
+ opacity:1; visibility:visible; pointer-events:auto;
+}
+.s-gallery-text .gallery-text_arrows.splide__arrows {
+ position:absolute; inset:0; width:100%; height:100%; display:block; opacity:1; pointer-events:none;
+}
+.s-gallery-text .gallery-text_arrows .splide__arrow {
+ position:absolute; top:calc(var(--gallery-text-media-height) / 2 - 1.375rem);
+ width:2.75rem; height:2.75rem; margin:0; padding:.5rem; display:flex; align-items:center; justify-content:center;
+ border:0; background:none; color:white; filter:drop-shadow(0 1px 2px #0008); cursor:pointer;
+ pointer-events:auto; opacity:0; transition:opacity 150ms ease;
+}
+.s-gallery-text .gallery-text_arrows .splide__arrow--prev { left:var(--gallery-text-prev-x); right:auto; }
+.s-gallery-text .gallery-text_arrows .splide__arrow--next { left:var(--gallery-text-next-x); right:auto; }
+.s-gallery-text .gallery-text_arrows .splide__arrow svg { display:block; width:100%; height:100%; transform:none; }
+.s-gallery-text .gallery-text_arrows .splide__arrow--prev svg { transform:rotate(180deg); }
+.s-gallery-text[data-gallery-text-hover="previous"] .splide__arrow--prev,
+.s-gallery-text[data-gallery-text-hover="next"] .splide__arrow--next,
+.s-gallery-text .gallery-text_arrows .splide__arrow:focus-visible { opacity:1; }
+.s-gallery-text .gallery-text_arrows .splide__arrow:focus-visible,
+.s-gallery-text .gallery-text_pagination button:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+.s-gallery-text .gallery-text_pagination.splide__pagination {
+ position:absolute; top:calc(var(--gallery-text-media-height) + .5rem); left:50%; right:auto;
+ transform:translateX(-50%); width:var(--gallery-text-frame-width); max-width:100%; min-height:32px;
+ display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:0; list-style:none;
+ padding:0; margin:0; z-index:2;
+}
+.s-gallery-text .gallery-text_pagination li { display:block; padding:0; margin:0; }
+.s-gallery-text .gallery-text_pagination button {
+ display:flex; align-items:center; justify-content:center; width:24px; height:32px; border:0; border-radius:0;
+ padding:0; margin:0; background:none; color:inherit; cursor:pointer; transform:none;
+}
+.s-gallery-text .gallery-text_pagination button::before {
+ content:""; width:6px; height:6px; border:1px solid currentColor; border-radius:50%; background:transparent;
+}
+.s-gallery-text .gallery-text_pagination button.is-active::before { background:currentColor; }
+.s-gallery-text .splide__sr {
+ display:block !important; position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+ overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+@media(max-width:767px), (hover:none) {
+ .s-gallery-text .gallery-text_arrows .splide__arrow {
+  top:calc(var(--gallery-text-media-height) + .5rem); color:inherit; filter:none; opacity:1;
+ }
+ .s-gallery-text .gallery-text_arrows .splide__arrow--prev { left:0; }
+ .s-gallery-text .gallery-text_arrows .splide__arrow--next { left:3rem; }
+ .s-gallery-text .gallery-text_pagination.splide__pagination {
+  left:auto; right:0; transform:none; width:calc(100% - 7rem); max-width:calc(100% - 7rem);
+ }
+}
+@media(prefers-reduced-motion:reduce) {
+ .s-gallery-text[data-gallery-text-ready] .amenity-gallery-slide_content,
+ .s-gallery-text .gallery-text_arrows .splide__arrow { transition:none; }
+}
