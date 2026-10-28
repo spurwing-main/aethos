@@ -11,8 +11,8 @@ const carouselCode = source.slice(start, end);
 const results = [];
 let browser;
 const test = async (name, fn) => { try { await fn(); results.push({ name, pass: true }); console.log('PASS', name); } catch (error) { results.push({ name, pass: false, error: error.message }); console.error('FAIL', name, error.message); } };
-async function setup({ reducedMotion = 'no-preference', width = 1440, library = true } = {}) {
-  const page = await browser.newPage({ viewport: { width, height: 1200 }, reducedMotion });
+async function setup({ reducedMotion = 'no-preference', width = 1440, library = true, touch = false } = {}) {
+  const page = await browser.newPage({ viewport: { width, height: 1200 }, reducedMotion, isMobile: touch, hasTouch: touch });
   await page.goto(pathToFileURL(path.join(__dirname, 'fixtures/gallery-text.html')).href);
   await page.addStyleTag({ content: fs.readFileSync(path.join(__dirname, '../css/globalstyles/4_components.css'), 'utf8') });
   if (library) await page.addScriptTag({ url: 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js' });
@@ -74,6 +74,56 @@ async function go(page, id, direction) {
     const page = await setup(); await page.evaluate(() => makeGallery('small-drag', ['One', 'Two'])); await initialise(page); const box = await page.locator('#small-drag .gallery-text_slider').boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + 60); await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 - 12, box.y + 60, { steps: 4 }); await page.waitForTimeout(250); await page.mouse.up(); await page.waitForTimeout(850);
     assert.equal(await page.locator('#small-drag [data-gallery-text-current]').count(), 1); await page.close();
+  });
+  await test('vertical touch scrolling over the gallery preserves its active caption, including cancellation', async () => {
+    const page = await setup({ width: 390, touch: true });
+    await page.evaluate(() => { makeGallery('vertical', ['One', 'Two', 'Three']); document.body.style.minHeight = '3000px'; }); await initialise(page); await page.waitForTimeout(700);
+    const client = await page.context().newCDPSession(page);
+    const touch = (type, x, y) => client.send('Input.dispatchTouchEvent', { type, touchPoints: /touchEnd|touchCancel/.test(type) ? [] : [{ x, y }] });
+    const box = await page.locator('#vertical .gallery-text_slider').boundingBox(); const x = box.x + box.width / 2, y = box.y + 100;
+    await touch('touchStart', x, y);
+    for (let i = 1; i <= 5; i++) {
+      await touch('touchMove', x + i % 2, y - i * 15); await page.waitForTimeout(25);
+      assert.equal(await page.locator('#vertical [data-gallery-text-current]').count(), 1, 'vertical movement must keep the caption visible');
+    }
+    await touch('touchCancel'); await page.waitForTimeout(200);
+    const state = await page.evaluate(() => ({ scroll: scrollY, index: document.getElementById('vertical')._aethosGalleryText.splide.index, captions: document.querySelectorAll('#vertical [data-gallery-text-current]').length }));
+    assert.ok(state.scroll > 0, 'the browser must scroll the page'); assert.equal(state.index, 0); assert.equal(state.captions, 1);
+    await page.evaluate(() => window.scrollTo(0, 100)); await page.waitForTimeout(50);
+    const currentBox = await page.locator('#vertical .gallery-text_slider').boundingBox(); const reverseY = Math.max(30, currentBox.y + 100);
+    await touch('touchStart', x, reverseY);
+    for (let i = 1; i <= 5; i++) {
+      await touch('touchMove', x + i % 2, reverseY + i * 12); await page.waitForTimeout(25);
+      assert.equal(await page.locator('#vertical [data-gallery-text-current]').count(), 1, 'scrolling back up must keep the caption visible');
+    }
+    await touch('touchEnd'); await page.waitForTimeout(200);
+    assert.ok(await page.evaluate(() => scrollY < 100), 'the page must scroll back up');
+    assert.equal(await page.locator('#vertical [data-gallery-text-current]').count(), 1); await page.close();
+  });
+  await test('horizontal touch swipes hide moving captions and restore them after release or cancellation', async () => {
+    const page = await setup({ width: 390, touch: true }); await page.evaluate(() => makeGallery('touch-swipe', ['One', 'Two', 'Three'])); await initialise(page);
+    const client = await page.context().newCDPSession(page);
+    const touch = (type, x, y) => client.send('Input.dispatchTouchEvent', { type, touchPoints: /touchEnd|touchCancel/.test(type) ? [] : [{ x, y }] });
+    const box = await page.locator('#touch-swipe .gallery-text_slider').boundingBox();
+    for (const ending of ['touchEnd', 'touchCancel']) {
+      await touch('touchStart', box.x + box.width * .8, box.y + 60);
+      for (let i = 1; i <= 6; i++) { await touch('touchMove', box.x + box.width * (.8 - i * .09), box.y + 60); await page.waitForTimeout(20); }
+      assert.equal(await page.locator('#touch-swipe [data-gallery-text-current]').count(), 0, 'a real horizontal drag must hide captions');
+      await touch(ending); await page.waitForTimeout(750);
+      assert.equal(await page.locator('#touch-swipe [data-gallery-text-current]').count(), 1, 'caption must return after ' + ending);
+      assert.equal(await page.evaluate(() => { const c = document.getElementById('touch-swipe')._aethosGalleryText; return c.dragging || c.moving; }), false);
+    }
+    await page.close();
+  });
+  await test('caption reveal progresses gently after the slide has settled', async () => {
+    const page = await setup(); await page.evaluate(() => makeGallery('soft', ['One', 'Two'])); await initialise(page); await page.waitForTimeout(700);
+    await page.evaluate(() => document.getElementById('soft')._aethosGalleryText.splide.go('>'));
+    await page.waitForFunction(() => !!document.querySelector('#soft [data-gallery-text-current]'));
+    await page.waitForTimeout(150);
+    const middle = await page.locator('#soft [data-gallery-text-current]').evaluate(el => Number(getComputedStyle(el).opacity));
+    assert.ok(middle > 0 && middle < .7, 'caption should still be fading in after 150ms, got ' + middle);
+    await page.waitForTimeout(550);
+    assert.equal(await page.locator('#soft [data-gallery-text-current]').evaluate(el => Number(getComputedStyle(el).opacity)), 1); await page.close();
   });
   await test('mobile controls stay below the image after resize and reduced motion removes transport and caption animation', async () => {
     const page = await setup({ reducedMotion: 'reduce' }); await page.evaluate(() => makeGallery('responsive', ['One', 'Two', 'Three'])); await initialise(page); await page.setViewportSize({ width: 390, height: 1000 }); await page.waitForTimeout(200);

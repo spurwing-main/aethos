@@ -2791,9 +2791,14 @@ function main() {
 						reducedMotion: { speed: 0, rewindSpeed: 0, autoplay: false },
 					}, (instance) => {
 						state.splide = instance;
-						instance.on("drag", () => { state.dragging = true; hideCaptions(); });
+						// `drag` also fires for vertical page scrolling; `dragging` confirms slider movement.
+						instance.on("dragging", () => {
+							if (!state.dragging) { state.dragging = true; hideCaptions(); }
+						});
 						instance.on("move scroll", () => { state.moving = true; hideCaptions(); });
-						instance.on("dragged", () => { state.dragging = false; settle(); });
+						instance.on("dragged", () => {
+							if (state.dragging) { state.dragging = false; settle(); }
+						});
 						instance.on("moved scrolled", () => { state.moving = false; settle(); });
 						instance.on("mounted resized refresh", settle);
 						instance.on("destroy", cleanup);
