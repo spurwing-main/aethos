@@ -1,4 +1,28 @@
 function main() {
+	// Capture campaign intent before provider startup can change the URL.
+	const hotelChampEntryUrl = window.location.href;
+	// Resolve booking shortcuts before any other link rewriting or handlers.
+	// This does not wait for Hotelchamp or start loading it.
+	aethos.helpers.getHotelChampShortLink = function (href) {
+		const value = (href || "").trim();
+		if (!value.includes("reservenow")) return null;
+		try {
+			const url = new URL(value, window.location.href);
+			if (url.origin !== window.location.origin || !/^\/reservenow\/?$/.test(url.pathname) || url.hash) return null;
+			const params = new URLSearchParams({ p: "base", c: "search", fo: "true" });
+			for (const [key, value] of url.searchParams) {
+				if (key !== "p" && key !== "c" && key !== "fo") params.append(key, value);
+			}
+			return `#?${params.toString()}`;
+		} catch {
+			return null;
+		}
+	};
+	document.querySelectorAll("a[href]").forEach((link) => {
+		const href = aethos.helpers.getHotelChampShortLink(link.getAttribute("href"));
+		if (href) link.setAttribute("href", href);
+	});
+
 	aethos.settings.dev = aethos.settings.dev || {};
 
 	// Function to get URL parameters
@@ -221,10 +245,16 @@ function main() {
 		const links = document.querySelectorAll("a[href^='https://'], a[href^='http://']");
 		const host = window.location.hostname;
 
-		const isInternalLink = (link) => new URL(link).hostname === host;
-
 		links.forEach((link) => {
-			if (isInternalLink(link)) return;
+			let url;
+			try {
+				url = new URL(link.href);
+			} catch {
+				// A malformed authored URL must not abort the rest of site setup.
+				aethos.log("Skipping invalid link URL:", link.getAttribute("href"));
+				return;
+			}
+			if (url.hostname === host) return;
 
 			link.setAttribute("target", "_blank");
 			link.setAttribute("rel", "noopener");
@@ -405,9 +435,13 @@ function main() {
 
 		// Set up link event listeners
 		document.addEventListener("click", function (e) {
+			// Booking and other delegated handlers may already own this click.
+			// Modified clicks should retain the browser's native new-tab behaviour.
+			if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 			const link = e.target.closest("a");
 
 			if (!link) return; // Ignore clicks not on <a> elements
+			if (link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
 
 			// Exclude links that are descendants of a `.pagination` element
 			if (link.closest(".pagination")) {
@@ -422,10 +456,16 @@ function main() {
 			}
 
 			const destinationHref = link.getAttribute("href");
-			const destinationUrl = link.href ? new URL(link.href) : null;
 
 			// Ignore links with empty href or href="#"
 			if (!destinationHref || destinationHref === "#") {
+				return;
+			}
+			let destinationUrl;
+			try {
+				destinationUrl = new URL(link.href);
+			} catch {
+				aethos.log("Skipping transition for invalid link URL:", destinationHref);
 				return;
 			}
 
@@ -6157,6 +6197,119 @@ function main() {
 		// Delegate so it works for buttons added later (CMS, dynamic content, etc)
 		const SELECTOR = ".button.reservenow";
 
+		// Named fragments work on clicks and arrivals. Native query and earlier
+		// fragment spellings remain supported for existing authored links.
+		function getBookingLink(href, { nativeArrival = false } = {}) {
+			const value = (href || "").trim();
+			if (!value) return null;
+			try {
+				const url = new URL(value, window.location.href);
+				if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+				const marker = !nativeArrival && url.hash.match(/^#reservenow(?:\?(.*))?$/);
+				const fragment = !nativeArrival && url.hash.match(/^#\/?\?(.*)$/);
+				// Ordinary anchors must not inherit booking state from the page URL.
+				if (value.startsWith("#") && !marker && !fragment) return null;
+				// Explicit fragment options outrank any remembered state before #.
+				const params = marker ? new URLSearchParams(marker[1] || "") : fragment ? new URLSearchParams(fragment[1]) : url.searchParams;
+				if (!marker && (params.get("p") !== "base" || params.get("c") !== "search" || params.get("fo") !== "true")) return null;
+				const rateId = params.get("pr");
+				const propertyId = params.get("propertyId");
+				const promoCode = params.has("promoCode") ? params.get("promoCode") : params.get("pc");
+				const options = {};
+				if (rateId !== null) options.promotionalRateId = rateId;
+				if (propertyId !== null) options.propertyId = propertyId;
+				if (promoCode !== null) options.promoCode = promoCode;
+				// Native arrivals keep their original recognition rules; HC owns
+				// interpreting those URLs. Validate optional API fields on clicks.
+				const valid = (rateId === null || /^\d+$/.test(rateId)) &&
+					(nativeArrival || ((propertyId === null || propertyId.trim().length > 0) &&
+						(promoCode === null || promoCode.trim().length > 0)));
+				return { url, rateId, options, valid, marker: Boolean(marker) };
+			} catch {
+				return null;
+			}
+		}
+
+		function getBookingTrigger(target) {
+			const button = target?.closest?.(SELECTOR);
+			// Webflow may put the class on a wrapper and href on its nested anchor.
+			const link = target?.closest?.("a[href]") || button?.querySelector("a[href]");
+			let href = link?.getAttribute("href") ?? button?.getAttribute("href");
+			// Catch shortcuts inserted after the initial pass (CMS/popups/etc).
+			const shortLink = aethos.helpers.getHotelChampShortLink(href);
+			if (shortLink) {
+				href = shortLink;
+				(link || button).setAttribute("href", href);
+			}
+			if (link && (link.hasAttribute("download") || (link.target && link.target !== "_self"))) return null;
+			const booking = getBookingLink(href);
+			if (booking) {
+				const samePage = booking.url.origin === window.location.origin &&
+					booking.url.pathname.replace(/\/+$/, "") === window.location.pathname.replace(/\/+$/, "");
+				// Explicit URLs outrank reservenow: another page/hotel must navigate,
+				// and an invalid explicit rate must not fall back to generic booking.
+				if (!booking.valid || !samePage) return null;
+			}
+			if (!booking && !button) return null;
+			return { element: button || link, href, booking };
+		}
+
+		function clearNativeOpeningState() {
+			const url = new URL(window.location.href);
+			const before = url.search;
+			// Only remove HC opening intent; keep campaign/destination context.
+			url.searchParams.delete("pr");
+			url.searchParams.delete("fo");
+			if (url.searchParams.get("p") === "base") {
+				url.searchParams.delete("p");
+				url.searchParams.delete("c");
+			}
+			if (url.search !== before) {
+				window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+			}
+		}
+
+		let markerArrivalVersion = 0;
+		async function openBooking(booking, { reason = "click", suppressLoading = true, isCurrent } = {}) {
+			if (booking?.marker) clearNativeOpeningState();
+			if (suppressLoading && typeof aethos?.functions?.showHC === "function") {
+				aethos.functions.showHC(false);
+			}
+			hcLog("open: ensureHotelChampLoaded() start", { reason });
+			const ok = await aethos.helpers.ensureHotelChampLoaded();
+			// A navigation or explicit click may supersede an automatic arrival
+			// while the shared script is loading. HC removing the hash does not.
+			if (isCurrent && !isCurrent()) return false;
+			if (ok && window.__HC__?.ibe?.search) {
+				const options = booking?.options;
+				hcLog("opening HC", { reason, rateId: options?.promotionalRateId || null, propertyId: options?.propertyId || null });
+				if (options && Object.keys(options).length) window.__HC__.ibe.search(options);
+				else window.__HC__.ibe.search();
+				// Automatic opens leave an existing intro visibility guard alone.
+				if (suppressLoading && typeof aethos?.functions?.showHC === "function") aethos.functions.showHC(true);
+				return true;
+			}
+			hcLog("open: HC not ready; not opening", { reason, ok, hasSearch: Boolean(window.__HC__?.ibe?.search) });
+			return false;
+		}
+
+		function openMarkerFromLocation(href) {
+			const version = ++markerArrivalVersion;
+			const booking = getBookingLink(href);
+			if (!booking?.marker) return false;
+			if (!booking.valid) {
+				// An invalid explicit marker must not fall back to a stale offer.
+				clearNativeOpeningState();
+				return true;
+			}
+			void openBooking(booking, {
+				reason: "fragment-arrival", suppressLoading: false,
+				isCurrent: () => version === markerArrivalVersion,
+			})
+				.catch((err) => hcLog("fragment arrival: failed to open", err));
+			return true;
+		}
+
 		// Prewarm stages:
 		// - fetch: download module bytes (modulepreload)
 		// - execute: execute/init HC module (ensureHotelChampLoaded)
@@ -6194,8 +6347,7 @@ function main() {
 		document.addEventListener(
 			"pointerover",
 			(e) => {
-				const btn = e.target?.closest?.(SELECTOR);
-				if (!btn) return;
+				if (!getBookingTrigger(e.target)) return;
 				if (shouldExecuteOnIntent(e.pointerType)) prewarmExecute("pointerover");
 				else prewarmFetch();
 			},
@@ -6206,8 +6358,7 @@ function main() {
 		document.addEventListener(
 			"pointerdown",
 			(e) => {
-				const btn = e.target?.closest?.(SELECTOR);
-				if (!btn) return;
+				if (!getBookingTrigger(e.target)) return;
 				if (shouldExecuteOnIntent(e.pointerType)) prewarmExecute("pointerdown");
 				else prewarmFetch();
 			},
@@ -6218,8 +6369,7 @@ function main() {
 		document.addEventListener(
 			"touchstart",
 			(e) => {
-				const btn = e.target?.closest?.(SELECTOR);
-				if (!btn) return;
+				if (!getBookingTrigger(e.target)) return;
 				// On touch devices we keep this as fetch-only;
 				// mobile gets execute-on-first-interaction anywhere (below).
 				prewarmFetch();
@@ -6231,41 +6381,18 @@ function main() {
 		document.addEventListener(
 			"click",
 			async (e) => {
-				const btn = e.target?.closest?.(SELECTOR);
-				if (!btn) return;
+				// Normalise dynamic shortcuts even when the browser owns the click.
+				const trigger = getBookingTrigger(e.target);
+				if (!trigger || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
 				hcLog("click: reserve button", {
-					href: btn.getAttribute("href") || null,
-					text: (btn.textContent || "").trim().slice(0, 80) || null,
+					href: trigger.href || null,
+					text: (trigger.element.textContent || "").trim().slice(0, 80) || null,
 				});
 
 				e.preventDefault();
-
-				// Keep HC hidden while we load/initialize to avoid showing HC's internal loading UI.
-				if (typeof aethos?.functions?.showHC === "function") {
-					hcLog("click: showHC(false) (suppress HC loading UI)");
-					aethos.functions.showHC(false);
-				}
-
-				hcLog("click: ensureHotelChampLoaded() start");
-				const ok = await aethos.helpers.ensureHotelChampLoaded();
-				hcLog("click: ensureHotelChampLoaded() result", ok);
-
-				if (ok && window.__HC__?.ibe?.search) {
-					hcLog("opening HC (window.__HC__.ibe.search())");
-					window.__HC__.ibe.search();
-					// Reveal HC only after we trigger open.
-					if (typeof aethos?.functions?.showHC === "function") {
-						hcLog("click: showHC(true)");
-						aethos.functions.showHC(true);
-					}
-					return;
-				}
-
-				hcLog("click: HC not ready; not opening", {
-					ok,
-					hasSearch: Boolean(window.__HC__?.ibe?.search),
-				});
+				markerArrivalVersion++;
+				await openBooking(trigger.booking);
 			},
 			{ capture: true },
 		);
@@ -6332,9 +6459,25 @@ function main() {
 		} catch (err) {
 			hcLog("mobile warm: failed to set up", err);
 		}
+
+		// Supplied Hotelchamp booking links already express booking intent. Load now,
+		// rather than waiting for mouse/touch activity, so HC can read its native
+		// URL parameters and open the selected package. HC owns that opening;
+		// calling search() here as well could open the booking engine twice.
+		// Only native query parameters are understood by HC's own auto-opener.
+		window.addEventListener("hashchange", (event) => {
+			const next = new URL(event.newURL);
+			// Multiple hash assignments can queue events for an obsolete marker.
+			if (next.origin !== window.location.origin || next.pathname !== window.location.pathname || next.hash !== window.location.hash) return;
+			openMarkerFromLocation(event.newURL);
+		});
+		if (!openMarkerFromLocation(hotelChampEntryUrl)) {
+			const deepLink = getBookingLink(hotelChampEntryUrl, { nativeArrival: true });
+			if (deepLink?.valid) prewarmExecute("deep-link");
+		}
 	};
 
-	// HotelChamp lazy loader (loads HC only on user intent)
+	// HotelChamp lazy loader (loads HC on user intent or a native booking deep link)
 	// State is stored on aethos.hotelChampLazy
 	aethos.hotelChampLazy = aethos.hotelChampLazy || {
 		loadPromise: null,
