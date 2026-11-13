@@ -3393,6 +3393,27 @@ function main() {
 		// Shared marker configurations
 		const defaultConfig = { radius: 7, fillOpacity: 1 };
 		const partnerConfig = { ...defaultConfig, fillColor: "#000", color: null };
+		// Leaflet creates marker elements when their layer is added to the map.
+		// Name image pins and SVG circles from the same location data as the popup.
+		const labelMarker = (marker, name) => {
+			const activate = (event) => {
+				if (event.key !== "Enter" && event.key !== " ") return;
+				event.preventDefault();
+				event.stopPropagation();
+				marker.openPopup();
+			};
+			marker.on("add", () => {
+				const element = marker.getElement();
+				if (!element) return;
+				element.setAttribute("aria-label", `Show details for ${name}`);
+				// Leaflet already supplies image-pin keyboard behaviour; SVG paths need it.
+				if (element.tagName.toLowerCase() === "path") {
+					element.setAttribute("role", "button");
+					element.setAttribute("tabindex", "0");
+					element.addEventListener("keydown", activate);
+				}
+			});
+		};
 
 		// Collect destination elements
 		const destinations = document.querySelectorAll(".map-data");
@@ -3410,6 +3431,7 @@ function main() {
 				return;
 			}
 			destination.name = destEl.getAttribute("aethos-dest-name");
+			const markerName = destination.name?.trim() || `${destination.lat}, ${destination.long}`;
 			destination.address = destEl.getAttribute("aethos-dest-address");
 			destination.imgSrc = destEl.getAttribute("aethos-dest-img");
 			destination.theme = destEl.getAttribute("aethos-dest-theme") || "default";
@@ -3438,7 +3460,10 @@ function main() {
 					//popupAnchor: [0, -12],
 				});
 
-				destination.marker = L.marker([destination.lat, destination.long], { icon: aethosIcon });
+				destination.marker = L.marker([destination.lat, destination.long], {
+					icon: aethosIcon,
+					alt: markerName,
+				});
 			} else {
 				// Themed circleMarker
 				// const color = aethos.themes[data.themeKey.toLowerCase()]?.dark || "#000";
@@ -3450,6 +3475,7 @@ function main() {
 				destination.marker = L.circleMarker([destination.lat, destination.long], cfg);
 			}
 
+			labelMarker(destination.marker, markerName);
 			destination.marker.bindPopup(
 				createPopupContent({
 					imageUrl: destination.imgSrc,
@@ -3479,6 +3505,7 @@ function main() {
 					if (!loc.latitude || !loc.longitude) return;
 
 					const marker = L.circleMarker([loc.latitude, loc.longitude], partnerConfig);
+					labelMarker(marker, loc.location_name?.trim() || `${loc.latitude}, ${loc.longitude}`);
 					const popupHtml = `
           <div class="popup is-partner">
             <div class="popup_header is-partner">
@@ -5102,20 +5129,16 @@ function main() {
 
 			const getRelativeLinkForFacility = (cardItem, facility) => {
 				const candidates = Array.from(
-					cardItem.querySelectorAll('a[data-facility-link][fs-cmsfilter-field="facility"]'),
+					cardItem.querySelectorAll('[data-facility-link][fs-cmsfilter-field="facility"]'),
 				);
 				debugLog("candidates", { count: candidates.length, facility });
 
 				const target = normalize(facility);
-				for (const a of candidates) {
-					const href = a.getAttribute("href") || "";
-					const match = href.match(/\/facilities\/([^/?#]+)/i);
-					if (!match) continue;
-					if (normalize(match[1]) !== target) continue;
+				for (const facilityEl of candidates) {
+					if (normalize(facilityEl.textContent) !== target) continue;
 
-					const rel = a.getAttribute("data-facility-link");
-					if (!rel) return null;
-					const relTrim = rel.trim();
+					const relTrim = facilityEl.getAttribute("data-facility-link")?.trim();
+					if (!relTrim) return null;
 					return relTrim.startsWith("/") ? relTrim : `/${relTrim}`;
 				}
 
