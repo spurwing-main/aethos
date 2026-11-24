@@ -6638,6 +6638,22 @@ function main() {
 			    }
 			    dialog.setAttribute("aria-labelledby", prefix + dialog.getAttribute("aria-labelledby"));
 			  }
+			  function setDiningOptions(field, values, selected, prompt) {
+			    let select = field;
+			    if (field instanceof HTMLInputElement) {
+			      select = field.ownerDocument.createElement("select");
+			      const inputAttributes = ["type", "inputmode", "min", "max", "step", "value"];
+			      for (const { name, value } of field.attributes) {
+			        if (!inputAttributes.includes(name))
+			          select.setAttribute(name, value);
+			      }
+			      field.replaceWith(select);
+			    }
+			    const options = values.map((value) => new Option(value, value, value === selected, value === selected));
+			    if (prompt)
+			      options.unshift(new Option(prompt, "", true, true));
+			    select.replaceChildren(...options);
+			  }
 			  function mountBookingModal(root, { catalogue, calendarTemplate, validateDiningUrl, onSubmit }) {
 			    const dialog = root?.querySelector("[data-mbm-dialog]");
 			    const tablist = dialog?.querySelector('[role="tablist"]');
@@ -6649,8 +6665,18 @@ function main() {
 			    if (forms.some((form) => !(form instanceof HTMLFormElement)))
 			      return null;
 			    const [stay, dining] = forms.map(readPanel);
-			    if (!stay.fields.hotel || !dining.fields.restaurant || !dining.fields.time || !dining.fields.guests || !dining.contact || [stay, dining].some((panel) => !panel.dates?.querySelector(".mbm-calendar") || !panel.status || !panel.submit))
+			    const { time: timeField, guests: guestsField } = dining.fields;
+			    if (!stay.fields.hotel || !dining.fields.restaurant || !dining.contact ||
+			      [timeField, guestsField].some((field) => !(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)) ||
+			      [stay, dining].some((panel) => !panel.dates?.querySelector(".mbm-calendar") || !panel.status || !panel.submit))
 			      return null;
+			    const diningTimes = Array.from({ length: 48 }, (_, index) => {
+			      const hour = String(Math.floor(index / 2)).padStart(2, "0");
+			      return hour + (index % 2 === 0 ? ":00" : ":30");
+			    });
+			    const diningGuests = Array.from({ length: 20 }, (_, index) => String(index + 1));
+			    setDiningOptions(timeField, diningTimes, "", "Select time");
+			    setDiningOptions(guestsField, diningGuests, "2");
 			    const data = prepareCatalogue(catalogue);
 			    for (const destination of data.orderedDestinations) {
 			      if (data.hotels.has(destination.key))
@@ -6699,7 +6725,8 @@ function main() {
 			    function restaurantSearch() {
 			      const venue = data.dining.get(dining.fields.restaurant.value);
 			      const { time, guests } = dining.fields;
-			      if (!approvedDining.has(venue?.key) || !values.date || values.date < today() || !time.validity.valid || !guests.validity.valid || !Number.isSafeInteger(guests.valueAsNumber))
+			      if (!approvedDining.has(venue?.key) || !values.date || values.date < today() || !time.validity.valid || !guests.validity.valid ||
+			        !diningTimes.includes(time.value) || !diningGuests.includes(guests.value))
 			        return null;
 			      return {
 			        type: "restaurant",
@@ -6707,7 +6734,7 @@ function main() {
 			        destinationKey: venue.destinationKey,
 			        date: dateKey(values.date),
 			        time: time.value,
-			        guests: guests.valueAsNumber,
+			        guests: Number(guests.value),
 			        sevenRoomsUrl: venue.sevenRoomsUrl
 			      };
 			    }
@@ -6968,6 +6995,13 @@ function main() {
 			    const state = () => doc.querySelector(stateSelector)?.getAttribute("data-hc-ibe-widget-state");
 			    return {
 			      isOpen: () => state() === "visible",
+			      focusOverlay() {
+			        const host = doc.querySelector(stateSelector);
+			        if (!host || host.contains(doc.activeElement))
+			          return;
+			        const controls = (host.shadowRoot ?? host).querySelectorAll("button:enabled, iframe, [tabindex='0']");
+			        [...controls].find((control) => control.getClientRects().length)?.focus({ preventScroll: true });
+			      },
 			      watch(report) {
 			        let previous;
 			        const update = () => {
@@ -7004,9 +7038,20 @@ function main() {
 			    const heading = dialog.querySelector("h2");
 			    const status = dialog.querySelector('[role="status"]');
 			    const close = dialog.querySelector("[data-close]");
+			    if (!close.hasAttribute("aria-label"))
+			      close.setAttribute("aria-label", close.textContent.trim() || "Close booking service");
 			    const retry = dialog.querySelector("[data-retry]");
 			    const contactLink = dialog.querySelector("[data-contact]");
 			    const frame = dialog.querySelector("iframe");
+			    const actions = dialog.querySelector(".mbm-service-actions");
+			    const fallback = root.ownerDocument.createElement("div");
+			    fallback.className = "mbm-service-fallback";
+			    const spinner = root.ownerDocument.createElement("span");
+			    spinner.className = "mbm-service-spinner";
+			    spinner.setAttribute("aria-hidden", "true");
+			    spinner.hidden = true;
+			    status.before(fallback);
+			    fallback.append(spinner, status, actions);
 			    const backgroundElements = Array.isArray(background) ? background : [background];
 			    const continueLink = root.ownerDocument.createElement("a");
 			    continueLink.dataset.sevenroomsContinue = "";
@@ -7014,7 +7059,30 @@ function main() {
 			    let active;
 			    function setStatus(message, canRetry) {
 			      status.textContent = message;
+			      status.hidden = !message;
 			      retry.hidden = !canRetry;
+			    }
+			    function showServiceDialog(session) {
+			      if (dialog.open)
+			        return;
+			      session.wasInert = backgroundElements.map((element) => element.inert);
+			      backgroundElements.forEach((element) => {
+			        element.inert = true;
+			      });
+			      root.dataset.active = session.type;
+			      dialog.showModal();
+			      close.focus({ preventScroll: true });
+			    }
+			    function releaseServiceDialog(session) {
+			      if (!session.wasInert)
+			        return false;
+			      dialog.close();
+			      delete root.dataset.active;
+			      backgroundElements.forEach((element, index) => {
+			        element.inert = session.wasInert[index];
+			      });
+			      session.wasInert = null;
+			      return true;
 			    }
 			    function dismiss() {
 			      if (!active)
@@ -7025,64 +7093,118 @@ function main() {
 			      session.unwatch?.();
 			      clearTimeout(session.timer);
 			      frame.removeAttribute("src");
+			      frame.removeAttribute("data-mbm-frame-ready");
 			      frame.hidden = true;
+			      spinner.hidden = true;
 			      continueLink.removeAttribute("href");
 			      continueLink.remove();
 			      contactLink.removeAttribute("href");
 			      contactLink.hidden = true;
 			      status.textContent = "";
-			      dialog.close();
-			      delete root.dataset.active;
-			      backgroundElements.forEach((element, index) => {
-			        element.inert = session.wasInert[index];
-			      });
+			      releaseServiceDialog(session);
 			      session.opener?.focus({ preventScroll: true });
 			    }
-			    function showDirectBooking() {
+			    const fallbackMessage = "If the booking form doesn't appear, go directly to SevenRooms or contact the restaurant.";
+			    function setRestaurantFallbacks(visible, pending = false) {
 			      const focused = root.ownerDocument.activeElement;
-			      if (frame.hasAttribute("src")) frame.removeAttribute("src");
+			      fallback.hidden = !visible;
+			      spinner.hidden = !pending;
+			      contactLink.hidden = !contactLink.hasAttribute("href");
+			      frame.toggleAttribute("data-mbm-frame-ready", !visible);
+			      setStatus(visible ? fallbackMessage : "", false);
+			      if (!visible && (focused === continueLink || focused === contactLink))
+			        close.focus({ preventScroll: true });
+			    }
+			    function clearRestaurantFrame() {
+			      const focused = root.ownerDocument.activeElement;
+			      frame.removeAttribute("src");
 			      frame.hidden = true;
-			      const canRetry = sevenRoomsConsent?.isGranted() === true;
-			      setStatus(canRetry
-			        ? "You can now open the booking form here or continue on SevenRooms."
-			        : "The booking form will open on the SevenRooms website.", canRetry);
-			      if (focused === frame || (retry.hidden && focused === retry))
+			      setRestaurantFallbacks(true);
+			      if (focused === frame)
 			        continueLink.focus({ preventScroll: true });
 			    }
-
-			    function openRestaurant(session) {
-			      if (sevenRoomsConsent?.isGranted() !== true) {
-			        showDirectBooking();
-			        return;
-			      }
-			      const alternative = contactLink.hidden ? "" : " or contact the restaurant";
-			      try {
-			        navigateFrame(frame, session.url);
-			        frame.hidden = false;
-			        setStatus("If the booking form doesn’t appear, try again, continue on SevenRooms" + alternative + ".", true);
-			      } catch {
-			        frame.removeAttribute("src");
-			        frame.hidden = true;
-			        setStatus("We could not open SevenRooms here. Continue on SevenRooms, try again" + alternative + ".", true);
-			      }
-			    }
-
 			    function startRestaurant(session) {
 			      continueLink.href = session.url;
 			      contactLink.before(continueLink);
-			      session.unwatch = sevenRoomsConsent?.watch(() => {
-			        if (active !== session || (sevenRoomsConsent.isGranted() && frame.hasAttribute("src"))) return;
-			        showDirectBooking();
+			      if (sevenRoomsConsent?.isGranted() !== true) {
+			        clearRestaurantFrame();
+			        return;
+			      }
+
+			      setRestaurantFallbacks(true, true);
+			      const controller = new AbortController();
+			      session.controller = controller;
+			      const listenerOptions = { signal: controller.signal };
+			      const providerOrigin = new URL(session.url).origin;
+			      let frameLoaded = false;
+			      let providerOpened = false;
+			      const activeFrame = () => active === session && !controller.signal.aborted && frame.hasAttribute("src");
+			      function showReadyFrame() {
+			        if (!frameLoaded || !providerOpened)
+			          return;
+			        clearTimeout(session.timer);
+			        providerOpened = false;
+			        setRestaurantFallbacks(false);
+			      }
+			      function failed() {
+			        if (active !== session || controller.signal.aborted)
+			          return;
+			        controller.abort();
+			        clearTimeout(session.timer);
+			        clearRestaurantFrame();
+			      }
+			      window.addEventListener("message", (event) => {
+			        if (!activeFrame() || !sevenRoomsConsent.isGranted() ||
+			            event.source !== frame.contentWindow || event.origin !== providerOrigin ||
+			            !event.data || typeof event.data !== "object" || event.data.topic !== "open")
+			          return;
+			        providerOpened = true;
+			        showReadyFrame();
+			      }, listenerOptions);
+			      frame.addEventListener("load", () => {
+			        if (!activeFrame() || frame.contentDocument?.URL === "about:blank")
+			          return;
+			        if (frameLoaded && !providerOpened)
+			          setRestaurantFallbacks(true);
+			        frameLoaded = true;
+			        showReadyFrame();
+			      }, listenerOptions);
+			      frame.addEventListener("error", failed, listenerOptions);
+			      session.unwatch = sevenRoomsConsent.watch(() => {
+			        if (active !== session || sevenRoomsConsent.isGranted())
+			          return;
+			        controller.abort();
+			        clearTimeout(session.timer);
+			        clearRestaurantFrame();
 			      });
-			      openRestaurant(session);
+			      try {
+			        navigateFrame(frame, session.url);
+			        frame.hidden = false;
+			        session.timer = setTimeout(() => {
+			          if (activeFrame())
+			            setRestaurantFallbacks(true);
+			        }, 10000);
+			      } catch {
+			        failed();
+			      }
 			    }
 			    async function openHotel(session, isRetry) {
-			      setStatus("Opening Hotelchamp\u2026", false);
 			      session.controller?.abort();
 			      session.unwatch?.();
 			      clearTimeout(session.timer);
 			      const controller = new AbortController();
 			      session.controller = controller;
+			      function showFailure(message) {
+			        if (active !== session || controller.signal.aborted || session.providerOpen)
+			          return;
+			        if (!dialog.open && document.querySelector("dialog:modal")) {
+			          dismiss();
+			          return;
+			        }
+			        fallback.hidden = false;
+			        setStatus(message, true);
+			        showServiceDialog(session);
+			      }
 			      session.unwatch = hotelchamp.watch((visible) => {
 			        if (active !== session || controller.signal.aborted)
 			          return;
@@ -7090,23 +7212,24 @@ function main() {
 			          session.providerOpen = true;
 			          session.payload = null;
 			          clearTimeout(session.timer);
-			          dialog.close();
-			          hotelchamp.focusOverlay?.();
+			          if (releaseServiceDialog(session))
+			            hotelchamp.focusOverlay();
 			        } else if (session.providerOpen) {
 			          dismiss();
 			        }
 			      });
+			      if (active !== session || session.providerOpen)
+			        return;
+			      session.timer = setTimeout(() => {
+			        showFailure("Hotelchamp did not confirm that it opened. Try again or close this window.");
+			      }, hotelchampOpenTimeout);
 			      try {
 			        const options = hotelchampOptions(session.payload, properties);
 			        await searchHotelchamp(options, hotelchamp, { signal: controller.signal, retry: isRetry });
-			        if (active !== session || controller.signal.aborted || session.providerOpen)
-			          return;
-			        session.timer = setTimeout(() => {
-			          setStatus("Hotelchamp did not confirm that it opened. Try again or close this window.", true);
-			        }, hotelchampOpenTimeout);
 			      } catch {
-			        if (active === session && !controller.signal.aborted && !session.providerOpen) {
-			          setStatus("We could not open Hotelchamp. Try again or close this window.", true);
+			        if (!controller.signal.aborted) {
+			          clearTimeout(session.timer);
+			          showFailure("We could not open Hotelchamp. Try again or close this window.");
 			        }
 			      }
 			    }
@@ -7119,21 +7242,18 @@ function main() {
 			      dismiss();
 			    });
 			    retry.addEventListener("click", () => {
-			      if (!active || retry.hidden)
+			      if (active?.type !== "stay" || retry.hidden)
 			        return;
-			      if (active.type === "restaurant") {
-			        openRestaurant(active);
-			      } else {
-			        close.focus({ preventScroll: true });
-			        void openHotel(active, true);
-			      }
+			      releaseServiceDialog(active);
+			      active.opener?.focus({ preventScroll: true });
+			      void openHotel(active, true);
 			    });
 			    return {
 			      isBusy,
 			      open(payload, { opener, contact = null }) {
 			        if (isBusy() || document.querySelector("dialog:modal"))
 			          return false;
-			        const session = { type: payload.type, opener, wasInert: backgroundElements.map((element) => element.inert) };
+			        const session = { type: payload.type, opener };
 			        if (payload.type === "stay") {
 			          if (!hotelchampOptions(payload, properties))
 			            return false;
@@ -7154,16 +7274,12 @@ function main() {
 			          return false;
 			        }
 			        active = session;
-			        root.dataset.active = "";
-			        backgroundElements.forEach((element) => {
-			          element.inert = true;
-			        });
-			        dialog.showModal();
-			        close.focus({ preventScroll: true });
-			        if (session.type === "stay")
+			        if (session.type === "stay") {
 			          void openHotel(session, false);
-			        else
+			        } else {
+			          showServiceDialog(session);
 			          startRestaurant(session);
+			        }
 			        return true;
 			      }
 			    };
@@ -7433,7 +7549,7 @@ function main() {
 			      return false;
 			    const serviceDialog = single(provider, "dialog");
 			    const frame = serviceDialog && single(serviceDialog, "iframe");
-			    return serviceDialog?.showModal && !serviceDialog.open && frame?.matches("[hidden]:not([src]):not([srcdoc])") && ["h2", '[role="status"]', "[data-close]", "[data-retry]", "[data-contact]"].every((selector) => single(serviceDialog, selector)) && [".mbm-days", ".mbm-month", '[data-month-step="-1"]', ".mbm-clear"].every((selector) => single(calendar.content, selector));
+			    return serviceDialog?.showModal && !serviceDialog.open && frame?.matches("[hidden]:not([src]):not([srcdoc])") && ["h2", '[role="status"]', "[data-close]", ".mbm-service-actions", "[data-retry]", "[data-contact]"].every((selector) => single(serviceDialog, selector)) && [".mbm-days", ".mbm-month", '[data-month-step="-1"]', ".mbm-clear"].every((selector) => single(calendar.content, selector));
 			  }
 			  function mount({ site, window: win = window, document: doc = document }) {
 			    const url = new URL(win.location.href);
