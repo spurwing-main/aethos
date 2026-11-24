@@ -6511,7 +6511,8 @@ function main() {
 			        close();
 			        trigger = button;
 			        button.setAttribute("aria-expanded", "true");
-			        calendar.setAttribute("aria-label", button.firstElementChild.textContent + " calendar");
+			        const label = button.querySelector(".mbm-date-label") ?? button.firstElementChild;
+			        calendar.setAttribute("aria-label", label.textContent + " calendar");
 			        calendar.hidden = false;
 			        goTo(getValue(button.name) ?? getMinimum(button.name), true);
 			      });
@@ -6562,7 +6563,7 @@ function main() {
 			      sync() {
 			        for (const button of triggers) {
 			          const value = getValue(button.name);
-			          button.querySelector(".mbm-date-value").textContent = value ? dateLabel.format(value) : "Select date";
+			          button.querySelector(".mbm-date-value").textContent = value ? dateLabel.format(value) : button.dataset.mbmDatePlaceholder ?? "Select date";
 			        }
 			      }
 			    };
@@ -7006,6 +7007,7 @@ function main() {
 			    const retry = dialog.querySelector("[data-retry]");
 			    const contactLink = dialog.querySelector("[data-contact]");
 			    const frame = dialog.querySelector("iframe");
+			    const backgroundElements = Array.isArray(background) ? background : [background];
 			    const continueLink = root.ownerDocument.createElement("a");
 			    continueLink.dataset.sevenroomsContinue = "";
 			    continueLink.textContent = "Continue on SevenRooms";
@@ -7031,7 +7033,9 @@ function main() {
 			      status.textContent = "";
 			      dialog.close();
 			      delete root.dataset.active;
-			      background.inert = session.wasInert;
+			      backgroundElements.forEach((element, index) => {
+			        element.inert = session.wasInert[index];
+			      });
 			      session.opener?.focus({ preventScroll: true });
 			    }
 			    function openRestaurant(session) {
@@ -7114,7 +7118,7 @@ function main() {
 			      open(payload, { opener, contact = null }) {
 			        if (isBusy() || document.querySelector("dialog:modal"))
 			          return false;
-			        const session = { type: payload.type, opener, wasInert: background.inert };
+			        const session = { type: payload.type, opener, wasInert: backgroundElements.map((element) => element.inert) };
 			        if (payload.type === "stay") {
 			          if (!hotelchampOptions(payload, properties))
 			            return false;
@@ -7136,7 +7140,9 @@ function main() {
 			        }
 			        active = session;
 			        root.dataset.active = "";
-			        background.inert = true;
+			        backgroundElements.forEach((element) => {
+			          element.inert = true;
+			        });
 			        dialog.showModal();
 			        close.focus({ preventScroll: true });
 			        if (session.type === "stay")
@@ -7564,6 +7570,33 @@ function main() {
 			    const matches = root.querySelectorAll(selector);
 			    return matches.length === 1 ? matches[0] : null;
 			  }
+			  function bookingMounts(doc, wrapper) {
+			    const mounts = [];
+			    const shared = single(doc, "[data-mbm-shared]");
+			    const header = shared?.closest(".site-header");
+			    if (shared?.matches("[hidden][inert]") && (wrapper.contains(shared) || header)) {
+			      mounts.push({
+			        shared: true,
+			        outsideHeader: header && !wrapper.contains(header) ? header : null,
+			        drawer: single(shared, ":scope > [data-mbm-shared-drawer]"),
+			        provider: single(shared, ":scope > [data-mbm-shared-service]"),
+			        calendar: single(shared, "template[data-mbm-shared-calendar]")
+			      });
+			    }
+			    const drawer = single(doc, "[data-mbm]");
+			    const provider = single(doc, "[data-mbm-service]");
+			    if (drawer && provider && !wrapper.contains(drawer) && !wrapper.contains(provider)) {
+			      mounts.push({ drawer, provider, calendar: single(doc, "template#mbm-calendar-template") });
+			    }
+			    return mounts;
+			  }
+			  function validMount({ drawer, provider, calendar }) {
+			    if (!drawer?.matches("[hidden][inert]") || !provider?.matches("[hidden][inert]") || drawer.contains(provider) || provider.contains(drawer) || !calendar)
+			      return false;
+			    const serviceDialog = single(provider, "dialog");
+			    const frame = serviceDialog && single(serviceDialog, "iframe");
+			    return serviceDialog?.showModal && !serviceDialog.open && frame?.matches("[hidden]:not([src]):not([srcdoc])") && ["h2", '[role="status"]', "[data-close]", "[data-retry]", "[data-contact]"].every((selector) => single(serviceDialog, selector)) && [".mbm-days", ".mbm-month", '[data-month-step="-1"]', ".mbm-clear"].every((selector) => single(calendar.content, selector));
+			  }
 			  function mount({ site, window: win = window, document: doc = document }) {
 			    const url = new URL(win.location.href);
 			    if (!isDemoRequest(url))
@@ -7572,14 +7605,10 @@ function main() {
 			    if (!kind)
 			      return null;
 			    const wrapper = single(doc, ".page-wrap");
-			    const drawer = single(doc, "[data-mbm]");
-			    const provider = single(doc, "[data-mbm-service]");
-			    const calendar = single(doc, "template#mbm-calendar-template");
-			    if (!wrapper || !drawer?.matches("[hidden][inert]") || !provider?.matches("[hidden][inert]") || wrapper.contains(drawer) || wrapper.contains(provider) || drawer.contains(provider) || provider.contains(drawer) || !calendar)
+			    if (!wrapper)
 			      return null;
-			    const serviceDialog = single(provider, "dialog");
-			    const frame = serviceDialog && single(serviceDialog, "iframe");
-			    if (!serviceDialog?.showModal || serviceDialog.open || !frame?.matches("[hidden]:not([src]):not([srcdoc])") || ["h2", '[role="status"]', "[data-close]", "[data-retry]", "[data-contact]"].some((selector) => !single(serviceDialog, selector)) || [".mbm-days", ".mbm-month", '[data-month-step="-1"]', ".mbm-clear"].some((selector) => !single(calendar.content, selector)))
+			    const mounts = bookingMounts(doc, wrapper).filter(validMount);
+			    if (!mounts.length)
 			      return null;
 			    const context = pageContext(kind, {
 			      destination: wrapper.getAttribute("aethos-destination-slug"),
@@ -7597,29 +7626,37 @@ function main() {
 			    data.catalogue.context = context;
 			    let service;
 			    let opener;
-			    const booking = mountBookingModal(drawer, {
-			      catalogue: data.catalogue,
-			      calendarTemplate: calendar,
-			      validateDiningUrl: (record) => validateSevenRoomsUrl(record, approved),
-			      onSubmit(payload) {
-			        service.open(payload, { opener, contact: data.contacts.get(payload.restaurantKey) });
-			      }
-			    });
+			    let booking;
+			    for (const { shared, outsideHeader, drawer, provider, calendar } of mounts) {
+			      booking = mountBookingModal(drawer, {
+			        catalogue: data.catalogue,
+			        calendarTemplate: calendar,
+			        validateDiningUrl: (record) => validateSevenRoomsUrl(record, approved),
+			        onSubmit(payload) {
+			          service.open(payload, { opener, contact: data.contacts.get(payload.restaurantKey) });
+			        }
+			      });
+			      if (!booking)
+			        continue;
+			      if (shared)
+			        doc.body.append(drawer, provider);
+			      service = mountBookingService(provider, {
+			        background: outsideHeader ? [wrapper, outsideHeader] : wrapper,
+			        properties: data.properties,
+			        restaurants: approved,
+			        hotelchamp: {
+			          ...hotelchampOverlay(doc),
+			          ensureLoaded: () => site.helpers.ensureHotelChampLoaded(),
+			          getIbe: () => win.__HC__?.ibe
+			        },
+			        canEmbedSevenRooms: () => site.mbmProviderConsent?.("sevenrooms") === true
+			      });
+			      provider.hidden = false;
+			      provider.inert = false;
+			      break;
+			    }
 			    if (!booking)
 			      return null;
-			    service = mountBookingService(provider, {
-			      background: wrapper,
-			      properties: data.properties,
-			      restaurants: approved,
-			      hotelchamp: {
-			        ...hotelchampOverlay(doc),
-			        ensureLoaded: () => site.helpers.ensureHotelChampLoaded(),
-			        getIbe: () => win.__HC__?.ibe
-			      },
-			      canEmbedSevenRooms: () => site.mbmProviderConsent?.("sevenrooms") === true
-			    });
-			    provider.hidden = false;
-			    provider.inert = false;
 			    for (const row of data.catalogue.destinations) {
 			      if (row.stay?.issue)
 			        console.warn("[MBM] " + row.stay.issue + " for " + row.key);
