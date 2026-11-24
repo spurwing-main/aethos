@@ -6994,7 +6994,7 @@ function main() {
 			    properties,
 			    restaurants,
 			    hotelchamp,
-			    canEmbedSevenRooms = () => true,
+			    sevenRoomsConsent,
 			    navigateFrame = (frame, url) => {
 			      frame.src = url;
 			    },
@@ -7038,28 +7038,43 @@ function main() {
 			      });
 			      session.opener?.focus({ preventScroll: true });
 			    }
+			    function showDirectBooking() {
+			      const focused = root.ownerDocument.activeElement;
+			      if (frame.hasAttribute("src")) frame.removeAttribute("src");
+			      frame.hidden = true;
+			      const canRetry = sevenRoomsConsent?.isGranted() === true;
+			      setStatus(canRetry
+			        ? "You can now open the booking form here or continue on SevenRooms."
+			        : "The booking form will open on the SevenRooms website.", canRetry);
+			      if (focused === frame || (retry.hidden && focused === retry))
+			        continueLink.focus({ preventScroll: true });
+			    }
+
 			    function openRestaurant(session) {
+			      if (sevenRoomsConsent?.isGranted() !== true) {
+			        showDirectBooking();
+			        return;
+			      }
 			      const alternative = contactLink.hidden ? "" : " or contact the restaurant";
 			      try {
-			        if (canEmbedSevenRooms() !== true) {
-			          frame.removeAttribute("src");
-			          frame.hidden = true;
-			          continueLink.href = session.url;
-			          contactLink.before(continueLink);
-			          const retryHadFocus = retry === root.ownerDocument.activeElement;
-			          setStatus("The booking form will open on the SevenRooms website.", false);
-			          if (retryHadFocus)
-			            continueLink.focus({ preventScroll: true });
-			          return;
-			        }
 			        navigateFrame(frame, session.url);
 			        frame.hidden = false;
-			        setStatus("If the booking form doesn\u2019t appear, try again" + alternative + ".", true);
+			        setStatus("If the booking form doesn’t appear, try again, continue on SevenRooms" + alternative + ".", true);
 			      } catch {
 			        frame.removeAttribute("src");
 			        frame.hidden = true;
-			        setStatus("We could not open SevenRooms. Try again" + alternative + ".", true);
+			        setStatus("We could not open SevenRooms here. Continue on SevenRooms, try again" + alternative + ".", true);
 			      }
+			    }
+
+			    function startRestaurant(session) {
+			      continueLink.href = session.url;
+			      contactLink.before(continueLink);
+			      session.unwatch = sevenRoomsConsent?.watch(() => {
+			        if (active !== session || (sevenRoomsConsent.isGranted() && frame.hasAttribute("src"))) return;
+			        showDirectBooking();
+			      });
+			      openRestaurant(session);
 			    }
 			    async function openHotel(session, isRetry) {
 			      setStatus("Opening Hotelchamp\u2026", false);
@@ -7148,7 +7163,7 @@ function main() {
 			        if (session.type === "stay")
 			          void openHotel(session, false);
 			        else
-			          openRestaurant(session);
+			          startRestaurant(session);
 			        return true;
 			      }
 			    };
@@ -7470,7 +7485,7 @@ function main() {
 			          ensureLoaded: () => site.helpers.ensureHotelChampLoaded(),
 			          getIbe: () => win.__HC__?.ibe
 			        },
-			        canEmbedSevenRooms: () => site.mbmProviderConsent?.("sevenrooms") === true
+			        sevenRoomsConsent: win.aethosMbmSevenRoomsConsent
 			      });
 			      provider.hidden = false;
 			      provider.inert = false;
