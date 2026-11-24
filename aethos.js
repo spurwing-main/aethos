@@ -6403,7 +6403,7 @@ function main() {
 		const mbm = (() => {
 			const optIn = new URLSearchParams(location.search).getAll("mbm-demo");
 			if (location.hostname !== "aethoshotels.webflow.io" || optIn.length !== 1 || optIn[0] !== "1") return null;
-			var Phase5Mbm = (() => {
+			var BookingModal = (() => {
 			  var __defProp = Object.defineProperty;
 			  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 			  var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -6422,9 +6422,9 @@ function main() {
 			  };
 			  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 			
-			  // integration.mjs
-			  var integration_exports = {};
-			  __export(integration_exports, {
+			  // booking-modal.mjs
+			  var booking_modal_exports = {};
+			  __export(booking_modal_exports, {
 			    mount: () => mount
 			  });
 			
@@ -7156,10 +7156,6 @@ function main() {
 			
 			  // cms.mjs
 			  var slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-			  var hotelchampId = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
-			  var messageTags = /* @__PURE__ */ new Set(["p", "br", "strong", "em", "b", "i", "ul", "ol", "li", "a"]);
-			  var blockedTags = "script,style,iframe,object,embed,template,svg,math,audio,video,picture,img,link,form";
-			  var contactBase = "https://www.aethos.com/";
 			  function isDemoRequest(url) {
 			    const values = url.searchParams.getAll("mbm-demo");
 			    return url.hostname === "aethoshotels.webflow.io" && values.length === 1 && values[0] === "1";
@@ -7185,6 +7181,23 @@ function main() {
 			      return { kind, destinationKey: destination };
 			    return null;
 			  }
+			
+			  // native-catalogue-proof/readers.mjs
+			  var slug2 = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+			  var hotelchampId = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
+			  var modes = /* @__PURE__ */ new Map([
+			    ["Online", "online"],
+			    ["Paused", "paused"],
+			    ["Walk-in", "walk-in"],
+			    ["Enquiry", "enquiry"],
+			    ["28968de640d75659e8f4c1a43886501f", "online"],
+			    ["58e44d750abe2acf11bba714204cafe9", "paused"],
+			    ["17d99d4c6d947aa8dac109a14568a4ec", "walk-in"],
+			    ["26047aa15c5d4424880cd1a9e5a864bd", "enquiry"]
+			  ]);
+			  var messageTags = /* @__PURE__ */ new Set(["p", "br", "strong", "em", "b", "i", "ul", "ol", "li", "a"]);
+			  var blockedTags = "script,style,iframe,object,embed,template,svg,math,audio,video,picture,img,link,form";
+			  var contactBase = "https://www.aethos.com/";
 			  function hotelChoices(destinations) {
 			    const counts = /* @__PURE__ */ new Map();
 			    for (const { propertyId } of destinations) {
@@ -7253,6 +7266,14 @@ function main() {
 			    container.innerHTML = markup;
 			    return cleanMessage(container.content, doc);
 			  }
+			  function uniqueRows(rows) {
+			    const keys = rows.map((row) => row.dataset.key);
+			    return keys.every((key) => slug2.test(key ?? "")) && new Set(keys).size === keys.length;
+			  }
+			  function orderFrom(row) {
+			    const value = row.dataset.order?.trim();
+			    return value && Number.isFinite(Number(value)) ? Number(value) : null;
+			  }
 			  function projectCatalogue(destinations, restaurants, approved) {
 			    const stays = hotelChoices(destinations);
 			    const destinationRows = destinations.map(({ key, label, order: order2, messageFragment }) => ({
@@ -7285,279 +7306,86 @@ function main() {
 			    }
 			    return { catalogue: { destinations: destinationRows, restaurants: restaurantRows }, destinationKeys, properties, contacts };
 			  }
-			  var snapshotModes = /* @__PURE__ */ new Set(["online", "paused", "walk-in", "enquiry"]);
-			  function validSnapshotRows(rows, expectedCount) {
-			    return Array.isArray(rows) && rows.length > 0 && rows.length === expectedCount && rows.every((row) => row && typeof row.key === "string" && slug.test(row.key) && typeof row.label === "string" && row.label.trim() && (row.order === null || Number.isFinite(row.order)) && (row.message === null || typeof row.message === "string")) && new Set(rows.map((row) => row.key)).size === rows.length;
-			  }
-			  function readSnapshot(snapshot, doc) {
-			    if (snapshot?.schemaVersion !== 1 || !/^mbm-v1-[0-9a-f]{16}$/.test(snapshot.version) || !validSnapshotRows(snapshot.destinations, snapshot.counts?.destinations) || !validSnapshotRows(snapshot.restaurants, snapshot.counts?.restaurants) || snapshot.destinations.some((row) => row.propertyId !== null && typeof row.propertyId !== "string"))
+			  function readCatalogue(template, approved) {
+			    if (template.localName !== "template" || !template.content)
 			      return null;
-			    const destinations = new Set(snapshot.destinations.map((row) => row.key));
-			    if (snapshot.restaurants.some((row) => !destinations.has(row.destinationKey) || !snapshotModes.has(row.mode) || !Array.isArray(row.contactUrls) || !row.contactUrls.length || row.contactUrls.some((url) => typeof url !== "string") || (row.mode === "online" ? typeof row.provider?.href !== "string" || typeof row.provider.venue !== "string" : row.provider !== null)))
+			    const destinations = [...template.content.querySelectorAll("[data-mbm-destination]")];
+			    const restaurants = [...template.content.querySelectorAll("[data-mbm-restaurant]")];
+			    if (!destinations.length || !uniqueRows(destinations) || !uniqueRows(restaurants))
 			      return null;
-			    const approved = new Map(snapshot.restaurants.map((row) => [row.key, {
-			      destinationKey: row.destinationKey,
-			      href: row.provider?.href,
-			      venue: row.provider?.venue,
-			      contactUrls: row.contactUrls
-			    }]));
-			    const data = projectCatalogue(snapshot.destinations.map((row) => ({
-			      ...row,
-			      messageFragment: parseMessage(row.message, doc)
-			    })), snapshot.restaurants.map((row) => ({
-			      key: row.key,
-			      label: row.label,
-			      order: row.order,
-			      destinationKey: row.destinationKey,
-			      mode: row.mode,
-			      sevenRoomsUrl: row.provider?.href ?? null,
-			      messageFragment: parseMessage(row.message, doc)
+			    if ([...destinations, ...restaurants].some((row) => !row.dataset.label?.trim() || row.querySelectorAll("[data-mbm-copy]").length > 1))
+			      return null;
+			    const doc = template.ownerDocument;
+			    const common = (row) => ({
+			      key: row.dataset.key,
+			      label: row.dataset.label.trim(),
+			      order: orderFrom(row),
+			      messageFragment: cleanMessage(row.querySelector("[data-mbm-copy]"), doc)
+			    });
+			    return projectCatalogue(destinations.map((row) => ({
+			      ...common(row),
+			      propertyId: row.dataset.propertyId,
+			      enabled: row.dataset.enabled === "true"
+			    })), restaurants.map((row) => ({
+			      ...common(row),
+			      destinationKey: row.dataset.destinationKey,
+			      mode: modes.get(row.dataset.mode),
+			      sevenRoomsUrl: row.dataset.sevenroomsUrl ?? null
 			    })), approved);
-			    return data.contacts.size === snapshot.restaurants.length ? { ...data, approved } : null;
 			  }
 			
-			  // snapshot.json
-			  var snapshot_default = {
-			    schemaVersion: 1,
-			    counts: {
-			      destinations: 7,
-			      restaurants: 12
-			    },
-			    destinations: [
-			      {
-			        key: "monterosa",
-			        label: "Aethos Monterosa",
-			        order: 1,
-			        enabled: true,
-			        propertyId: "9dbd4b30-32f7-4c9c-ace4-101352f56167",
-			        message: null
-			      },
-			      {
-			        key: "saragano",
-			        label: "Aethos Saragano",
-			        order: 2,
-			        enabled: true,
-			        propertyId: "9dbd47ae-375e-4638-ad23-95df3590f16a",
-			        message: null
-			      },
-			      {
-			        key: "ericeira",
-			        label: "Aethos Ericeira",
-			        order: 3,
-			        enabled: true,
-			        propertyId: "9dbd4822-c424-4000-8db8-cbf4a75e5415",
-			        message: null
-			      },
-			      {
-			        key: "milan",
-			        label: "Aethos Milan",
-			        order: 4,
-			        enabled: true,
-			        propertyId: "9dbd4a3e-c89f-4ca2-a2cc-b1a002cff5e7",
-			        message: null
-			      },
-			      {
-			        key: "london",
-			        label: "Aethos London Shoreditch",
-			        order: 5,
-			        enabled: true,
-			        propertyId: "9ebeb109-210c-4a82-92ce-84b05717aa2b",
-			        message: null
-			      },
-			      {
-			        key: "mallorca",
-			        label: "Aethos Mallorca",
-			        order: 6,
-			        enabled: true,
-			        propertyId: "9dbd4aeb-20ab-4da7-8056-366fd65b5eb4",
-			        message: null
-			      },
-			      {
-			        key: "sardinia",
-			        label: "Aethos Sardinia",
-			        order: 7,
-			        enabled: true,
-			        propertyId: "9dbd4aa5-2c0f-446f-9097-f12846023e3c",
-			        message: null
+			  // native-catalogue-proof/catalogue.mjs
+			  function listRows(list, kind, marker) {
+			    if (!list?.matches('.w-dyn-list[data-mbm-list="' + kind + '"]') || list.children.length !== 1)
+			      return null;
+			    const items = list.firstElementChild;
+			    if (!items.matches(".w-dyn-items") || items.children.length > 100)
+			      return null;
+			    const rows = [...items.children].map((item) => item.matches(".w-dyn-item") && item.children.length === 1 && item.firstElementChild.matches(marker) ? item.firstElementChild : null);
+			    return rows.every(Boolean) && list.querySelectorAll(marker).length === rows.length ? rows : null;
+			  }
+			  function getApprovedValues(rows) {
+			    const approved = /* @__PURE__ */ new Map();
+			    for (const row of rows) {
+			      const { key, destinationKey, sevenroomsUrl: href } = row.dataset;
+			      const message = parseMessage(row.querySelector("[data-mbm-copy]")?.innerHTML, row.ownerDocument);
+			      const contacts = [...message?.querySelectorAll("a[href]") ?? []].filter((link) => {
+			        const url = new URL(link.href);
+			        return link.textContent.trim() && ["mailto:", "tel:"].includes(url.protocol) && !url.search && !url.hash;
+			      });
+			      const entry = { destinationKey, contactUrls: contacts.length === 1 ? [contacts[0].href] : [] };
+			      if (href?.startsWith("https://www.sevenrooms.com/")) {
+			        const route = new URL(href);
+			        entry.href = href;
+			        entry.venue = route.pathname.split("/")[2];
 			      }
-			    ],
-			    restaurants: [
-			      {
-			        key: "monterosa-summit-restaurant",
-			        destinationKey: "monterosa",
-			        label: "Summit",
-			        order: 1,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:monterosa@aethos.com">email Summit</a>.</p>',
-			        contactUrls: [
-			          "mailto:monterosa@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/explore/thesummit/reservations/create/search/",
-			          venue: "thesummit"
-			        }
-			      },
-			      {
-			        key: "monterosa-1568-restaurant",
-			        destinationKey: "monterosa",
-			        label: "1568 Restaurant",
-			        order: 2,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:monterosa@aethos.com">email 1568 Restaurant</a>.</p>',
-			        contactUrls: [
-			          "mailto:monterosa@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/explore/1568/reservations/create/search",
-			          venue: "1568"
-			        }
-			      },
-			      {
-			        key: "saragano-brace",
-			        destinationKey: "saragano",
-			        label: "Brace",
-			        order: 1,
-			        mode: "paused",
-			        message: '<p>Brace is temporarily closed. For enquiries, <a href="mailto:saragano@aethos.com">email Aethos Saragano</a>.</p>',
-			        contactUrls: [
-			          "mailto:saragano@aethos.com"
-			        ],
-			        provider: null
-			      },
-			      {
-			        key: "saragano-ceci",
-			        destinationKey: "saragano",
-			        label: "CECI",
-			        order: 1,
-			        mode: "enquiry",
-			        message: '<p>For dining enquiries at CECI, <a href="mailto:saragano@aethos.com">email Aethos Saragano</a>.</p>',
-			        contactUrls: [
-			          "mailto:saragano@aethos.com"
-			        ],
-			        provider: null
-			      },
-			      {
-			        key: "ericeira-onda-restaurant",
-			        destinationKey: "ericeira",
-			        label: "Onda Restaurant",
-			        order: 1,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:ericeira@aethos.com">email ONDA Ericeira</a>.</p>',
-			        contactUrls: [
-			          "mailto:ericeira@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/reservations/onda",
-			          venue: "onda"
-			        }
-			      },
-			      {
-			        key: "milan-the-doping-mixology",
-			        destinationKey: "milan",
-			        label: "THE DOPING Mixology",
-			        order: 1,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:doping@aethos.com">email THE DOPING Mixology</a>.</p>',
-			        contactUrls: [
-			          "mailto:doping@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/reservations/dopingbar",
-			          venue: "dopingbar"
-			        }
-			      },
-			      {
-			        key: "milan-doping-dining",
-			        destinationKey: "milan",
-			        label: "THE DOPING Dining",
-			        order: 2,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:doping@aethos.com">email THE DOPING Dining</a>.</p>',
-			        contactUrls: [
-			          "mailto:doping@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/explore/dopingbar/reservations/create/search/?searchTab=reservations",
-			          venue: "dopingbar"
-			        }
-			      },
-			      {
-			        key: "london-aethos-cafe",
-			        destinationKey: "london",
-			        label: "Aethos Cafe London",
-			        order: 0,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:londonshoreditch@aethos.com">email Aethos Caf\xE9 London</a>.</p>',
-			        contactUrls: [
-			          "mailto:londonshoreditch@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/explore/aethoslondon/reservations/create/search/",
-			          venue: "aethoslondon"
-			        }
-			      },
-			      {
-			        key: "london-mitsu",
-			        destinationKey: "london",
-			        label: "Mitsu",
-			        order: 2,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:hello@mitsurestaurant.com">email Mitsu</a>.</p>',
-			        contactUrls: [
-			          "mailto:hello@mitsurestaurant.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/explore/mitsulondon/reservations/create/search/",
-			          venue: "mitsulondon"
-			        }
-			      },
-			      {
-			        key: "mallorca-onda",
-			        destinationKey: "mallorca",
-			        label: "ONDA",
-			        order: 1,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:onda.mallorca@aethos.com">email ONDA Mallorca</a>.</p>',
-			        contactUrls: [
-			          "mailto:onda.mallorca@aethos.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/explore/ondai/reservations/create/search/",
-			          venue: "ondai"
-			        }
-			      },
-			      {
-			        key: "mallorca-raig",
-			        destinationKey: "mallorca",
-			        label: "RAIG Rooftop",
-			        order: 2,
-			        mode: "walk-in",
-			        message: '<p>Walk-ins are welcome, subject to availability. <a href="mailto:raig.mallorca@aethos.com">Email RAIG Rooftop</a> for enquiries.</p>',
-			        contactUrls: [
-			          "mailto:raig.mallorca@aethos.com"
-			        ],
-			        provider: null
-			      },
-			      {
-			        key: "sardinia-zaia-sardinia",
-			        destinationKey: "sardinia",
-			        label: "ZA\xCFA Sardinia",
-			        order: 1,
-			        mode: "online",
-			        message: '<p>For booking enquiries, <a href="mailto:Zaia@aethoshotels.com">email ZA\xCFA Sardinia</a>.</p>',
-			        contactUrls: [
-			          "mailto:Zaia@aethoshotels.com"
-			        ],
-			        provider: {
-			          href: "https://www.sevenrooms.com/reservations/aethossardinia/",
-			          venue: "aethossardinia"
-			        }
+			      approved.set(key, entry);
+			      if (entry.href && !validateSevenRoomsUrl({ key, destinationKey, sevenRoomsUrl: href }, approved)) {
+			        delete entry.href;
+			        delete entry.venue;
 			      }
-			    ],
-			    version: "mbm-v1-eec3e76cad258a06"
-			  };
+			    }
+			    return approved;
+			  }
+			  function readNativeCatalogue(root) {
+			    const templates = root.querySelectorAll("template[data-mbm-catalogue]");
+			    if (templates.length !== 1 || !templates[0].matches('template[data-mbm-catalogue="1"]'))
+			      return null;
+			    const template = templates[0];
+			    if (template.parentElement !== root && !(template.parentElement.matches(".w-embed") && template.parentElement.parentElement === root))
+			      return null;
+			    const [destinations, restaurants] = template.content.children;
+			    if (template.content.children.length !== 2 || !listRows(destinations, "destinations", "[data-mbm-destination]") || destinations.querySelector("[data-mbm-restaurant]") || restaurants.querySelector("[data-mbm-destination]"))
+			      return null;
+			    const dining = listRows(restaurants, "restaurants", "[data-mbm-restaurant]");
+			    if (!dining)
+			      return null;
+			    const approved = getApprovedValues(dining);
+			    const data = readCatalogue(template, approved);
+			    return data && { ...data, approved };
+			  }
 			
-			  // integration.mjs
+			  // booking-modal.mjs
 			  var coverage = /* @__PURE__ */ new Map([
 			    ["/", "brand"],
 			    ["/destinations/ericeira", "destination"],
@@ -7583,11 +7411,6 @@ function main() {
 			        calendar: single(shared, "template[data-mbm-shared-calendar]")
 			      });
 			    }
-			    const drawer = single(doc, "[data-mbm]");
-			    const provider = single(doc, "[data-mbm-service]");
-			    if (drawer && provider && !wrapper.contains(drawer) && !wrapper.contains(provider)) {
-			      mounts.push({ drawer, provider, calendar: single(doc, "template#mbm-calendar-template") });
-			    }
 			    return mounts;
 			  }
 			  function validMount({ drawer, provider, calendar }) {
@@ -7610,19 +7433,17 @@ function main() {
 			    const mounts = bookingMounts(doc, wrapper).filter(validMount);
 			    if (!mounts.length)
 			      return null;
+			    const data = readNativeCatalogue(mounts[0].drawer.parentElement);
+			    if (!data || !data.catalogue.destinations.some((row) => row.stay) || !data.catalogue.restaurants.length)
+			      return null;
 			    const context = pageContext(kind, {
 			      destination: wrapper.getAttribute("aethos-destination-slug"),
 			      room: wrapper.getAttribute("aethos-room-slug"),
 			      dining: wrapper.getAttribute("aethos-dining-slug")
-			    }, new Set(Array.isArray(snapshot_default?.destinations) ? snapshot_default.destinations.map((row) => row?.key) : []));
+			    }, data.destinationKeys);
 			    if (!context)
 			      return null;
-			    const data = readSnapshot(snapshot_default, doc);
-			    if (!data || !data.catalogue.destinations.some((row) => row.stay))
-			      return null;
 			    const { approved } = data;
-			    if (data.catalogue.restaurants.some((row) => row.mode === "online" && !validateSevenRoomsUrl(row, approved)))
-			      return null;
 			    data.catalogue.context = context;
 			    let service;
 			    let opener;
@@ -7675,9 +7496,9 @@ function main() {
 			      }
 			    };
 			  }
-			  return __toCommonJS(integration_exports);
+			  return __toCommonJS(booking_modal_exports);
 			})();
-			return Phase5Mbm.mount({ site: aethos });
+			return BookingModal.mount({ site: aethos });
 		})();
 
 		// Click = ensure loaded, then open HC
