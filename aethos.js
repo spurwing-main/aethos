@@ -6400,6 +6400,1236 @@ function main() {
 			{ passive: true, capture: true },
 		);
 
+		const mbm = (() => {
+			const optIn = new URLSearchParams(location.search).getAll("mbm-demo");
+			if (location.hostname !== "aethoshotels.webflow.io" || optIn.length !== 1 || optIn[0] !== "1") return null;
+			var Phase5Mbm = (() => {
+			  var __defProp = Object.defineProperty;
+			  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+			  var __getOwnPropNames = Object.getOwnPropertyNames;
+			  var __hasOwnProp = Object.prototype.hasOwnProperty;
+			  var __export = (target, all) => {
+			    for (var name in all)
+			      __defProp(target, name, { get: all[name], enumerable: true });
+			  };
+			  var __copyProps = (to, from, except, desc) => {
+			    if (from && typeof from === "object" || typeof from === "function") {
+			      for (let key of __getOwnPropNames(from))
+			        if (!__hasOwnProp.call(to, key) && key !== except)
+			          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+			    }
+			    return to;
+			  };
+			  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+			
+			  // integration.mjs
+			  var integration_exports = {};
+			  __export(integration_exports, {
+			    mount: () => mount
+			  });
+			
+			  // ../phase-3-interface/calendar.js
+			  var dayLabel = new Intl.DateTimeFormat("en-GB", { dateStyle: "full" });
+			  var dateLabel = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+			  var monthLabel = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+			  var pad = (value) => String(value).padStart(2, "0");
+			  var dateKey = (day) => `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
+			  var addDays = (day, amount) => new Date(day.getFullYear(), day.getMonth(), day.getDate() + amount);
+			  var monthStart = (day) => new Date(day.getFullYear(), day.getMonth(), 1);
+			  var weekday = (day) => (day.getDay() + 6) % 7;
+			  function moveMonth(day, amount) {
+			    const target = new Date(day.getFullYear(), day.getMonth() + amount, 1);
+			    const last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+			    target.setDate(Math.min(day.getDate(), last));
+			    return target;
+			  }
+			  function bindCalendar(host, template, { getValue, getMinimum, onChange }) {
+			    const calendar = host.querySelector(".mbm-calendar");
+			    calendar.append(template.content.cloneNode(true));
+			    const grid = calendar.querySelector(".mbm-days");
+			    const heading = calendar.querySelector(".mbm-month");
+			    const previous = calendar.querySelector('[data-month-step="-1"]');
+			    const clear = calendar.querySelector(".mbm-clear");
+			    const triggers = Array.from(host.querySelectorAll(".mbm-date"));
+			    let trigger;
+			    let cursor;
+			    function close({ restore = false } = {}) {
+			      if (!trigger)
+			        return false;
+			      const opener = trigger;
+			      trigger = null;
+			      opener.setAttribute("aria-expanded", "false");
+			      calendar.hidden = true;
+			      if (restore)
+			        opener.focus();
+			      return true;
+			    }
+			    function focusDay() {
+			      grid.querySelector('[tabindex="0"]')?.focus();
+			    }
+			    function render() {
+			      const month = monthStart(cursor);
+			      const min = getMinimum(trigger.name);
+			      const value = getValue(trigger.name);
+			      const currentMonth = monthLabel.format(month);
+			      if (heading.textContent !== currentMonth)
+			        heading.textContent = currentMonth;
+			      previous.disabled = month <= monthStart(min);
+			      clear.hidden = !value;
+			      const cells = document.createDocumentFragment();
+			      for (let index = 0; index < weekday(month); index++) {
+			        cells.append(document.createElement("span"));
+			      }
+			      for (let day = month; day.getMonth() === month.getMonth(); day = addDays(day, 1)) {
+			        const cell = document.createElement("button");
+			        cell.type = "button";
+			        cell.dataset.date = dateKey(day);
+			        cell.textContent = String(day.getDate());
+			        cell.setAttribute("aria-label", dayLabel.format(day));
+			        cell.setAttribute("aria-pressed", String(value ? dateKey(value) === dateKey(day) : false));
+			        if (dateKey(day) === dateKey(new Date()))
+			          cell.setAttribute("aria-current", "date");
+			        cell.disabled = day < min;
+			        cell.tabIndex = +day === +cursor ? 0 : -1;
+			        cells.append(cell);
+			      }
+			      grid.replaceChildren(cells);
+			    }
+			    function goTo(day, focus) {
+			      const min = getMinimum(trigger.name);
+			      cursor = day < min ? min : day;
+			      render();
+			      if (focus)
+			        focusDay();
+			    }
+			    for (const button of triggers) {
+			      button.addEventListener("click", () => {
+			        if (trigger === button) {
+			          close({ restore: true });
+			          return;
+			        }
+			        close();
+			        trigger = button;
+			        button.setAttribute("aria-expanded", "true");
+			        calendar.setAttribute("aria-label", button.firstElementChild.textContent + " calendar");
+			        calendar.hidden = false;
+			        goTo(getValue(button.name) ?? getMinimum(button.name), true);
+			      });
+			    }
+			    host.addEventListener("focusout", (event) => {
+			      if (event.relatedTarget && !host.contains(event.relatedTarget))
+			        close();
+			    });
+			    calendar.addEventListener("click", (event) => {
+			      const control = event.target.closest("button");
+			      if (!trigger || !control)
+			        return;
+			      if (control.dataset.monthStep) {
+			        goTo(moveMonth(cursor, Number(control.dataset.monthStep)), false);
+			        if (control.disabled)
+			          focusDay();
+			        return;
+			      }
+			      if (control !== clear && !control.dataset.date)
+			        return;
+			      const day = control === clear ? null : new Date(cursor.getFullYear(), cursor.getMonth(), Number(control.textContent));
+			      onChange(trigger.name, day);
+			      close({ restore: true });
+			    });
+			    grid.addEventListener("keydown", (event) => {
+			      const moves = {
+			        ArrowLeft: -1,
+			        ArrowRight: 1,
+			        ArrowUp: -7,
+			        ArrowDown: 7,
+			        Home: -weekday(cursor),
+			        End: 6 - weekday(cursor)
+			      };
+			      let target;
+			      if (Object.hasOwn(moves, event.key))
+			        target = addDays(cursor, moves[event.key]);
+			      if (event.key === "PageUp")
+			        target = moveMonth(cursor, event.shiftKey ? -12 : -1);
+			      if (event.key === "PageDown")
+			        target = moveMonth(cursor, event.shiftKey ? 12 : 1);
+			      if (!target)
+			        return;
+			      event.preventDefault();
+			      goTo(target, true);
+			    });
+			    return {
+			      close,
+			      sync() {
+			        for (const button of triggers) {
+			          const value = getValue(button.name);
+			          button.querySelector(".mbm-date-value").textContent = value ? dateLabel.format(value) : "Select date";
+			        }
+			      }
+			    };
+			  }
+			
+			  // ../phase-3-interface/mbm.js
+			  var includedModes = /* @__PURE__ */ new Set(["online", "paused", "walk-in", "enquiry"]);
+			  var order = (row) => Number.isFinite(row.order) ? row.order : Infinity;
+			  var byOrder = (a, b) => order(a) - order(b) || a.key.localeCompare(b.key, "en");
+			  var textValue = (value) => typeof value === "string" ? value.trim() : "";
+			  var today = () => addDays(new Date(), 0);
+			  var instance = 0;
+			  function prepareCatalogue({ context = {}, destinations, restaurants }) {
+			    const locations = [...destinations].sort(byOrder);
+			    const byDestination = new Map(locations.map((destination) => [destination.key, destination]));
+			    const idCounts = /* @__PURE__ */ new Map();
+			    for (const destination of locations) {
+			      const id = textValue(destination.stay?.propertyId);
+			      if (id)
+			        idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
+			    }
+			    const hotels = new Map(locations.filter((destination) => destination.stay?.listed === true || idCounts.get(textValue(destination.stay?.propertyId)) === 1).map((destination) => [destination.key, destination]));
+			    const dining = new Map(restaurants.filter((venue) => includedModes.has(venue.mode) && byDestination.has(venue.destinationKey)).map((venue) => [venue.key, venue]));
+			    const { kind, restaurantKey, destinationKey } = context;
+			    const pageVenue = kind === "dining" ? dining.get(restaurantKey) : null;
+			    const boundDestination = ["destination", "room", "dining"].includes(kind) ? byDestination.get(destinationKey) : null;
+			    const pageDestination = boundDestination ?? (pageVenue ? byDestination.get(pageVenue.destinationKey) : null);
+			    const defaultRestaurant = pageVenue?.destinationKey === pageDestination?.key ? pageVenue?.key ?? "" : "";
+			    const defaultHotel = hotels.has(pageDestination?.key) ? pageDestination.key : "";
+			    const orderedDestinations = locations.filter((destination) => destination !== pageDestination);
+			    if (pageDestination)
+			      orderedDestinations.unshift(pageDestination);
+			    return { hotels, dining, orderedDestinations, pageDestination, defaultRestaurant, defaultHotel, defaultTab: kind === "dining" ? 1 : 0 };
+			  }
+			  function contactInfo(value) {
+			    if (!textValue(value))
+			      return null;
+			    try {
+			      const link = new URL(value);
+			      if (link.protocol === "https:" && !link.username && !link.password)
+			        return { url: link.href, label: "View contact details" };
+			      if (link.protocol === "mailto:" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(link.pathname)) {
+			        return { url: link.href, label: "Email" };
+			      }
+			      if (link.protocol === "tel:" && /^\+?\d[\d().-]+$/.test(link.pathname))
+			        return { url: link.href, label: "Call" };
+			    } catch {
+			      return null;
+			    }
+			    return null;
+			  }
+			  function readPanel(form) {
+			    return {
+			      form,
+			      fields: form.elements,
+			      dates: form.querySelector("[data-mbm-dates]"),
+			      status: form.querySelector("[data-mbm-status]"),
+			      submit: form.querySelector('button[type="submit"]'),
+			      contact: form.querySelector("[data-mbm-contact]"),
+			      message: form.querySelector("[data-mbm-message]")
+			    };
+			  }
+			  function scopeIds(dialog) {
+			    const prefix = "mbm-" + ++instance + "-";
+			    for (const element of dialog.querySelectorAll("[id], [for], [aria-labelledby], [aria-controls]")) {
+			      if (element.id)
+			        element.id = prefix + element.id;
+			      for (const name of ["for", "aria-labelledby", "aria-controls"]) {
+			        if (element.hasAttribute(name))
+			          element.setAttribute(name, prefix + element.getAttribute(name));
+			      }
+			    }
+			    dialog.setAttribute("aria-labelledby", prefix + dialog.getAttribute("aria-labelledby"));
+			  }
+			  function mountBookingModal(root, { catalogue, calendarTemplate, validateDiningUrl, onSubmit }) {
+			    const dialog = root?.querySelector("[data-mbm-dialog]");
+			    const tablist = dialog?.querySelector('[role="tablist"]');
+			    const tabs = Array.from(tablist?.querySelectorAll('[role="tab"]') ?? []);
+			    const closeButton = dialog?.querySelector("[data-mbm-close]");
+			    if (!dialog?.showModal || !closeButton || tabs.length !== 2 || !calendarTemplate?.content || !Array.isArray(catalogue?.destinations) || !Array.isArray(catalogue?.restaurants) || typeof validateDiningUrl !== "function" || typeof onSubmit !== "function" || !root.matches("[hidden][inert]"))
+			      return null;
+			    const forms = tabs.map((tab) => dialog.querySelector("#" + CSS.escape(tab.getAttribute("aria-controls"))));
+			    if (forms.some((form) => !(form instanceof HTMLFormElement)))
+			      return null;
+			    const [stay, dining] = forms.map(readPanel);
+			    if (!stay.fields.hotel || !dining.fields.restaurant || !dining.fields.time || !dining.fields.guests || !dining.contact || [stay, dining].some((panel) => !panel.dates?.querySelector(".mbm-calendar") || !panel.status || !panel.submit))
+			      return null;
+			    const data = prepareCatalogue(catalogue);
+			    for (const destination of data.orderedDestinations) {
+			      if (data.hotels.has(destination.key))
+			        stay.fields.hotel.add(new Option(destination.label, destination.key));
+			    }
+			    const labelCounts = /* @__PURE__ */ new Map();
+			    for (const venue of data.dining.values()) {
+			      labelCounts.set(venue.label, (labelCounts.get(venue.label) ?? 0) + 1);
+			    }
+			    for (const destination of data.orderedDestinations) {
+			      const venues = [...data.dining.values()].filter((venue) => venue.destinationKey === destination.key).sort(byOrder);
+			      if (!venues.length)
+			        continue;
+			      const group = document.createElement("optgroup");
+			      group.label = destination.label;
+			      for (const venue of venues) {
+			        const location = destination.label.replace(/^Aethos /, "");
+			        const label = labelCounts.get(venue.label) > 1 ? venue.label + " \xB7 " + location : venue.label;
+			        group.append(new Option(label, venue.key));
+			      }
+			      dining.fields.restaurant.append(group);
+			    }
+			    const approvedDining = new Set([...data.dining.values()].filter((venue) => venue.mode === "online" && textValue(venue.sevenRoomsUrl) && validateDiningUrl(venue)).map((venue) => venue.key));
+			    let values = {};
+			    let activeTab;
+			    let opener;
+			    let backdropDown = false;
+			    const panels = [stay, dining];
+			    const calendars = panels.map((panel) => bindCalendar(panel.dates, calendarTemplate, {
+			      getValue: (name) => values[name],
+			      getMinimum: (name) => name === "checkOut" && values.checkIn ? addDays(values.checkIn, 1) : today(),
+			      onChange(name, value) {
+			        values[name] = value;
+			        if (name === "checkIn" && values.checkOut && (!value || values.checkOut <= value))
+			          values.checkOut = null;
+			        refresh();
+			      }
+			    }));
+			    function staySearch() {
+			      const hotel = data.hotels.get(stay.fields.hotel.value);
+			      const { checkIn, checkOut } = values;
+			      if (!hotel || hotel.stay.paused === true || !checkIn || !checkOut || checkIn < today() || checkOut <= checkIn)
+			        return null;
+			      return { type: "stay", destinationKey: hotel.key, propertyId: hotel.stay.propertyId, checkIn: dateKey(checkIn), checkOut: dateKey(checkOut) };
+			    }
+			    function restaurantSearch() {
+			      const venue = data.dining.get(dining.fields.restaurant.value);
+			      const { time, guests } = dining.fields;
+			      if (!approvedDining.has(venue?.key) || !values.date || values.date < today() || !time.validity.valid || !guests.validity.valid || !Number.isSafeInteger(guests.valueAsNumber))
+			        return null;
+			      return {
+			        type: "restaurant",
+			        restaurantKey: venue.key,
+			        destinationKey: venue.destinationKey,
+			        date: dateKey(values.date),
+			        time: time.value,
+			        guests: guests.valueAsNumber,
+			        sevenRoomsUrl: venue.sevenRoomsUrl
+			      };
+			    }
+			    function stayStatus(hotel, ready) {
+			      const contextNotice = data.defaultHotel ? "" : data.pageDestination?.message;
+			      const notice = textValue(hotel ? hotel.message : contextNotice);
+			      if (hotel?.stay.issue)
+			        return "Online booking is unavailable for this hotel.";
+			      if (hotel?.stay.paused === true)
+			        return notice || "Hotel bookings are temporarily paused.";
+			      const instruction = ready ? "" : hotel ? "Select check-in and check-out dates." : "Select a hotel and your stay dates.";
+			      return [notice, instruction].filter(Boolean).join(" ");
+			    }
+			    const guidance = {
+			      paused: "Online reservations for this restaurant are paused.",
+			      "walk-in": "Walk-ins are welcome, subject to availability.",
+			      enquiry: "Contact the restaurant to enquire about a table."
+			    };
+			    function diningStatus(venue, ready) {
+			      if (!venue)
+			        return "Select a restaurant, date, time and number of guests.";
+			      const message = textValue(venue.message);
+			      if (venue.mode !== "online")
+			        return message || guidance[venue.mode];
+			      const instruction = approvedDining.has(venue.key) ? ready ? "" : "Select a date, time and a guest count of at least one." : "Online booking is unavailable for this restaurant.";
+			      return [message, instruction].filter(Boolean).join(" ");
+			    }
+			    function setStatus(panel, message) {
+			      if (panel.status.textContent !== message)
+			        panel.status.textContent = message;
+			      panel.status.hidden = !message;
+			    }
+			    function showMessage(panel, fragment) {
+			      if (!panel.message || panel.currentMessage === fragment)
+			        return;
+			      panel.currentMessage = fragment;
+			      panel.message.replaceChildren(...fragment ? [fragment.cloneNode(true)] : []);
+			      panel.message.hidden = !fragment;
+			    }
+			    function refresh() {
+			      calendars.forEach((calendar) => calendar.sync());
+			      const canStay = Boolean(staySearch());
+			      const canDine = Boolean(restaurantSearch());
+			      const hotel = data.hotels.get(stay.fields.hotel.value);
+			      setStatus(stay, stayStatus(hotel, canStay));
+			      showMessage(stay, (hotel ?? (!data.defaultHotel ? data.pageDestination : null))?.messageFragment);
+			      const venue = data.dining.get(dining.fields.restaurant.value);
+			      setStatus(dining, diningStatus(venue, canDine));
+			      showMessage(dining, venue?.messageFragment);
+			      const contact = contactInfo(venue?.contactUrl);
+			      dining.contact.hidden = !contact;
+			      if (contact) {
+			        dining.contact.href = contact.url;
+			        if (dining.contact.textContent !== contact.label)
+			          dining.contact.textContent = contact.label;
+			      } else {
+			        dining.contact.removeAttribute("href");
+			        dining.contact.textContent = "";
+			      }
+			      stay.submit.disabled = !canStay;
+			      dining.submit.disabled = !canDine;
+			    }
+			    function activate(index, { focus = false } = {}) {
+			      calendars.forEach((calendar) => calendar.close());
+			      activeTab = index;
+			      tabs.forEach((tab, tabIndex) => {
+			        const selected = tabIndex === index;
+			        tab.setAttribute("aria-selected", String(selected));
+			        tab.tabIndex = selected ? 0 : -1;
+			        forms[tabIndex].hidden = !selected;
+			      });
+			      if (focus)
+			        tabs[index].focus();
+			    }
+			    function dismiss({ handoff = false } = {}) {
+			      calendars.forEach((calendar) => calendar.close());
+			      const target = opener;
+			      opener = null;
+			      backdropDown = false;
+			      dialog.toggleAttribute("data-mbm-handoff", handoff);
+			      dialog.close();
+			      dialog.inert = true;
+			      if (target?.isConnected)
+			        target.focus({ preventScroll: true });
+			    }
+			    tabs.forEach((tab, index) => tab.addEventListener("click", () => activate(index, { focus: true })));
+			    tablist.addEventListener("keydown", (event) => {
+			      const next = { ArrowLeft: 1 - activeTab, ArrowRight: 1 - activeTab, Home: 0, End: 1 };
+			      if (!Object.hasOwn(next, event.key))
+			        return;
+			      event.preventDefault();
+			      event.stopPropagation();
+			      activate(next[event.key], { focus: true });
+			    });
+			    dialog.addEventListener("keydown", (event) => {
+			      if (event.key === "Escape" && !event.defaultPrevented) {
+			        event.preventDefault();
+			        event.stopPropagation();
+			        if (!calendars[activeTab].close({ restore: true }))
+			          dismiss();
+			      }
+			      if (event.key !== "Tab")
+			        return;
+			      const focusable = [...dialog.querySelectorAll("button, select, input, a[href]")].filter((element) => element.tabIndex >= 0 && !element.matches(":disabled") && !element.closest("[hidden]"));
+			      const first = focusable.at(0);
+			      const last = focusable.at(-1);
+			      if (event.shiftKey && document.activeElement === first) {
+			        event.preventDefault();
+			        last?.focus();
+			      } else if (!event.shiftKey && document.activeElement === last) {
+			        event.preventDefault();
+			        first?.focus();
+			      }
+			    });
+			    dialog.addEventListener("cancel", (event) => {
+			      event.preventDefault();
+			      if (!calendars[activeTab].close({ restore: true }))
+			        dismiss();
+			    });
+			    closeButton.addEventListener("click", dismiss);
+			    function onBackdrop(event) {
+			      if (event.target !== dialog)
+			        return false;
+			      const bounds = dialog.getBoundingClientRect();
+			      return event.clientX < bounds.left || event.clientX >= bounds.right || event.clientY < bounds.top || event.clientY >= bounds.bottom;
+			    }
+			    dialog.addEventListener("pointerdown", (event) => {
+			      backdropDown = onBackdrop(event);
+			    });
+			    dialog.addEventListener("click", (event) => {
+			      if (backdropDown && onBackdrop(event))
+			        dismiss();
+			      backdropDown = false;
+			      if (dialog.open && !event.target.closest("[data-mbm-dates]"))
+			        calendars[activeTab].close();
+			    });
+			    panels.forEach((panel, index) => {
+			      panel.form.addEventListener("input", refresh);
+			      panel.form.addEventListener("change", refresh);
+			      panel.form.addEventListener("submit", (event) => {
+			        event.preventDefault();
+			        if (!dialog.open || activeTab !== index)
+			          return;
+			        const payload = index === 0 ? staySearch() : restaurantSearch();
+			        refresh();
+			        if (!payload)
+			          return;
+			        dismiss({ handoff: true });
+			        onSubmit(payload);
+			      });
+			    });
+			    scopeIds(dialog);
+			    root.hidden = false;
+			    root.inert = false;
+			    return {
+			      open(trigger) {
+			        if (dialog.open || document.querySelector("dialog:modal"))
+			          return false;
+			        forms.forEach((form) => form.reset());
+			        values = {};
+			        stay.fields.hotel.value = data.defaultHotel;
+			        dining.fields.restaurant.value = data.defaultRestaurant;
+			        activate(data.defaultTab);
+			        refresh();
+			        opener = trigger;
+			        dialog.inert = false;
+			        dialog.removeAttribute("data-mbm-handoff");
+			        dialog.showModal();
+			        dialog.scrollTop = 0;
+			        tabs[activeTab].focus();
+			        return true;
+			      }
+			    };
+			  }
+			
+			  // ../phase-4-handoffs/booking-date.mjs
+			  function isBookingDate(value) {
+			    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000"))
+			      return false;
+			    const date = new Date(value + "T12:00:00Z");
+			    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+			  }
+			
+			  // ../phase-4-handoffs/sevenrooms.mjs
+			  var origin = "https://www.sevenrooms.com";
+			  var modern = /^\/explore\/([a-z0-9_-]+)\/reservations\/create\/search\/?$/;
+			  var legacy = /^\/reservations\/([a-z0-9_-]+)(?:\/[a-zA-Z0-9_-]+)?\/?$/;
+			  var searchKeys = /* @__PURE__ */ new Set([
+			    "date",
+			    "start_time",
+			    "party_size",
+			    "default_date",
+			    "default_time",
+			    "default_party_size",
+			    "defaultDate",
+			    "defaultTime",
+			    "defaultPartySize"
+			  ]);
+			  function approvedRoute(key, destinationKey, href, approved) {
+			    const record = approved.get(key);
+			    if (!record || record.destinationKey !== destinationKey || href !== record.href || typeof href !== "string" || !href.startsWith(origin + "/") || /[\x00-\x20\x7f\\]/.test(href))
+			      return null;
+			    const path = href.slice(origin.length).split(/[?#]/, 1)[0];
+			    const current = path.match(modern);
+			    const previous = path.match(legacy);
+			    const matched = current ?? previous;
+			    if (!matched || matched[1] !== record.venue)
+			      return null;
+			    return { url: new URL(href), names: current ? ["date", "start_time", "party_size"] : ["default_date", "default_time", "default_party_size"] };
+			  }
+			  function validateSevenRoomsUrl(record, approved) {
+			    return Boolean(approvedRoute(record.key, record.destinationKey, record.sevenRoomsUrl, approved));
+			  }
+			  function createSevenRoomsUrl(payload, approved) {
+			    const { restaurantKey, destinationKey, sevenRoomsUrl, date, time, guests } = payload;
+			    const route = approvedRoute(restaurantKey, destinationKey, sevenRoomsUrl, approved);
+			    if (!route || !isBookingDate(date) || typeof time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !Number.isSafeInteger(guests) || guests < 1)
+			      return null;
+			    const existing = route.url.search.slice(1).split("&").filter((pair) => {
+			      const key = new URLSearchParams(pair).keys().next().value;
+			      return pair && !searchKeys.has(key);
+			    });
+			    const values = [date, time, String(guests)];
+			    const search = new URLSearchParams(route.names.map((name, index) => [name, values[index]]));
+			    route.url.search = [...existing, search.toString()].join("&");
+			    return route.url.href;
+			  }
+			
+			  // ../phase-4-handoffs/hotelchamp.mjs
+			  function localCalendarDate(value) {
+			    if (!isBookingDate(value))
+			      return null;
+			    const [year, month, day] = value.split("-").map(Number);
+			    const local = new Date(2e3, 0, 1, 12);
+			    local.setFullYear(year, month - 1, day);
+			    return local.getFullYear() === year && local.getMonth() === month - 1 && local.getDate() === day ? local : null;
+			  }
+			  function hotelchampOptions(payload, properties) {
+			    const { destinationKey, propertyId, checkIn, checkOut } = payload;
+			    if (typeof propertyId !== "string" || !propertyId.trim() || properties.get(destinationKey) !== propertyId)
+			      return null;
+			    const checkin = localCalendarDate(checkIn);
+			    const checkout = localCalendarDate(checkOut);
+			    return checkin && checkout && checkOut > checkIn ? { propertyId, checkin, checkout } : null;
+			  }
+			  async function searchHotelchamp(options, adapter, { signal, retry }) {
+			    signal.throwIfAborted();
+			    const ready = await adapter.ensureLoaded({ retry });
+			    signal.throwIfAborted();
+			    const ibe = ready && adapter.getIbe();
+			    if (typeof ibe?.search !== "function")
+			      throw new Error("Hotelchamp search is unavailable");
+			    ibe.search(options);
+			  }
+			  var stateSelector = "#hc-ibe-root[data-hc-ibe-widget-state]";
+			  var released = /* @__PURE__ */ new Set(["inactive", "hidden", "closed", "minimised", "finished"]);
+			  function hotelchampOverlay(doc = document) {
+			    const state = () => doc.querySelector(stateSelector)?.getAttribute("data-hc-ibe-widget-state");
+			    return {
+			      isOpen: () => state() === "visible",
+			      watch(report) {
+			        let previous;
+			        const update = () => {
+			          const current = state();
+			          if (current === previous)
+			            return;
+			          previous = current;
+			          if (current === "visible")
+			            report(true);
+			          if (released.has(current))
+			            report(false);
+			        };
+			        const observer = new MutationObserver(update);
+			        observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-hc-ibe-widget-state"] });
+			        update();
+			        return () => observer.disconnect();
+			      }
+			    };
+			  }
+			
+			  // ../phase-4-handoffs/service.mjs
+			  function mountBookingService(root, {
+			    background,
+			    properties,
+			    restaurants,
+			    hotelchamp,
+			    navigateFrame = (frame, url) => {
+			      frame.src = url;
+			    },
+			    hotelchampOpenTimeout = 7e3
+			  }) {
+			    const dialog = root.querySelector("dialog");
+			    const heading = dialog.querySelector("h2");
+			    const status = dialog.querySelector('[role="status"]');
+			    const close = dialog.querySelector("[data-close]");
+			    const retry = dialog.querySelector("[data-retry]");
+			    const contactLink = dialog.querySelector("[data-contact]");
+			    const frame = dialog.querySelector("iframe");
+			    let active;
+			    function setStatus(message, canRetry) {
+			      status.textContent = message;
+			      retry.hidden = !canRetry;
+			    }
+			    function dismiss() {
+			      if (!active)
+			        return;
+			      const session = active;
+			      active = null;
+			      session.controller?.abort();
+			      session.unwatch?.();
+			      clearTimeout(session.timer);
+			      frame.removeAttribute("src");
+			      frame.hidden = true;
+			      contactLink.removeAttribute("href");
+			      contactLink.hidden = true;
+			      status.textContent = "";
+			      dialog.close();
+			      delete root.dataset.active;
+			      background.inert = session.wasInert;
+			      session.opener?.focus({ preventScroll: true });
+			    }
+			    function openRestaurant(session) {
+			      const alternative = contactLink.hidden ? "" : " or contact the restaurant";
+			      setStatus("If the booking form doesn\u2019t appear, try again" + alternative + ".", true);
+			      try {
+			        navigateFrame(frame, session.url);
+			        frame.hidden = false;
+			      } catch {
+			        frame.removeAttribute("src");
+			        frame.hidden = true;
+			        setStatus("We could not open SevenRooms. Try again" + alternative + ".", true);
+			      }
+			    }
+			    async function openHotel(session, isRetry) {
+			      setStatus("Opening Hotelchamp\u2026", false);
+			      session.controller?.abort();
+			      session.unwatch?.();
+			      clearTimeout(session.timer);
+			      const controller = new AbortController();
+			      session.controller = controller;
+			      session.unwatch = hotelchamp.watch((visible) => {
+			        if (active !== session || controller.signal.aborted)
+			          return;
+			        if (visible) {
+			          session.providerOpen = true;
+			          session.payload = null;
+			          clearTimeout(session.timer);
+			          dialog.close();
+			          hotelchamp.focusOverlay?.();
+			        } else if (session.providerOpen) {
+			          dismiss();
+			        }
+			      });
+			      try {
+			        const options = hotelchampOptions(session.payload, properties);
+			        await searchHotelchamp(options, hotelchamp, { signal: controller.signal, retry: isRetry });
+			        if (active !== session || controller.signal.aborted || session.providerOpen)
+			          return;
+			        session.timer = setTimeout(() => {
+			          setStatus("Hotelchamp did not confirm that it opened. Try again or close this window.", true);
+			        }, hotelchampOpenTimeout);
+			      } catch {
+			        if (active === session && !controller.signal.aborted && !session.providerOpen) {
+			          setStatus("We could not open Hotelchamp. Try again or close this window.", true);
+			        }
+			      }
+			    }
+			    function isBusy() {
+			      return Boolean(active) || hotelchamp.isOpen();
+			    }
+			    close.addEventListener("click", dismiss);
+			    dialog.addEventListener("cancel", (event) => {
+			      event.preventDefault();
+			      dismiss();
+			    });
+			    retry.addEventListener("click", () => {
+			      if (!active || retry.hidden)
+			        return;
+			      if (active.type === "restaurant") {
+			        openRestaurant(active);
+			      } else {
+			        close.focus({ preventScroll: true });
+			        void openHotel(active, true);
+			      }
+			    });
+			    return {
+			      isBusy,
+			      open(payload, { opener, contact = null }) {
+			        if (isBusy() || document.querySelector("dialog:modal"))
+			          return false;
+			        const session = { type: payload.type, opener, wasInert: background.inert };
+			        if (payload.type === "stay") {
+			          if (!hotelchampOptions(payload, properties))
+			            return false;
+			          const { destinationKey, propertyId, checkIn, checkOut } = payload;
+			          session.payload = { destinationKey, propertyId, checkIn, checkOut };
+			          heading.textContent = "Hotel booking";
+			        } else if (payload.type === "restaurant") {
+			          session.url = createSevenRoomsUrl(payload, restaurants);
+			          if (!session.url)
+			            return false;
+			          heading.textContent = "Restaurant booking";
+			          if (contact) {
+			            contactLink.href = contact.url;
+			            contactLink.textContent = contact.label;
+			            contactLink.hidden = false;
+			          }
+			        } else {
+			          return false;
+			        }
+			        active = session;
+			        root.dataset.active = "";
+			        background.inert = true;
+			        dialog.showModal();
+			        close.focus({ preventScroll: true });
+			        if (session.type === "stay")
+			          void openHotel(session, false);
+			        else
+			          openRestaurant(session);
+			        return true;
+			      }
+			    };
+			  }
+			
+			  // cms.mjs
+			  var slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+			  var hotelchampId = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
+			  var messageTags = /* @__PURE__ */ new Set(["p", "br", "strong", "em", "b", "i", "ul", "ol", "li", "a"]);
+			  var blockedTags = "script,style,iframe,object,embed,template,svg,math,audio,video,picture,img,link,form";
+			  var contactBase = "https://www.aethos.com/";
+			  function isDemoRequest(url) {
+			    const values = url.searchParams.getAll("mbm-demo");
+			    return url.hostname === "aethoshotels.webflow.io" && values.length === 1 && values[0] === "1";
+			  }
+			  function isGeneralBooking(marker, href, booking) {
+			    if (marker !== "general")
+			      return false;
+			    if (href === "#")
+			      return !booking;
+			    return href === "#reservenow" && booking?.marker === true && Object.keys(booking.options).length === 0;
+			  }
+			  function pageContext(kind, { destination, room, dining }, destinations) {
+			    if (kind === "brand")
+			      return !destination && room == null && dining == null ? { kind } : null;
+			    if (!destinations.has(destination))
+			      return null;
+			    if (kind === "room" && slug.test(room ?? "") && dining == null)
+			      return { kind, destinationKey: destination, roomKey: room };
+			    if (kind === "dining" && slug.test(dining ?? "") && room == null) {
+			      return { kind, destinationKey: destination, restaurantKey: dining };
+			    }
+			    if (kind === "destination" && room == null && dining == null)
+			      return { kind, destinationKey: destination };
+			    return null;
+			  }
+			  function hotelChoices(destinations) {
+			    const counts = /* @__PURE__ */ new Map();
+			    for (const { propertyId } of destinations) {
+			      const id = propertyId?.trim().toLowerCase();
+			      if (id)
+			        counts.set(id, (counts.get(id) ?? 0) + 1);
+			    }
+			    const choices = /* @__PURE__ */ new Map();
+			    for (const { key, propertyId, enabled } of destinations) {
+			      const id = propertyId?.trim();
+			      if (!id)
+			        continue;
+			      const issue = !hotelchampId.test(id) ? "malformed Hotelchamp ID" : counts.get(id.toLowerCase()) !== 1 ? "ambiguous Hotelchamp ID" : null;
+			      choices.set(key, { propertyId: id, listed: true, paused: enabled !== true || Boolean(issue), issue });
+			    }
+			    return choices;
+			  }
+			  function safeHref(value) {
+			    if (!value || /[\\\x00-\x20\x7f]|%0[ad]/i.test(value))
+			      return null;
+			    if (!/^(?:https:\/\/|mailto:|tel:|\/(?!\/))/i.test(value))
+			      return null;
+			    try {
+			      const url = new URL(value, contactBase);
+			      if (url.protocol === "https:" && !url.username && !url.password)
+			        return url.href;
+			      const address = decodeURIComponent(url.pathname);
+			      if (url.protocol === "mailto:" && /^[^\s@,?]+@[^\s@,?]+\.[^\s@,?]+$/.test(address))
+			        return url.href;
+			      if (url.protocol === "tel:" && /^\+?\d[\d(). -]+$/.test(address) && !url.hash && !url.search)
+			        return url.href;
+			    } catch {
+			      return null;
+			    }
+			    return null;
+			  }
+			  function cleanMessage(source, doc) {
+			    if (!source)
+			      return null;
+			    const fragment = doc.createDocumentFragment();
+			    function append(node, target) {
+			      if (node.nodeType === 3) {
+			        target.append(doc.createTextNode(node.textContent));
+			        return;
+			      }
+			      if (node.nodeType !== 1 || node.matches(blockedTags))
+			        return;
+			      const name = node.localName;
+			      const href = name === "a" ? safeHref(node.getAttribute("href")) : null;
+			      const element = messageTags.has(name) && (name !== "a" || href) ? doc.createElement(name) : null;
+			      if (href)
+			        element.href = href;
+			      if (element)
+			        target.append(element);
+			      for (const child of node.childNodes)
+			        append(child, element ?? target);
+			    }
+			    for (const node of source.childNodes)
+			      append(node, fragment);
+			    return fragment.textContent.trim() ? fragment : null;
+			  }
+			  function parseMessage(markup, doc) {
+			    if (!markup)
+			      return null;
+			    const container = doc.createElement("template");
+			    container.innerHTML = markup;
+			    return cleanMessage(container.content, doc);
+			  }
+			  function projectCatalogue(destinations, restaurants, approved) {
+			    const stays = hotelChoices(destinations);
+			    const destinationRows = destinations.map(({ key, label, order: order2, messageFragment }) => ({
+			      key,
+			      label,
+			      order: order2,
+			      messageFragment,
+			      stay: stays.get(key)
+			    }));
+			    const properties = new Map(destinationRows.filter((row) => row.stay && !row.stay.paused).map((row) => [row.key, row.stay.propertyId]));
+			    const restaurantRows = [];
+			    const contacts = /* @__PURE__ */ new Map();
+			    const destinationKeys = new Set(destinationRows.map((row) => row.key));
+			    for (const row of restaurants) {
+			      const { key, destinationKey, mode, messageFragment } = row;
+			      if (!mode || !destinationKeys.has(destinationKey))
+			        continue;
+			      const approval = approved.get(key);
+			      const approvedContacts = approval?.destinationKey === destinationKey ? (approval.contactUrls ?? []).map(safeHref) : [];
+			      for (const link of messageFragment?.querySelectorAll("a[href]") ?? []) {
+			        const text = link.textContent.trim();
+			        const url = link.href;
+			        const providerPage = /(?:^|\.)sevenrooms\.com$/i.test(new URL(url).hostname);
+			        if (text && approvedContacts.includes(url) && !providerPage) {
+			          contacts.set(key, { label: text, url });
+			          break;
+			        }
+			      }
+			      restaurantRows.push(mode === "online" ? row : { ...row, sevenRoomsUrl: null });
+			    }
+			    return { catalogue: { destinations: destinationRows, restaurants: restaurantRows }, destinationKeys, properties, contacts };
+			  }
+			  var snapshotModes = /* @__PURE__ */ new Set(["online", "paused", "walk-in", "enquiry"]);
+			  function validSnapshotRows(rows, expectedCount) {
+			    return Array.isArray(rows) && rows.length > 0 && rows.length === expectedCount && rows.every((row) => row && typeof row.key === "string" && slug.test(row.key) && typeof row.label === "string" && row.label.trim() && (row.order === null || Number.isFinite(row.order)) && (row.message === null || typeof row.message === "string")) && new Set(rows.map((row) => row.key)).size === rows.length;
+			  }
+			  function readSnapshot(snapshot, doc) {
+			    if (snapshot?.schemaVersion !== 1 || !/^mbm-v1-[0-9a-f]{16}$/.test(snapshot.version) || !validSnapshotRows(snapshot.destinations, snapshot.counts?.destinations) || !validSnapshotRows(snapshot.restaurants, snapshot.counts?.restaurants) || snapshot.destinations.some((row) => row.propertyId !== null && typeof row.propertyId !== "string"))
+			      return null;
+			    const destinations = new Set(snapshot.destinations.map((row) => row.key));
+			    if (snapshot.restaurants.some((row) => !destinations.has(row.destinationKey) || !snapshotModes.has(row.mode) || !Array.isArray(row.contactUrls) || !row.contactUrls.length || row.contactUrls.some((url) => typeof url !== "string") || (row.mode === "online" ? typeof row.provider?.href !== "string" || typeof row.provider.venue !== "string" : row.provider !== null)))
+			      return null;
+			    const approved = new Map(snapshot.restaurants.map((row) => [row.key, {
+			      destinationKey: row.destinationKey,
+			      href: row.provider?.href,
+			      venue: row.provider?.venue,
+			      contactUrls: row.contactUrls
+			    }]));
+			    const data = projectCatalogue(snapshot.destinations.map((row) => ({
+			      ...row,
+			      messageFragment: parseMessage(row.message, doc)
+			    })), snapshot.restaurants.map((row) => ({
+			      key: row.key,
+			      label: row.label,
+			      order: row.order,
+			      destinationKey: row.destinationKey,
+			      mode: row.mode,
+			      sevenRoomsUrl: row.provider?.href ?? null,
+			      messageFragment: parseMessage(row.message, doc)
+			    })), approved);
+			    return data.contacts.size === snapshot.restaurants.length ? { ...data, approved } : null;
+			  }
+			
+			  // snapshot.json
+			  var snapshot_default = {
+			    schemaVersion: 1,
+			    counts: {
+			      destinations: 7,
+			      restaurants: 12
+			    },
+			    destinations: [
+			      {
+			        key: "monterosa",
+			        label: "Aethos Monterosa",
+			        order: 1,
+			        enabled: true,
+			        propertyId: "9dbd4b30-32f7-4c9c-ace4-101352f56167",
+			        message: null
+			      },
+			      {
+			        key: "saragano",
+			        label: "Aethos Saragano",
+			        order: 2,
+			        enabled: true,
+			        propertyId: "9dbd47ae-375e-4638-ad23-95df3590f16a",
+			        message: null
+			      },
+			      {
+			        key: "ericeira",
+			        label: "Aethos Ericeira",
+			        order: 3,
+			        enabled: true,
+			        propertyId: "9dbd4822-c424-4000-8db8-cbf4a75e5415",
+			        message: null
+			      },
+			      {
+			        key: "milan",
+			        label: "Aethos Milan",
+			        order: 4,
+			        enabled: true,
+			        propertyId: "9dbd4a3e-c89f-4ca2-a2cc-b1a002cff5e7",
+			        message: null
+			      },
+			      {
+			        key: "london",
+			        label: "Aethos London Shoreditch",
+			        order: 5,
+			        enabled: true,
+			        propertyId: "9ebeb109-210c-4a82-92ce-84b05717aa2b",
+			        message: null
+			      },
+			      {
+			        key: "mallorca",
+			        label: "Aethos Mallorca",
+			        order: 6,
+			        enabled: true,
+			        propertyId: "9dbd4aeb-20ab-4da7-8056-366fd65b5eb4",
+			        message: null
+			      },
+			      {
+			        key: "sardinia",
+			        label: "Aethos Sardinia",
+			        order: 7,
+			        enabled: true,
+			        propertyId: "9dbd4aa5-2c0f-446f-9097-f12846023e3c",
+			        message: null
+			      }
+			    ],
+			    restaurants: [
+			      {
+			        key: "monterosa-summit-restaurant",
+			        destinationKey: "monterosa",
+			        label: "Summit",
+			        order: 1,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:monterosa@aethos.com">email Summit</a>.</p>',
+			        contactUrls: [
+			          "mailto:monterosa@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/explore/thesummit/reservations/create/search/",
+			          venue: "thesummit"
+			        }
+			      },
+			      {
+			        key: "monterosa-1568-restaurant",
+			        destinationKey: "monterosa",
+			        label: "1568 Restaurant",
+			        order: 2,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:monterosa@aethos.com">email 1568 Restaurant</a>.</p>',
+			        contactUrls: [
+			          "mailto:monterosa@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/explore/1568/reservations/create/search",
+			          venue: "1568"
+			        }
+			      },
+			      {
+			        key: "saragano-brace",
+			        destinationKey: "saragano",
+			        label: "Brace",
+			        order: 1,
+			        mode: "paused",
+			        message: '<p>Brace is temporarily closed. For enquiries, <a href="mailto:saragano@aethos.com">email Aethos Saragano</a>.</p>',
+			        contactUrls: [
+			          "mailto:saragano@aethos.com"
+			        ],
+			        provider: null
+			      },
+			      {
+			        key: "saragano-ceci",
+			        destinationKey: "saragano",
+			        label: "CECI",
+			        order: 1,
+			        mode: "enquiry",
+			        message: '<p>For dining enquiries at CECI, <a href="mailto:saragano@aethos.com">email Aethos Saragano</a>.</p>',
+			        contactUrls: [
+			          "mailto:saragano@aethos.com"
+			        ],
+			        provider: null
+			      },
+			      {
+			        key: "ericeira-onda-restaurant",
+			        destinationKey: "ericeira",
+			        label: "Onda Restaurant",
+			        order: 1,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:ericeira@aethos.com">email ONDA Ericeira</a>.</p>',
+			        contactUrls: [
+			          "mailto:ericeira@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/reservations/onda",
+			          venue: "onda"
+			        }
+			      },
+			      {
+			        key: "milan-the-doping-mixology",
+			        destinationKey: "milan",
+			        label: "THE DOPING Mixology",
+			        order: 1,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:doping@aethos.com">email THE DOPING Mixology</a>.</p>',
+			        contactUrls: [
+			          "mailto:doping@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/reservations/dopingbar",
+			          venue: "dopingbar"
+			        }
+			      },
+			      {
+			        key: "milan-doping-dining",
+			        destinationKey: "milan",
+			        label: "THE DOPING Dining",
+			        order: 2,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:doping@aethos.com">email THE DOPING Dining</a>.</p>',
+			        contactUrls: [
+			          "mailto:doping@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/explore/dopingbar/reservations/create/search/?searchTab=reservations",
+			          venue: "dopingbar"
+			        }
+			      },
+			      {
+			        key: "london-aethos-cafe",
+			        destinationKey: "london",
+			        label: "Aethos Cafe London",
+			        order: 0,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:londonshoreditch@aethos.com">email Aethos Caf\xE9 London</a>.</p>',
+			        contactUrls: [
+			          "mailto:londonshoreditch@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/explore/aethoslondon/reservations/create/search/",
+			          venue: "aethoslondon"
+			        }
+			      },
+			      {
+			        key: "london-mitsu",
+			        destinationKey: "london",
+			        label: "Mitsu",
+			        order: 2,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:hello@mitsurestaurant.com">email Mitsu</a>.</p>',
+			        contactUrls: [
+			          "mailto:hello@mitsurestaurant.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/explore/mitsulondon/reservations/create/search/",
+			          venue: "mitsulondon"
+			        }
+			      },
+			      {
+			        key: "mallorca-onda",
+			        destinationKey: "mallorca",
+			        label: "ONDA",
+			        order: 1,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:onda.mallorca@aethos.com">email ONDA Mallorca</a>.</p>',
+			        contactUrls: [
+			          "mailto:onda.mallorca@aethos.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/explore/ondai/reservations/create/search/",
+			          venue: "ondai"
+			        }
+			      },
+			      {
+			        key: "mallorca-raig",
+			        destinationKey: "mallorca",
+			        label: "RAIG Rooftop",
+			        order: 2,
+			        mode: "walk-in",
+			        message: '<p>Walk-ins are welcome, subject to availability. <a href="mailto:raig.mallorca@aethos.com">Email RAIG Rooftop</a> for enquiries.</p>',
+			        contactUrls: [
+			          "mailto:raig.mallorca@aethos.com"
+			        ],
+			        provider: null
+			      },
+			      {
+			        key: "sardinia-zaia-sardinia",
+			        destinationKey: "sardinia",
+			        label: "ZA\xCFA Sardinia",
+			        order: 1,
+			        mode: "online",
+			        message: '<p>For booking enquiries, <a href="mailto:Zaia@aethoshotels.com">email ZA\xCFA Sardinia</a>.</p>',
+			        contactUrls: [
+			          "mailto:Zaia@aethoshotels.com"
+			        ],
+			        provider: {
+			          href: "https://www.sevenrooms.com/reservations/aethossardinia/",
+			          venue: "aethossardinia"
+			        }
+			      }
+			    ],
+			    version: "mbm-v1-eec3e76cad258a06"
+			  };
+			
+			  // integration.mjs
+			  var coverage = /* @__PURE__ */ new Map([
+			    ["/", "brand"],
+			    ["/destinations/ericeira", "destination"],
+			    ["/rooms/ericeira-deluxe-room", "room"],
+			    ["/dining/milan-doping-dining", "dining"],
+			    ["/dining/milan-the-doping-mixology", "dining"],
+			    ["/dining/ericeira-onda-restaurant", "dining"]
+			  ]);
+			  function single(root, selector) {
+			    const matches = root.querySelectorAll(selector);
+			    return matches.length === 1 ? matches[0] : null;
+			  }
+			  function mount({ site, window: win = window, document: doc = document }) {
+			    const url = new URL(win.location.href);
+			    if (!isDemoRequest(url))
+			      return null;
+			    const kind = coverage.get(url.pathname);
+			    if (!kind)
+			      return null;
+			    const wrapper = single(doc, ".page-wrap");
+			    const drawer = single(doc, "[data-mbm]");
+			    const provider = single(doc, "[data-mbm-service]");
+			    const calendar = single(doc, "template#mbm-calendar-template");
+			    if (!wrapper || !drawer?.matches("[hidden][inert]") || !provider?.matches("[hidden][inert]") || wrapper.contains(drawer) || wrapper.contains(provider) || drawer.contains(provider) || provider.contains(drawer) || !calendar)
+			      return null;
+			    const serviceDialog = single(provider, "dialog");
+			    const frame = serviceDialog && single(serviceDialog, "iframe");
+			    if (!serviceDialog?.showModal || serviceDialog.open || !frame?.matches("[hidden]:not([src]):not([srcdoc])") || ["h2", '[role="status"]', "[data-close]", "[data-retry]", "[data-contact]"].some((selector) => !single(serviceDialog, selector)) || [".mbm-days", ".mbm-month", '[data-month-step="-1"]', ".mbm-clear"].some((selector) => !single(calendar.content, selector)))
+			      return null;
+			    const context = pageContext(kind, {
+			      destination: wrapper.getAttribute("aethos-destination-slug"),
+			      room: wrapper.getAttribute("aethos-room-slug"),
+			      dining: wrapper.getAttribute("aethos-dining-slug")
+			    }, new Set(Array.isArray(snapshot_default?.destinations) ? snapshot_default.destinations.map((row) => row?.key) : []));
+			    if (!context)
+			      return null;
+			    const data = readSnapshot(snapshot_default, doc);
+			    if (!data || !data.catalogue.destinations.some((row) => row.stay))
+			      return null;
+			    const { approved } = data;
+			    if (data.catalogue.restaurants.some((row) => row.mode === "online" && !validateSevenRoomsUrl(row, approved)))
+			      return null;
+			    data.catalogue.context = context;
+			    let service;
+			    let opener;
+			    const booking = mountBookingModal(drawer, {
+			      catalogue: data.catalogue,
+			      calendarTemplate: calendar,
+			      validateDiningUrl: (record) => validateSevenRoomsUrl(record, approved),
+			      onSubmit(payload) {
+			        service.open(payload, { opener, contact: data.contacts.get(payload.restaurantKey) });
+			      }
+			    });
+			    if (!booking)
+			      return null;
+			    service = mountBookingService(provider, {
+			      background: wrapper,
+			      properties: data.properties,
+			      restaurants: approved,
+			      hotelchamp: {
+			        ...hotelchampOverlay(doc),
+			        ensureLoaded: () => site.helpers.ensureHotelChampLoaded(),
+			        getIbe: () => win.__HC__?.ibe
+			      },
+			      navigateFrame(frame2, href) {
+			        if (site.mbmProviderConsent?.("sevenrooms") !== true)
+			          throw new Error("SevenRooms consent unavailable");
+			        frame2.src = href;
+			      }
+			    });
+			    provider.hidden = false;
+			    provider.inert = false;
+			    for (const row of data.catalogue.destinations) {
+			      if (row.stay?.issue)
+			        console.warn("[MBM] " + row.stay.issue + " for " + row.key);
+			    }
+			    return {
+			      openGeneral(target, trigger) {
+			        const link = target?.closest?.('a[data-mbm-trigger="general"]');
+			        if (!link || !isGeneralBooking(link.dataset.mbmTrigger, trigger.href, trigger.booking))
+			          return false;
+			        if (service.isBusy())
+			          return true;
+			        if (!booking.open(link))
+			          return false;
+			        opener = link;
+			        return true;
+			      }
+			    };
+			  }
+			  return __toCommonJS(integration_exports);
+			})();
+			return Phase5Mbm.mount({ site: aethos });
+		})();
+
 		// Click = ensure loaded, then open HC
 		document.addEventListener(
 			"click",
@@ -6413,6 +7643,10 @@ function main() {
 					text: (trigger.element.textContent || "").trim().slice(0, 80) || null,
 				});
 
+				if (mbm?.openGeneral(e.target, trigger)) {
+					e.preventDefault();
+					return;
+				}
 				e.preventDefault();
 				markerArrivalVersion++;
 				await openBooking(trigger.booking);
