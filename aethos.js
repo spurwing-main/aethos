@@ -6993,6 +6993,7 @@ function main() {
 			    properties,
 			    restaurants,
 			    hotelchamp,
+			    canEmbedSevenRooms = () => true,
 			    navigateFrame = (frame, url) => {
 			      frame.src = url;
 			    },
@@ -7005,6 +7006,9 @@ function main() {
 			    const retry = dialog.querySelector("[data-retry]");
 			    const contactLink = dialog.querySelector("[data-contact]");
 			    const frame = dialog.querySelector("iframe");
+			    const continueLink = root.ownerDocument.createElement("a");
+			    continueLink.dataset.sevenroomsContinue = "";
+			    continueLink.textContent = "Continue on SevenRooms";
 			    let active;
 			    function setStatus(message, canRetry) {
 			      status.textContent = message;
@@ -7020,6 +7024,8 @@ function main() {
 			      clearTimeout(session.timer);
 			      frame.removeAttribute("src");
 			      frame.hidden = true;
+			      continueLink.removeAttribute("href");
+			      continueLink.remove();
 			      contactLink.removeAttribute("href");
 			      contactLink.hidden = true;
 			      status.textContent = "";
@@ -7030,10 +7036,21 @@ function main() {
 			    }
 			    function openRestaurant(session) {
 			      const alternative = contactLink.hidden ? "" : " or contact the restaurant";
-			      setStatus("If the booking form doesn\u2019t appear, try again" + alternative + ".", true);
 			      try {
+			        if (canEmbedSevenRooms() !== true) {
+			          frame.removeAttribute("src");
+			          frame.hidden = true;
+			          continueLink.href = session.url;
+			          contactLink.before(continueLink);
+			          const retryHadFocus = retry === root.ownerDocument.activeElement;
+			          setStatus("The booking form will open on the SevenRooms website.", false);
+			          if (retryHadFocus)
+			            continueLink.focus({ preventScroll: true });
+			          return;
+			        }
 			        navigateFrame(frame, session.url);
 			        frame.hidden = false;
+			        setStatus("If the booking form doesn\u2019t appear, try again" + alternative + ".", true);
 			      } catch {
 			        frame.removeAttribute("src");
 			        frame.hidden = true;
@@ -7599,11 +7616,7 @@ function main() {
 			        ensureLoaded: () => site.helpers.ensureHotelChampLoaded(),
 			        getIbe: () => win.__HC__?.ibe
 			      },
-			      navigateFrame(frame2, href) {
-			        if (site.mbmProviderConsent?.("sevenrooms") !== true)
-			          throw new Error("SevenRooms consent unavailable");
-			        frame2.src = href;
-			      }
+			      canEmbedSevenRooms: () => site.mbmProviderConsent?.("sevenrooms") === true
 			    });
 			    provider.hidden = false;
 			    provider.inert = false;
