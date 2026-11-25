@@ -6570,7 +6570,7 @@ function main() {
 			  }
 			
 			  // ../phase-3-interface/mbm.js
-			  var includedModes = /* @__PURE__ */ new Set(["online", "paused", "walk-in", "enquiry"]);
+			  var includedModes = /* @__PURE__ */ new Set(["booking-enabled", "message-only"]);
 			  var order = (row) => Number.isFinite(row.order) ? row.order : Infinity;
 			  var byOrder = (a, b) => order(a) - order(b) || a.key.localeCompare(b.key, "en");
 			  var textValue = (value) => typeof value === "string" ? value.trim() : "";
@@ -6677,6 +6677,12 @@ function main() {
 			    const diningGuests = Array.from({ length: 20 }, (_, index) => String(index + 1));
 			    setDiningOptions(timeField, diningTimes, "", "Select time");
 			    setDiningOptions(guestsField, diningGuests, "2");
+			    const { time, guests } = dining.fields;
+			    const timingPair = time.closest(".mbm-pair");
+			    const timingControls = timingPair?.contains(guests)
+			      ? [timingPair]
+			      : [time.closest(".mbm-field") ?? time, guests.closest(".mbm-field") ?? guests];
+			    const diningBookingControls = [dining.dates, ...timingControls, dining.submit];
 			    const data = prepareCatalogue(catalogue);
 			    for (const destination of data.orderedDestinations) {
 			      if (data.hotels.has(destination.key))
@@ -6699,7 +6705,7 @@ function main() {
 			      }
 			      dining.fields.restaurant.append(group);
 			    }
-			    const approvedDining = new Set([...data.dining.values()].filter((venue) => venue.mode === "online" && textValue(venue.sevenRoomsUrl) && validateDiningUrl(venue)).map((venue) => venue.key));
+			    const approvedDining = new Set([...data.dining.values()].filter((venue) => venue.mode === "booking-enabled" && textValue(venue.sevenRoomsUrl) && validateDiningUrl(venue)).map((venue) => venue.key));
 			    let values = {};
 			    let activeTab;
 			    let opener;
@@ -6748,19 +6754,16 @@ function main() {
 			      const instruction = ready ? "" : hotel ? "Select check-in and check-out dates." : "Select a hotel and your stay dates.";
 			      return [notice, instruction].filter(Boolean).join(" ");
 			    }
-			    const guidance = {
-			      paused: "Online reservations for this restaurant are paused.",
-			      "walk-in": "Walk-ins are welcome, subject to availability.",
-			      enquiry: "Contact the restaurant to enquire about a table."
-			    };
 			    function diningStatus(venue, ready) {
 			      if (!venue)
 			        return "Select a restaurant, date, time and number of guests.";
-			      const message = textValue(venue.message);
-			      if (venue.mode !== "online")
-			        return message || guidance[venue.mode];
-			      const instruction = approvedDining.has(venue.key) ? ready ? "" : "Select a date, time and a guest count of at least one." : "Online booking is unavailable for this restaurant.";
-			      return [message, instruction].filter(Boolean).join(" ");
+			      const hasRichMessage = Boolean(dining.message && venue.messageFragment);
+			      const textMessage = hasRichMessage ? "" : textValue(venue.message);
+			      const unavailable = "Online booking is unavailable for this restaurant.";
+			      if (venue.mode === "message-only")
+			        return hasRichMessage ? "" : textMessage || unavailable;
+			      const instruction = approvedDining.has(venue.key) ? ready ? "" : "Select a date, time and a guest count of at least one." : unavailable;
+			      return [textMessage, instruction].filter(Boolean).join(" ");
 			    }
 			    function setStatus(panel, message) {
 			      if (panel.status.textContent !== message)
@@ -6782,6 +6785,11 @@ function main() {
 			      setStatus(stay, stayStatus(hotel, canStay));
 			      showMessage(stay, (hotel ?? (!data.defaultHotel ? data.pageDestination : null))?.messageFragment);
 			      const venue = data.dining.get(dining.fields.restaurant.value);
+			      const messageOnly = venue?.mode === "message-only";
+			      if (messageOnly)
+			        calendars[1].close();
+			      for (const control of diningBookingControls)
+			        control.hidden = messageOnly;
 			      setStatus(dining, diningStatus(venue, canDine));
 			      showMessage(dining, venue?.messageFragment);
 			      const contact = contactInfo(venue?.contactUrl);
@@ -7317,14 +7325,19 @@ function main() {
 			  var slug2 = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 			  var hotelchampId = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
 			  var modes = /* @__PURE__ */ new Map([
-			    ["Online", "online"],
-			    ["Paused", "paused"],
-			    ["Walk-in", "walk-in"],
-			    ["Enquiry", "enquiry"],
-			    ["28968de640d75659e8f4c1a43886501f", "online"],
-			    ["58e44d750abe2acf11bba714204cafe9", "paused"],
-			    ["17d99d4c6d947aa8dac109a14568a4ec", "walk-in"],
-			    ["26047aa15c5d4424880cd1a9e5a864bd", "enquiry"]
+			    ["booking enabled", "booking-enabled"],
+			    ["message only", "message-only"],
+			    ["hidden", "hidden"],
+			    ["online", "booking-enabled"],
+			    ["paused", "message-only"],
+			    ["walk-in", "message-only"],
+			    ["enquiry", "message-only"],
+			    ["excluded", "hidden"],
+			    ["28968de640d75659e8f4c1a43886501f", "booking-enabled"],
+			    ["58e44d750abe2acf11bba714204cafe9", "message-only"],
+			    ["17d99d4c6d947aa8dac109a14568a4ec", "message-only"],
+			    ["26047aa15c5d4424880cd1a9e5a864bd", "message-only"],
+			    ["89f360b65b6e5c1446c84ba87ed4d87a", "hidden"]
 			  ]);
 			  var messageTags = /* @__PURE__ */ new Set(["p", "br", "strong", "em", "b", "i", "ul", "ol", "li", "a"]);
 			  var blockedTags = "script,style,iframe,object,embed,template,svg,math,audio,video,picture,img,link,form";
@@ -7420,7 +7433,7 @@ function main() {
 			    const destinationKeys = new Set(destinationRows.map((row) => row.key));
 			    for (const row of restaurants) {
 			      const { key, destinationKey, mode, messageFragment } = row;
-			      if (!mode || !destinationKeys.has(destinationKey))
+			      if (!mode || mode === "hidden" || !destinationKeys.has(destinationKey))
 			        continue;
 			      const approval = approved.get(key);
 			      const approvedContacts = approval?.destinationKey === destinationKey ? (approval.contactUrls ?? []).map(safeHref) : [];
@@ -7433,7 +7446,7 @@ function main() {
 			          break;
 			        }
 			      }
-			      restaurantRows.push(mode === "online" ? row : { ...row, sevenRoomsUrl: null });
+			      restaurantRows.push(mode === "booking-enabled" ? row : { ...row, sevenRoomsUrl: null });
 			    }
 			    return { catalogue: { destinations: destinationRows, restaurants: restaurantRows }, destinationKeys, properties, contacts };
 			  }
@@ -7460,7 +7473,7 @@ function main() {
 			    })), restaurants.map((row) => ({
 			      ...common(row),
 			      destinationKey: row.dataset.destinationKey,
-			      mode: modes.get(row.dataset.mode),
+			      mode: modes.get(row.dataset.mode?.trim().toLowerCase()),
 			      sevenRoomsUrl: row.dataset.sevenroomsUrl ?? null
 			    })), approved);
 			  }
