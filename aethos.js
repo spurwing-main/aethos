@@ -6402,7 +6402,7 @@ function main() {
 
 		const mbm = (() => {
 			const optIn = new URLSearchParams(location.search).getAll("mbm-demo");
-			if (location.hostname !== "aethoshotels.webflow.io" || optIn.length !== 1 || optIn[0] !== "1") return null;
+			if (optIn.length !== 1 || optIn[0] !== "1") return null;
 			var BookingModal = (() => {
 			  var __defProp = Object.defineProperty;
 			  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -7289,7 +7289,7 @@ function main() {
 			  var slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 			  function isDemoRequest(url) {
 			    const values = url.searchParams.getAll("mbm-demo");
-			    return url.hostname === "aethoshotels.webflow.io" && values.length === 1 && values[0] === "1";
+			    return values.length === 1 && values[0] === "1";
 			  }
 			  function isGeneralBooking(marker, href, booking) {
 			    if (marker !== "general")
